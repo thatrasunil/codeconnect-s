@@ -55,6 +55,7 @@ const CodeEditor = () => {
     const [showSettings, setShowSettings] = useState(false);
     const [snapshots, setSnapshots] = useState([]);
     const [output, setOutput] = useState([]);
+    const [isRunning, setIsRunning] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const lastSavedCodeRef = useRef(code);
     const lastTypeTimeRef = useRef(0);
@@ -166,10 +167,15 @@ const CodeEditor = () => {
     };
 
     const handleRunCode = async () => {
-        setOutput([{ type: 'info', content: `Running ${language} code...` }]);
+        if (isRunning) return; // Prevent multiple simultaneous runs
+
+        setIsRunning(true);
+        setOutput([{ type: 'info', content: `⚡ Running ${language} code...` }]);
 
         try {
-            // Still need backend for execution
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
             const res = await fetch(`${config.BACKEND_URL}/api/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -177,31 +183,53 @@ const CodeEditor = () => {
                     code,
                     language,
                     testCases: []
-                })
+                }),
+                signal: controller.signal
             });
 
+            clearTimeout(timeoutId);
             const data = await res.json();
 
             if (res.ok) {
-                // ... Log transaction if needed
+                // Log transaction if user is logged in
+                if (user?.id) {
+                    incrementUserStats(user.id, 'execution');
+                }
+
                 const runResult = data.results && data.results.length > 0 ? data.results[0] : null;
                 if (runResult) {
                     if (runResult.error) {
-                        setOutput([{ type: 'error', content: `Error: ${runResult.error}` }]);
+                        setOutput([
+                            { type: 'error', content: '❌ Execution Error:' },
+                            { type: 'error', content: runResult.error }
+                        ]);
                     } else {
                         setOutput([
-                            { type: 'info', content: '> Code Executed:' },
-                            { type: 'success', content: runResult.actual || 'No output' }
+                            { type: 'success', content: '✅ Code Executed Successfully!' },
+                            { type: 'info', content: '📤 Output:' },
+                            { type: 'success', content: runResult.actual || '(No output)' }
                         ]);
                     }
                 } else {
-                    setOutput([{ type: 'info', content: 'No output' }]);
+                    setOutput([{ type: 'info', content: '✅ Execution completed (No output)' }]);
                 }
             } else {
-                setOutput([{ type: 'error', content: `Execution Failed: ${data.detail || data.error || 'Server unreachable'}` }]);
+                setOutput([
+                    { type: 'error', content: '❌ Execution Failed' },
+                    { type: 'error', content: data.detail || data.error || 'Server error occurred' }
+                ]);
             }
         } catch (err) {
-            setOutput([{ type: 'error', content: `Error: ${err.message}. Ensure backend is running for code execution.` }]);
+            if (err.name === 'AbortError') {
+                setOutput([{ type: 'error', content: '⏱️ Execution timeout (30s limit exceeded)' }]);
+            } else {
+                setOutput([
+                    { type: 'error', content: '❌ Connection Error' },
+                    { type: 'error', content: `${err.message}. Please ensure the backend is running.` }
+                ]);
+            }
+        } finally {
+            setIsRunning(false);
         }
     };
 
@@ -385,7 +413,23 @@ const CodeEditor = () => {
 
                     <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
 
-                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleRunCode}><FaPlay color="#10b981" /> Run</button>
+                    <button
+                        className="btn"
+                        style={{
+                            display: 'flex',
+                            gap: '6px',
+                            background: isRunning ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                            color: 'white',
+                            border: '1px solid #475569',
+                            cursor: isRunning ? 'not-allowed' : 'pointer',
+                            opacity: isRunning ? 0.7 : 1
+                        }}
+                        onClick={handleRunCode}
+                        disabled={isRunning}
+                    >
+                        <FaPlay color="#10b981" style={{ animation: isRunning ? 'pulse 1s infinite' : 'none' }} />
+                        {isRunning ? 'Running...' : 'Run'}
+                    </button>
                     <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
                     <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
 
@@ -451,8 +495,9 @@ const CodeEditor = () => {
                         onChange={handleEditorChange}
                         onMount={(editor) => { editorRef.current = editor; }}
                         options={{
-                            minimap: { enabled: false },
+                            minimap: { enabled: editorSettings.minimap !== false },
                             fontSize: editorSettings.fontSize,
+                            fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
                             wordWrap: editorSettings.wordWrap,
                             lineNumbers: editorSettings.lineNumbers,
                             tabSize: editorSettings.tabSize,
@@ -460,6 +505,52 @@ const CodeEditor = () => {
                             automaticLayout: true,
                             readOnly: !permissions.canEdit,
                             domReadOnly: !permissions.canEdit,
+
+                            // Autocomplete & IntelliSense
+                            suggestOnTriggerCharacters: true,
+                            quickSuggestions: {
+                                other: true,
+                                comments: true,
+                                strings: true
+                            },
+                            parameterHints: {
+                                enabled: true
+                            },
+                            suggestSelection: 'first',
+                            acceptSuggestionOnCommitCharacter: true,
+                            acceptSuggestionOnEnter: 'on',
+                            snippetSuggestions: 'top',
+                            wordBasedSuggestions: true,
+
+                            // Code Formatting
+                            formatOnPaste: true,
+                            formatOnType: true,
+                            autoIndent: 'full',
+
+                            // Bracket Features
+                            bracketPairColorization: {
+                                enabled: editorSettings.bracketPairColorization !== false
+                            },
+                            guides: {
+                                bracketPairs: true,
+                                indentation: true
+                            },
+
+                            // Additional helpful features
+                            hover: {
+                                enabled: true
+                            },
+                            lightbulb: {
+                                enabled: true
+                            },
+                            codeLens: true,
+                            folding: true,
+                            foldingStrategy: 'indentation',
+                            showFoldingControls: 'always',
+                            matchBrackets: 'always',
+                            autoClosingBrackets: 'always',
+                            autoClosingQuotes: 'always',
+                            autoSurround: 'languageDefined',
                         }}
                     />
 
@@ -467,7 +558,7 @@ const CodeEditor = () => {
                         isOpen={output.length > 0}
                         output={output}
                         onClose={() => setOutput([])}
-                        isRunning={false}
+                        isRunning={isRunning}
                     />
 
                     <SettingsModal
