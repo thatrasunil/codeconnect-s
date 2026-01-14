@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy, FaCode, FaBrain, FaArrowRight, FaBug, FaVial, FaMagic } from 'react-icons/fa';
 import RoomChoiceModal from '../components/RoomChoiceModal';
 import OnlineUsersModal from '../components/OnlineUsersModal';
+import ChatbotButton from '../components/ChatbotButton';
 import Loading from '../components/Loading';
 
 import config from '../config';
@@ -400,6 +401,9 @@ const Dashboard = () => {
                 onClose={() => setIsOnlineUsersModalOpen(false)}
                 users={onlineUsers}
             />
+
+            {/* AI Chatbot */}
+            <ChatbotButton position="bottom-right" />
         </div>
     );
 };
