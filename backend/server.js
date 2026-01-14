@@ -24,7 +24,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL || "https://codeconnect.vercel.app",
   "https://codeconnect-zeta-pied.vercel.app",
   "https://codeconnect-frontend.vercel.app",
-  "https://codeshare-production-b2f2.up.railway.app"
+  "https://codeshare-production-b2f2.up.railway.app",
+  "https://code-connect-beige-rho.vercel.app"  // New Vercel deployment
 ];
 
 const io = new Server(server, {
