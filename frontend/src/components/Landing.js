@@ -9,6 +9,7 @@ import FlowDiagram3D from './Three/FlowDiagram3D';
 
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons'; import { createRoom as createFirestoreRoom } from '../services/firestoreService';
 import Loading from './Loading';
+import LandingPageChatbot from './LandingPageChatbot';
 
 function Landing() {
   const [roomId, setRoomId] = useState('');
@@ -414,6 +415,7 @@ function Landing() {
 
       </main>
 
+
       <footer className="landing-footer" style={{
         borderTop: '1px solid rgba(255,255,255,0.05)',
         padding: '6rem 2rem',
@@ -452,6 +454,9 @@ function Landing() {
           © 2026 CodeConnect. All rights reserved.
         </div>
       </footer>
+
+      <LandingPageChatbot />
+
 
       <style>{`
         /* Hero Section Responsive */

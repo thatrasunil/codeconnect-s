@@ -12,6 +12,7 @@ dotenv.config();
 // Import routes
 const problemsRouter = require('./routes/problems');
 const authRouter = require('./routes/auth');
+const chatRouter = require('./routes/chat');
 const verifyToken = require('./middleware/auth');
 
 const app = express();
@@ -168,6 +169,7 @@ const socketIdToUserId = new Map(); // socket.id -> userId
 // Pass db instance to problems router
 app.use('/api/problems', problemsRouter(db));
 app.use('/api/auth', authRouter(db));
+app.use('/api/chat', chatRouter(db, localRooms));
 
 // --- API Routes ---
 function generateRoomId() {
