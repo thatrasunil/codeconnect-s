@@ -22,7 +22,8 @@ import {
     sendMessage,
     updateRoomCode,
     updateTypingStatus,
-    updateUserStatus
+    updateUserStatus,
+    addMessageReaction
 } from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
@@ -344,6 +345,17 @@ const CodeEditor = () => {
         }, 2000);
     };
 
+    const handleReaction = async (msgId, emoji) => {
+        if (!user) return;
+        try {
+            if (msgId && typeof msgId === 'string') {
+                await addMessageReaction(roomId, msgId, emoji, user.username || user.uid);
+            }
+        } catch (err) {
+            console.error("Failed to add reaction", err);
+        }
+    };
+
     if (isLocked) {
         return (
             // Lock Screen (Simplified, as password logic requires valid backend usually)
@@ -588,6 +600,7 @@ const CodeEditor = () => {
                             roomId={roomId}
                             messages={messages}
                             onSendMessage={handleSendMessage}
+                            onReaction={handleReaction}
                             isOpen={true}
                             currentTypingUsers={currentTypingUsers}
                             onTyping={handleTyping}

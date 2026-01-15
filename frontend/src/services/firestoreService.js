@@ -16,7 +16,9 @@ import {
     getCountFromServer,
     runTransaction,
     deleteDoc,
-    getDocs
+    deleteDoc,
+    getDocs,
+    arrayUnion
 } from "firebase/firestore";
 
 
@@ -407,6 +409,40 @@ export const subscribeToTyping = (roomId, callback) => {
         });
         callback(typingUsers);
     });
+};
+
+/**
+ * Add a reaction to a message
+ */
+export const addMessageReaction = async (roomId, messageId, reaction, userId) => {
+    try {
+        const messageRef = doc(db, "messages", messageId);
+
+        // We can use arrayUnion or a map of reactions
+        // For simplicity, let's just push a reaction object to an array
+        // But to toggle, we'd need read-write or a subcollection.
+        // Let's go with a simple "reactions" array field for now: [{emoji, userId, timestamp}]
+
+        // Better: Map field: reactions: { "👍": [userId1, userId2], "❤️": [userId1] }
+        // Even simpler for this UI: Just list of reactions.
+        // Given the UI shows counts, let's assume we store them.
+
+        // Let's try to just append { emoji: reaction, userId, timestamp: Date.now() } to a 'reactions' array
+        // This is safe even if concurrent (with arrayUnion)
+
+        const newReaction = {
+            emoji: reaction,
+            userId: userId,
+            timestamp: Date.now()
+        };
+
+        await updateDoc(messageRef, {
+            reactions: arrayUnion(newReaction)
+        });
+
+    } catch (error) {
+        console.error("Error adding reaction:", error);
+    }
 };
 
 /**

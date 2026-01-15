@@ -267,9 +267,9 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                             {content}
 
                             <div className="message-reactions" style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
-                                <button onClick={() => onReaction && onReaction(msg.timestamp, '👍')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>👍</button>
-                                <button onClick={() => onReaction && onReaction(msg.timestamp, '❤️')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>❤️</button>
-                                <button onClick={() => onReaction && onReaction(msg.timestamp, '😂')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>😂</button>
+                                <button onClick={() => onReaction && onReaction(msg.id, '👍')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>👍</button>
+                                <button onClick={() => onReaction && onReaction(msg.id, '❤️')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>❤️</button>
+                                <button onClick={() => onReaction && onReaction(msg.id, '😂')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>😂</button>
                             </div>
                         </div>
                     </div>
