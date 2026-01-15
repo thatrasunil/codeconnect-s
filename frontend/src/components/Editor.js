@@ -23,7 +23,7 @@ import {
     updateRoomCode,
     updateTypingStatus,
     updateUserStatus,
-    addMessageReaction
+    toggleMessageReaction
 } from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
@@ -349,7 +349,7 @@ const CodeEditor = () => {
         if (!user) return;
         try {
             if (msgId) {
-                await addMessageReaction(roomId, String(msgId), emoji, user.username || user.uid);
+                await toggleMessageReaction(roomId, String(msgId), emoji, user.username || user.uid);
             }
         } catch (err) {
             console.error("Failed to add reaction", err);

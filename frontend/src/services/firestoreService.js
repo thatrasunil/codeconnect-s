@@ -413,34 +413,47 @@ export const subscribeToTyping = (roomId, callback) => {
 /**
  * Add a reaction to a message
  */
-export const addMessageReaction = async (roomId, messageId, reaction, userId) => {
+/**
+ * Toggle a reaction on a message (Add or Remove)
+ */
+export const toggleMessageReaction = async (roomId, messageId, reactionEmoji, userId) => {
     try {
         const messageRef = doc(db, "messages", messageId);
 
-        // We can use arrayUnion or a map of reactions
-        // For simplicity, let's just push a reaction object to an array
-        // But to toggle, we'd need read-write or a subcollection.
-        // Let's go with a simple "reactions" array field for now: [{emoji, userId, timestamp}]
+        await runTransaction(db, async (transaction) => {
+            const messageDoc = await transaction.get(messageRef);
+            if (!messageDoc.exists()) {
+                throw new Error("Message does not exist!");
+            }
 
-        // Better: Map field: reactions: { "👍": [userId1, userId2], "❤️": [userId1] }
-        // Even simpler for this UI: Just list of reactions.
-        // Given the UI shows counts, let's assume we store them.
+            const data = messageDoc.data();
+            const reactions = data.reactions || [];
 
-        // Let's try to just append { emoji: reaction, userId, timestamp: Date.now() } to a 'reactions' array
-        // This is safe even if concurrent (with arrayUnion)
+            // Check if user already reacted with this emoji
+            const existingIndex = reactions.findIndex(
+                (r) => r.userId === userId && (r.emoji === reactionEmoji || r === reactionEmoji)
+            );
 
-        const newReaction = {
-            emoji: reaction,
-            userId: userId,
-            timestamp: Date.now()
-        };
+            let newReactions = [...reactions];
 
-        await updateDoc(messageRef, {
-            reactions: arrayUnion(newReaction)
+            if (existingIndex !== -1) {
+                // User already reacted -> Remove it
+                newReactions.splice(existingIndex, 1);
+            } else {
+                // User hasn't reacted -> Add it
+                // We purposefully omit timestamp to make equality checks easier if we ever move to arrayUnion/Remove
+                // But for now, we just stick to this object structure without timestamp for simplicity
+                newReactions.push({
+                    emoji: reactionEmoji,
+                    userId: userId
+                });
+            }
+
+            transaction.update(messageRef, { reactions: newReactions });
         });
 
     } catch (error) {
-        console.error("Error adding reaction:", error);
+        console.error("Error toggling reaction:", error);
     }
 };
 
