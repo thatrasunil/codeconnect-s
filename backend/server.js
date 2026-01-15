@@ -67,11 +67,22 @@ let isFirestoreConnected = false;
 
 // 1. Connect to MongoDB (Primary Auth DB)
 if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI)
+  mongoose.connect(process.env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000,  // Reduce timeout to 5 seconds
+    socketTimeoutMS: 45000,           // Socket timeout
+    connectTimeoutMS: 10000,          // Connection timeout
+    maxPoolSize: 10,                  // Connection pool
+    retryWrites: true,
+    w: 'majority'
+  })
     .then(() => console.log('✅ MongoDB connected successfully'))
-    .catch(err => console.error('❌ MongoDB connection error:', err));
+    .catch(err => {
+      console.error('❌ MongoDB connection error:', err);
+      console.warn('⚠️ Running in limited mode without authentication');
+    });
 } else {
-  console.warn('⚠️ MONGODB_URI not found in environment variables. Authentication may fail.');
+  console.warn('⚠️ MONGODB_URI not found in environment variables. Authentication will fail.');
+  console.warn('📝 Please add MONGODB_URI to your Vercel environment variables');
 }
 
 // 2. Connect to Firestore (Chat & Rooms DB)
