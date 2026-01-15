@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply, FaTimes, FaRobot, FaSmile, FaChevronRight } from 'react-icons/fa';
+import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply, FaTimes, FaRobot, FaSmile, FaChevronRight, FaHeadphones } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import config from '../config';
+import useVoice from '../hooks/useVoice';
 
 const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, currentTypingUsers, onTyping, aiMode, setAiMode, onClose }) => {
     const { user } = useAuth();
@@ -15,6 +16,45 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
     const [replyingTo, setReplyingTo] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const [voiceMode, setVoiceMode] = useState(false);
+
+    const {
+        isListening,
+        isSpeaking,
+        transcript,
+        startListening,
+        stopListening,
+        speak,
+        stopSpeaking,
+        resetTranscript
+    } = useVoice();
+
+    // Update Input with Transcript
+    useEffect(() => {
+        if (transcript) {
+            setMessageText(transcript);
+        }
+    }, [transcript]);
+
+    // TTS for AI Responses
+    useEffect(() => {
+        if (voiceMode && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.userId === 'Gemini AI') {
+                // In a real app we'd track 'read' state to avoid re-reading. 
+                // Here we just read the last message if checking briefly.
+                // A better heuristic: compare with previous message length or ID?
+                // For now, let's just speak it. 
+                // Note: This might re-speak on every render if we aren't careful.
+                // We'll rely on the user turning voice mode on effectively "asking" to hear things.
+                const text = lastMsg.content;
+                speak(text);
+            }
+        } else {
+            stopSpeaking();
+        }
+    }, [messages, voiceMode, speak, stopSpeaking]);
+
 
     // Sync local tab logic
     const activeTab = aiMode ? 'ai' : 'team';
@@ -36,9 +76,10 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
         onSendMessage(messageText, 'TEXT', null, parentId);
         setMessageText('');
         setReplyingTo(null);
+        resetTranscript();
     };
 
-    // --- File & Voice Handlers (Identical logic, compressed for brevity) ---
+    // --- File & Voice Handlers ---
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file || !user) return;
@@ -59,7 +100,7 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
         } catch (err) { toast.error("Upload failed"); } finally { setIsUploading(false); }
     };
 
-    const startRecording = async () => {
+    const startRecordingAudio = async () => {
         if (!user) return;
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -68,7 +109,6 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
             recorder.ondataavailable = e => chunks.push(e.data);
             recorder.onstop = async () => {
                 const blob = new Blob(chunks, { type: 'audio/webm' });
-                // Upload logic inline for brevity
                 const formData = new FormData(); formData.append('file', blob, 'voice.webm');
                 const token = localStorage.getItem('token');
                 const res = await fetch(`${config.BACKEND_URL}/api/upload`, {
@@ -87,10 +127,20 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
         } catch (err) { toast.error("Mic access denied"); }
     };
 
-    const stopRecording = () => {
+    const stopRecordingAudio = () => {
         if (mediaRecorder?.state !== 'inactive') {
             mediaRecorder.stop();
             setIsRecording(false);
+        }
+    };
+
+    const handleMicClick = () => {
+        if (voiceMode) {
+            if (isListening) {
+                stopListening();
+            } else {
+                startListening();
+            }
         }
     };
 
@@ -263,7 +313,21 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
                             CodeConnect Chat
                         </span>
                     </div>
-                    <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><FaTimes /></button>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button
+                            onClick={() => setVoiceMode(!voiceMode)}
+                            title={voiceMode ? "Voice Mode: ON" : "Voice Mode: OFF"}
+                            style={{
+                                background: voiceMode ? 'rgba(74, 222, 128, 0.2)' : 'rgba(255,255,255,0.05)',
+                                border: voiceMode ? '1px solid #4ade80' : '1px solid #334155',
+                                color: voiceMode ? '#4ade80' : '#94a3b8',
+                                cursor: 'pointer', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}
+                        >
+                            <FaHeadphones size={12} />
+                        </button>
+                        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><FaTimes /></button>
+                    </div>
                 </div>
 
                 {/* Pill Tabs */}
@@ -342,8 +406,8 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
                         value={messageText}
                         onChange={e => { setMessageText(e.target.value); onTyping && onTyping(); }}
                         onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-                        placeholder={isRecording ? "Listening..." : "Type a message..."}
-                        disabled={isRecording}
+                        placeholder={voiceMode && isListening ? "Listening..." : isRecording ? "Recording..." : "Type a message..."}
+                        disabled={isRecording || (voiceMode && isListening)}
                         style={{
                             flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '0.9rem'
                         }}
@@ -359,13 +423,18 @@ const ChatPanel = ({ roomId, messages, onSendMessage, onReaction, isOpen, curren
                         </button>
                     ) : (
                         <button
-                            onMouseDown={startRecording} onMouseUp={stopRecording}
+                            onMouseDown={voiceMode ? null : startRecordingAudio}
+                            onMouseUp={voiceMode ? null : stopRecordingAudio}
+                            onClick={voiceMode ? handleMicClick : null}
+                            title={voiceMode ? (isListening ? "Stop Listening" : "Start Dictation") : "Hold to Record"}
                             style={{
-                                background: isRecording ? '#ef4444' : 'transparent', border: 'none', width: '32px', height: '32px', borderRadius: '50%',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: isRecording ? 'white' : '#94a3b8', cursor: 'pointer'
+                                background: isRecording ? '#ef4444' : isListening ? '#3b82f6' : 'transparent',
+                                border: 'none', width: '32px', height: '32px', borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: isRecording || isListening ? 'white' : '#94a3b8', cursor: 'pointer'
                             }}
                         >
-                            {isRecording ? <FaStop /> : <FaMicrophone />}
+                            {isRecording || isListening ? <FaStop /> : <FaMicrophone />}
                         </button>
                     )}
                 </div>

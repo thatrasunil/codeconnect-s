@@ -1,8 +1,8 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { FaRobot } from 'react-icons/fa';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
-import AIAssistant from './components/AIAssistant';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
@@ -22,10 +22,12 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Debugging = lazy(() => import('./pages/Debugging'));
 const Testing = lazy(() => import('./pages/Testing'));
 const CodeGen = lazy(() => import('./pages/CodeGen'));
+const Chatbot = lazy(() => import('./components/Chatbot'));
 
 function App() {
 
 
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
   return (
     <div className="App">
       <AuthProvider>
@@ -33,7 +35,6 @@ function App() {
           <ToastProvider>
             <Router>
               <Navbar />
-              {/* <AIAssistant /> */}
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
@@ -70,15 +71,35 @@ function App() {
                       <Profile />
                     </ProtectedRoute>
                   } />
-                  <Route path="/profile" element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/room/:roomId" element={<Editor />} />
                   <Route path="/solve/:roomId" element={<ProblemSolver />} />
                 </Routes>
               </Suspense>
+
+              {/* Global Chatbot FAB & Component */}
+              <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+                {!isChatOpen && (
+                  <button
+                    onClick={() => setIsChatOpen(true)}
+                    style={{
+                      width: '60px', height: '60px', borderRadius: '50%',
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      border: 'none', color: 'white', fontSize: '24px',
+                      boxShadow: '0 4px 20px rgba(99, 102, 241, 0.5)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'transform 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <FaRobot size={24} />
+                  </button>
+                )}
+                <React.Suspense fallback={null}>
+                  <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+                </React.Suspense>
+              </div>
+
             </Router>
           </ToastProvider>
         </ErrorBoundary>

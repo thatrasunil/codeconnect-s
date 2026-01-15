@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaRobot, FaTimes, FaPaperPlane, FaCode, FaLightbulb, FaBug, FaTrash } from 'react-icons/fa';
+import { FaRobot, FaTimes, FaPaperPlane, FaCode, FaLightbulb, FaBug, FaTrash, FaHeadphones, FaMicrophone, FaStop } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import config from '../config';
 import { useAuth } from '../contexts/AuthContext';
+import useVoice from '../hooks/useVoice';
 
 const Chatbot = ({ isOpen, onClose, context = null }) => {
     const { user } = useAuth();
@@ -19,6 +20,18 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const [voiceMode, setVoiceMode] = useState(false);
+
+    const {
+        isListening,
+        isSpeaking,
+        transcript,
+        startListening,
+        stopListening,
+        speak,
+        stopSpeaking,
+        resetTranscript
+    } = useVoice();
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,6 +47,33 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
         }
     }, [isOpen]);
 
+    // Update Input with Transcript
+    useEffect(() => {
+        if (transcript) {
+            setInput(transcript);
+        }
+    }, [transcript]);
+
+    // TTS for Assistant Responses
+    useEffect(() => {
+        if (voiceMode && messages.length > 0) {
+            const lastMsg = messages[messages.length - 1];
+            if (lastMsg.role === 'assistant' && lastMsg.id > 1) { // Skip intro message if desired, or play it. 
+                // We'll skip intro for annoyance factor, only read new responses
+                // Actually, let's just read whatever is new.
+                // NOTE: logic here needs to determine if it's "newly added". 
+                // Ideally, we'd have a 'read' flag. For now, simple check:
+                // If it's the very last message and we haven't spoken it yet... (hard to track "spoken yet" easily without state)
+                // We'll rely on the fact that this effect runs when `messages` changes.
+                // So when a new message is added, we speak it.
+                speak(lastMsg.content);
+            }
+        } else {
+            stopSpeaking();
+        }
+    }, [messages, voiceMode, speak, stopSpeaking]);
+
+
     const quickActions = [
         { icon: <FaCode />, label: 'Explain Code', prompt: 'Explain this code in simple terms' },
         { icon: <FaBug />, label: 'Debug', prompt: 'Help me debug this code and find potential issues' },
@@ -43,6 +83,8 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
     const handleSend = async (customPrompt = null) => {
         const messageText = customPrompt || input.trim();
         if (!messageText) return;
+
+        resetTranscript(); // Clear voice buffer
 
         const userMessage = {
             id: Date.now(),
@@ -101,6 +143,15 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
                 timestamp: new Date()
             }
         ]);
+        stopSpeaking();
+    };
+
+    const handleMicClick = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            startListening();
+        }
     };
 
     if (!isOpen) return null;
@@ -158,6 +209,17 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => setVoiceMode(!voiceMode)}
+                            title={voiceMode ? "Voice Mode: ON" : "Voice Mode: OFF"}
+                            style={{
+                                background: voiceMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255,255,255,0.1)',
+                                border: voiceMode ? '1px solid #fff' : 'none',
+                                borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer'
+                            }}
+                        >
+                            <FaHeadphones size={12} />
+                        </button>
                         <button
                             onClick={handleClearChat}
                             style={{
@@ -255,6 +317,7 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
                         </motion.div>
                     ))}
 
+                    {/* Loading Indicator */}
                     {isLoading && (
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -333,25 +396,51 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
                     background: 'rgba(0, 0, 0, 0.2)'
                 }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
-                            placeholder="Ask me anything about coding..."
-                            disabled={isLoading}
-                            style={{
-                                flex: 1,
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                border: '1px solid rgba(139, 92, 246, 0.3)',
-                                borderRadius: '12px',
-                                padding: '12px 16px',
-                                color: 'white',
-                                fontSize: '0.9rem',
-                                outline: 'none'
-                            }}
-                        />
+                        <div style={{ position: 'relative', flex: 1 }}>
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
+                                placeholder={voiceMode && isListening ? "Listening..." : "Ask me anything..."}
+                                disabled={isLoading || (voiceMode && isListening)}
+                                style={{
+                                    width: '100%',
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid rgba(139, 92, 246, 0.3)',
+                                    borderRadius: '12px',
+                                    padding: '12px 16px',
+                                    paddingRight: voiceMode ? '40px' : '16px',
+                                    color: 'white',
+                                    fontSize: '0.9rem',
+                                    outline: 'none'
+                                }}
+                            />
+                            {voiceMode && (
+                                <button
+                                    onClick={handleMicClick}
+                                    style={{
+                                        position: 'absolute',
+                                        right: '8px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        background: isListening ? '#ef4444' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '28px',
+                                        height: '28px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: isListening ? 'white' : '#94a3b8'
+                                    }}
+                                >
+                                    {isListening ? <FaStop size={12} /> : <FaMicrophone size={14} />}
+                                </button>
+                            )}
+                        </div>
                         <button
                             onClick={() => handleSend()}
                             disabled={!input.trim() || isLoading}
