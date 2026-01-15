@@ -266,10 +266,56 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
 
                             {content}
 
-                            <div className="message-reactions" style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
-                                <button onClick={() => onReaction && onReaction(msg.id, '👍')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>👍</button>
-                                <button onClick={() => onReaction && onReaction(msg.id, '❤️')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>❤️</button>
-                                <button onClick={() => onReaction && onReaction(msg.id, '😂')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>😂</button>
+                            <div className="message-reactions" style={{ marginTop: '5px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                                {/* Display Existing Reactions */}
+                                {(() => {
+                                    if (!msg.reactions || !Array.isArray(msg.reactions)) return null;
+
+                                    // Group by emoji
+                                    const reactionCounts = msg.reactions.reduce((acc, curr) => {
+                                        const emoji = curr.emoji || curr; // Handle both object and simple string legacy
+                                        acc[emoji] = (acc[emoji] || 0) + 1;
+                                        return acc;
+                                    }, {});
+
+                                    return Object.entries(reactionCounts).map(([emoji, count]) => (
+                                        <div key={emoji} style={{
+                                            fontSize: '0.8rem',
+                                            background: 'rgba(255,255,255,0.1)',
+                                            borderRadius: '12px',
+                                            padding: '2px 8px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            <span>{emoji}</span>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{count}</span>
+                                        </div>
+                                    ));
+                                })()}
+
+                                {/* Add Reaction Buttons */}
+                                <div style={{ display: 'flex', gap: '2px', opacity: 0.6 }}>
+                                    {['👍', '❤️', '😂', '🔥', '🤔'].map(emoji => (
+                                        <button
+                                            key={emoji}
+                                            onClick={() => onReaction && onReaction(msg.id, emoji)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                cursor: 'pointer',
+                                                padding: '2px 5px',
+                                                fontSize: '0.85rem',
+                                                filter: 'grayscale(100%)',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.filter = 'grayscale(0%)'; e.currentTarget.style.transform = 'scale(1.2)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.filter = 'grayscale(100%)'; e.currentTarget.style.transform = 'scale(1)'; }}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
