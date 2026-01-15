@@ -4,6 +4,7 @@ import { useToast } from '../contexts/ToastContext';
 import {
     FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply,
     FaTimes, FaRobot, FaSmile, FaChevronRight, FaHeadphones,
+    FaComments,
     FaEllipsisH, FaSearch, FaImage, FaFile
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
