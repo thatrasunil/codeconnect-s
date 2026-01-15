@@ -351,273 +351,272 @@ const CodeEditor = () => {
             if (msgId) {
                 await addMessageReaction(roomId, String(msgId), emoji, user.username || user.uid);
             }
-        }
         } catch (err) {
-        console.error("Failed to add reaction", err);
-    }
-};
+            console.error("Failed to add reaction", err);
+        }
+    };
 
-if (isLocked) {
+    if (isLocked) {
+        return (
+            // Lock Screen (Simplified, as password logic requires valid backend usually)
+            // We can assume open for now or check roomData.password in firestore
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
+                    <h2>Room Locked</h2>
+                    <p>Please contact room owner.</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        // Lock Screen (Simplified, as password logic requires valid backend usually)
-        // We can assume open for now or check roomData.password in firestore
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
-            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-                <h2>Room Locked</h2>
-                <p>Please contact room owner.</p>
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white' }}>
+            {/* Toolbar */}
+            <div style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155', background: '#1e293b' }}>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div className="logo" style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>CodeConnect</div>
+
+                    {/* Room ID Badge */}
+                    <div style={{
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        color: '#60a5fa',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                    }}>
+                        Room: {roomId}
+                    </div>
+
+                    <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+
+                    {/* Language Selector */}
+                    <select
+                        value={language}
+                        onChange={(e) => {
+                            const newLang = e.target.value;
+                            setLanguage(newLang);
+                            localStorage.setItem(`editor_language_${roomId}`, newLang);
+                            // Also update remote
+                            updateRoomCode(roomId, code, newLang);
+                        }}
+                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                    >
+                        {SUPPORTED_LANGUAGES.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                        ))}
+                    </select>
+
+                    {/* Theme Selector */}
+                    <select
+                        value={theme}
+                        onChange={(e) => {
+                            const newTheme = e.target.value;
+                            setTheme(newTheme);
+                            localStorage.setItem(`editor_theme_${roomId}`, newTheme);
+                        }}
+                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                    >
+                        {SUPPORTED_THEMES.map(theme => (
+                            <option key={theme.id} value={theme.id}>{theme.name}</option>
+                        ))}
+                    </select>
+
+                    <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+
+                    <button
+                        className="btn"
+                        style={{
+                            display: 'flex',
+                            gap: '6px',
+                            background: isRunning ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                            color: 'white',
+                            border: '1px solid #475569',
+                            cursor: isRunning ? 'not-allowed' : 'pointer',
+                            opacity: isRunning ? 0.7 : 1
+                        }}
+                        onClick={handleRunCode}
+                        disabled={isRunning}
+                    >
+                        <FaPlay color="#10b981" style={{ animation: isRunning ? 'pulse 1s infinite' : 'none' }} />
+                        {isRunning ? 'Running...' : 'Run'}
+                    </button>
+                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
+                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
+
+                    <div style={{ fontSize: '0.8rem', color: isSaving ? '#facc15' : '#94a3b8', fontStyle: 'italic', minWidth: '60px' }}>
+                        {isSaving ? 'Saving...' : 'Saved'}
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
+                    <button className="btn icon-btn" onClick={() => {
+                        const model = editorRef.current.getModel();
+                        const selection = editorRef.current.getSelection();
+                        const selectedCode = model.getValueInRange(selection) || code;
+                        handleAskAI(`Find bugs and suggest fixes for this code:\n${selectedCode}`);
+                        setShowChat(true);
+                        setAiMode(true);
+                    }} title="Debug with AI" style={{ color: '#ef4444', background: 'transparent', border: 'none' }}><FaRobot /> Debug</button>
+
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <button className="btn" onClick={handleDownloadCode} title="Download File" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaDownload /></button>
+                        <button className="btn" onClick={handleCopyCode} title="Copy to Clipboard" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaCopy /></button>
+                        <button className="btn" onClick={handleSaveSnapshot} title="Save Snapshot" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaHistory /></button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', fontSize: '0.8rem' }}>
+                        <span style={{ color: '#94a3b8' }}>Participants: {participants.length}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main Content */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                {/* Left Panel */}
+                <motion.div
+                    initial={{ width: 350, opacity: 1 }}
+                    animate={{ width: showInterview ? 350 : 0, opacity: showInterview ? 1 : 0 }}
+                    style={{ borderRight: '1px solid #334155', display: showInterview ? 'block' : 'none', background: '#1e293b' }}
+                >
+                    <MemoizedProblemPanel
+                        socket={null}
+                        roomId={roomId}
+                        onPostQuestion={(text) => setCode(prev => text + prev)}
+                        questionId={initialQuestionId}
+                        isOpen={showInterview}
+                        onClose={() => setShowInterview(false)}
+                    />
+                </motion.div>
+
+                {/* Center Panel */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    {userRole === 'INTERVIEWER' && (
+                        <div style={{ background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                            🎯 INTERVIEWER MODE - Read-Only View
+                        </div>
+                    )}
+
+                    <Editor
+                        height="100%"
+                        theme={theme}
+                        language={language}
+                        value={code}
+                        onChange={handleEditorChange}
+                        onMount={(editor) => { editorRef.current = editor; }}
+                        options={{
+                            minimap: { enabled: editorSettings.minimap !== false },
+                            fontSize: editorSettings.fontSize,
+                            fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
+                            wordWrap: editorSettings.wordWrap,
+                            lineNumbers: editorSettings.lineNumbers,
+                            tabSize: editorSettings.tabSize,
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            readOnly: !permissions.canEdit,
+                            domReadOnly: !permissions.canEdit,
+
+                            // Autocomplete & IntelliSense
+                            suggestOnTriggerCharacters: true,
+                            quickSuggestions: {
+                                other: true,
+                                comments: true,
+                                strings: true
+                            },
+                            parameterHints: {
+                                enabled: true
+                            },
+                            suggestSelection: 'first',
+                            acceptSuggestionOnCommitCharacter: true,
+                            acceptSuggestionOnEnter: 'on',
+                            snippetSuggestions: 'top',
+                            wordBasedSuggestions: true,
+
+                            // Code Formatting
+                            formatOnPaste: true,
+                            formatOnType: true,
+                            autoIndent: 'full',
+
+                            // Bracket Features
+                            bracketPairColorization: {
+                                enabled: editorSettings.bracketPairColorization !== false
+                            },
+                            guides: {
+                                bracketPairs: true,
+                                indentation: true
+                            },
+
+                            // Additional helpful features
+                            hover: {
+                                enabled: true
+                            },
+                            lightbulb: {
+                                enabled: true
+                            },
+                            codeLens: true,
+                            folding: true,
+                            foldingStrategy: 'indentation',
+                            showFoldingControls: 'always',
+                            matchBrackets: 'always',
+                            autoClosingBrackets: 'always',
+                            autoClosingQuotes: 'always',
+                            autoSurround: 'languageDefined',
+                        }}
+                    />
+
+                    <MemoizedOutputPanel
+                        isOpen={output.length > 0}
+                        output={output}
+                        onClose={() => setOutput([])}
+                        isRunning={isRunning}
+                    />
+
+                    <SettingsModal
+                        isOpen={showSettings}
+                        onClose={() => setShowSettings(false)}
+                        settings={editorSettings}
+                        onSettingsChange={handleSettingsChange}
+                    />
+                </div>
+
+                {/* Right Panel */}
+                <motion.div
+                    initial={{ width: 320, opacity: 1 }}
+                    animate={{ width: showChat ? 320 : 0, opacity: showChat ? 1 : 0 }}
+                    style={{ borderLeft: '1px solid #334155', display: showChat ? 'block' : 'none', background: '#1e293b' }}
+                >
+                    <div style={{ padding: '10px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 'bold' }}>Chat & AI</span>
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                            <button onClick={() => setAiMode(!aiMode)} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '12px', background: aiMode ? 'linear-gradient(45deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer' }}>{aiMode ? 'AI ON 🤖' : 'AI OFF'}</button>
+                            <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'white' }}><FaShareAlt /></button>
+                        </div>
+                    </div>
+                    <div style={{ height: 'calc(100% - 50px)' }}>
+                        <MemoizedChatPanel
+                            socket={null}
+                            roomId={roomId}
+                            messages={messages}
+                            onSendMessage={handleSendMessage}
+                            onReaction={handleReaction}
+                            isOpen={true}
+                            currentTypingUsers={currentTypingUsers}
+                            onTyping={handleTyping}
+                            aiMode={aiMode}
+                            setAiMode={setAiMode}
+                        />
+                    </div>
+                </motion.div>
+            </div>
+
+            <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
+                {initialQuestionId && !showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaBook /></button>}
+                {!showChat && <button onClick={() => setShowChat(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt style={{ transform: 'scaleX(-1)' }} /></button>}
             </div>
         </div>
     );
-}
-
-return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white' }}>
-        {/* Toolbar */}
-        <div style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155', background: '#1e293b' }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div className="logo" style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>CodeConnect</div>
-
-                {/* Room ID Badge */}
-                <div style={{
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    color: '#60a5fa',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                    fontWeight: '600',
-                    border: '1px solid rgba(59, 130, 246, 0.2)'
-                }}>
-                    Room: {roomId}
-                </div>
-
-                <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
-
-                {/* Language Selector */}
-                <select
-                    value={language}
-                    onChange={(e) => {
-                        const newLang = e.target.value;
-                        setLanguage(newLang);
-                        localStorage.setItem(`editor_language_${roomId}`, newLang);
-                        // Also update remote
-                        updateRoomCode(roomId, code, newLang);
-                    }}
-                    style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
-                >
-                    {SUPPORTED_LANGUAGES.map(lang => (
-                        <option key={lang.id} value={lang.id}>{lang.name}</option>
-                    ))}
-                </select>
-
-                {/* Theme Selector */}
-                <select
-                    value={theme}
-                    onChange={(e) => {
-                        const newTheme = e.target.value;
-                        setTheme(newTheme);
-                        localStorage.setItem(`editor_theme_${roomId}`, newTheme);
-                    }}
-                    style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
-                >
-                    {SUPPORTED_THEMES.map(theme => (
-                        <option key={theme.id} value={theme.id}>{theme.name}</option>
-                    ))}
-                </select>
-
-                <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
-
-                <button
-                    className="btn"
-                    style={{
-                        display: 'flex',
-                        gap: '6px',
-                        background: isRunning ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                        color: 'white',
-                        border: '1px solid #475569',
-                        cursor: isRunning ? 'not-allowed' : 'pointer',
-                        opacity: isRunning ? 0.7 : 1
-                    }}
-                    onClick={handleRunCode}
-                    disabled={isRunning}
-                >
-                    <FaPlay color="#10b981" style={{ animation: isRunning ? 'pulse 1s infinite' : 'none' }} />
-                    {isRunning ? 'Running...' : 'Run'}
-                </button>
-                <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
-                <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
-
-                <div style={{ fontSize: '0.8rem', color: isSaving ? '#facc15' : '#94a3b8', fontStyle: 'italic', minWidth: '60px' }}>
-                    {isSaving ? 'Saving...' : 'Saved'}
-                </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
-                <button className="btn icon-btn" onClick={() => {
-                    const model = editorRef.current.getModel();
-                    const selection = editorRef.current.getSelection();
-                    const selectedCode = model.getValueInRange(selection) || code;
-                    handleAskAI(`Find bugs and suggest fixes for this code:\n${selectedCode}`);
-                    setShowChat(true);
-                    setAiMode(true);
-                }} title="Debug with AI" style={{ color: '#ef4444', background: 'transparent', border: 'none' }}><FaRobot /> Debug</button>
-
-                <div style={{ display: 'flex', gap: '5px' }}>
-                    <button className="btn" onClick={handleDownloadCode} title="Download File" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaDownload /></button>
-                    <button className="btn" onClick={handleCopyCode} title="Copy to Clipboard" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaCopy /></button>
-                    <button className="btn" onClick={handleSaveSnapshot} title="Save Snapshot" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaHistory /></button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', fontSize: '0.8rem' }}>
-                    <span style={{ color: '#94a3b8' }}>Participants: {participants.length}</span>
-                </div>
-            </div>
-        </div>
-
-        {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            {/* Left Panel */}
-            <motion.div
-                initial={{ width: 350, opacity: 1 }}
-                animate={{ width: showInterview ? 350 : 0, opacity: showInterview ? 1 : 0 }}
-                style={{ borderRight: '1px solid #334155', display: showInterview ? 'block' : 'none', background: '#1e293b' }}
-            >
-                <MemoizedProblemPanel
-                    socket={null}
-                    roomId={roomId}
-                    onPostQuestion={(text) => setCode(prev => text + prev)}
-                    questionId={initialQuestionId}
-                    isOpen={showInterview}
-                    onClose={() => setShowInterview(false)}
-                />
-            </motion.div>
-
-            {/* Center Panel */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                {userRole === 'INTERVIEWER' && (
-                    <div style={{ background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                        🎯 INTERVIEWER MODE - Read-Only View
-                    </div>
-                )}
-
-                <Editor
-                    height="100%"
-                    theme={theme}
-                    language={language}
-                    value={code}
-                    onChange={handleEditorChange}
-                    onMount={(editor) => { editorRef.current = editor; }}
-                    options={{
-                        minimap: { enabled: editorSettings.minimap !== false },
-                        fontSize: editorSettings.fontSize,
-                        fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
-                        wordWrap: editorSettings.wordWrap,
-                        lineNumbers: editorSettings.lineNumbers,
-                        tabSize: editorSettings.tabSize,
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                        readOnly: !permissions.canEdit,
-                        domReadOnly: !permissions.canEdit,
-
-                        // Autocomplete & IntelliSense
-                        suggestOnTriggerCharacters: true,
-                        quickSuggestions: {
-                            other: true,
-                            comments: true,
-                            strings: true
-                        },
-                        parameterHints: {
-                            enabled: true
-                        },
-                        suggestSelection: 'first',
-                        acceptSuggestionOnCommitCharacter: true,
-                        acceptSuggestionOnEnter: 'on',
-                        snippetSuggestions: 'top',
-                        wordBasedSuggestions: true,
-
-                        // Code Formatting
-                        formatOnPaste: true,
-                        formatOnType: true,
-                        autoIndent: 'full',
-
-                        // Bracket Features
-                        bracketPairColorization: {
-                            enabled: editorSettings.bracketPairColorization !== false
-                        },
-                        guides: {
-                            bracketPairs: true,
-                            indentation: true
-                        },
-
-                        // Additional helpful features
-                        hover: {
-                            enabled: true
-                        },
-                        lightbulb: {
-                            enabled: true
-                        },
-                        codeLens: true,
-                        folding: true,
-                        foldingStrategy: 'indentation',
-                        showFoldingControls: 'always',
-                        matchBrackets: 'always',
-                        autoClosingBrackets: 'always',
-                        autoClosingQuotes: 'always',
-                        autoSurround: 'languageDefined',
-                    }}
-                />
-
-                <MemoizedOutputPanel
-                    isOpen={output.length > 0}
-                    output={output}
-                    onClose={() => setOutput([])}
-                    isRunning={isRunning}
-                />
-
-                <SettingsModal
-                    isOpen={showSettings}
-                    onClose={() => setShowSettings(false)}
-                    settings={editorSettings}
-                    onSettingsChange={handleSettingsChange}
-                />
-            </div>
-
-            {/* Right Panel */}
-            <motion.div
-                initial={{ width: 320, opacity: 1 }}
-                animate={{ width: showChat ? 320 : 0, opacity: showChat ? 1 : 0 }}
-                style={{ borderLeft: '1px solid #334155', display: showChat ? 'block' : 'none', background: '#1e293b' }}
-            >
-                <div style={{ padding: '10px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold' }}>Chat & AI</span>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                        <button onClick={() => setAiMode(!aiMode)} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '12px', background: aiMode ? 'linear-gradient(45deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer' }}>{aiMode ? 'AI ON 🤖' : 'AI OFF'}</button>
-                        <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'white' }}><FaShareAlt /></button>
-                    </div>
-                </div>
-                <div style={{ height: 'calc(100% - 50px)' }}>
-                    <MemoizedChatPanel
-                        socket={null}
-                        roomId={roomId}
-                        messages={messages}
-                        onSendMessage={handleSendMessage}
-                        onReaction={handleReaction}
-                        isOpen={true}
-                        currentTypingUsers={currentTypingUsers}
-                        onTyping={handleTyping}
-                        aiMode={aiMode}
-                        setAiMode={setAiMode}
-                    />
-                </div>
-            </motion.div>
-        </div>
-
-        <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
-            {initialQuestionId && !showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaBook /></button>}
-            {!showChat && <button onClick={() => setShowChat(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt style={{ transform: 'scaleX(-1)' }} /></button>}
-        </div>
-    </div>
-);
 };
 
 export default CodeEditor;
