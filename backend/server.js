@@ -59,10 +59,22 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// --- Database Connection (Firebase Firestore) ---
+const mongoose = require('mongoose');
+
+// --- Database Connection (MongoDB & Firestore) ---
 let db;
 let isFirestoreConnected = false;
 
+// 1. Connect to MongoDB (Primary Auth DB)
+if (process.env.MONGODB_URI) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('✅ MongoDB connected successfully'))
+    .catch(err => console.error('❌ MongoDB connection error:', err));
+} else {
+  console.warn('⚠️ MONGODB_URI not found in environment variables. Authentication may fail.');
+}
+
+// 2. Connect to Firestore (Chat & Rooms DB)
 try {
   // Check for service account - normally provided via GOOGLE_APPLICATION_CREDENTIALS
   // or passed directly. For now, we'll try default app or warn.
@@ -81,10 +93,10 @@ try {
   }
   db = getFirestore();
   isFirestoreConnected = true;
-  console.log('Firestore connected successfully');
+  console.log('✅ Firestore connected successfully');
 } catch (err) {
   console.warn('Firebase connection warning:', err.message);
-  console.log('Server will start with IN-MEMORY storage only.');
+  console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
   console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
 }
 

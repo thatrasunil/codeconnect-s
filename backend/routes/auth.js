@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/auth');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
+const User = require('../models/User');
 
 module.exports = (db) => {
 
@@ -16,41 +20,27 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email and password are required' });
             }
 
-            // check if user exists in firestore
-            const usersRef = db.collection('users');
-            const snapshot = await usersRef.where('email', '==', email).get();
-
-            if (!snapshot.empty) {
-                return res.status(400).json({ error: 'User already exists' });
+            // Check if user already exists
+            const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+            if (existingUser) {
+                return res.status(400).json({ error: 'User with this email or username already exists' });
             }
 
-            // Hash password
-            const bcrypt = require('bcryptjs');
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            // Create user doc
-            // We use a random ID or email hash as UID since we aren't using Firebase Auth for this user
-            const uid = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
-
-            const newUser = {
-                uid,
-                email,
+            const newUser = new User({
                 username: username || email.split('@')[0],
-                displayName: displayName || username || "User",
-                password: hashedPassword, // Store hashed!
-                createdAt: new Date().toISOString(),
-                provider: 'local'
-            };
+                email,
+                password, // Will be hashed by model pre-save hook
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || 'User'}`,
+                role: 'user'
+            });
 
-            await usersRef.doc(uid).set(newUser);
+            await newUser.save();
 
             // Generate Token
-            const jwt = require('jsonwebtoken');
             const payload = {
-                uid: newUser.uid,
+                uid: newUser._id.toString(), // Mongoose ID
                 email: newUser.email,
-                name: newUser.displayName
+                name: newUser.username
             };
 
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'default_secret_key_change_me', { expiresIn: '7d' });
@@ -58,7 +48,12 @@ module.exports = (db) => {
             res.status(201).json({
                 success: true,
                 access: token,
-                user: { uid: newUser.uid, email: newUser.email, username: newUser.username }
+                user: {
+                    uid: newUser._id,
+                    email: newUser.email,
+                    username: newUser.username,
+                    avatar: newUser.avatar
+                }
             });
 
         } catch (error) {
@@ -79,35 +74,27 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email and password are required' });
             }
 
-            const usersRef = db.collection('users');
-            const snapshot = await usersRef.where('email', '==', email).get();
-
-            if (snapshot.empty) {
-                return res.status(404).json({ error: 'User not found' });
+            // Find user
+            const user = await User.findOne({ email });
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid credentials' });
             }
-
-            const userDoc = snapshot.docs[0];
-            const userData = userDoc.data();
 
             // Verify Password
-            const bcrypt = require('bcryptjs');
-            // If user signed up with Google/Firebase, they might not have a password field here
-            if (!userData.password) {
-                return res.status(400).json({ error: 'Invalid authentication method. Try Google login.' });
+            if (!user.password) {
+                return res.status(400).json({ error: 'Please login with Google.' });
             }
 
-            const isMatch = await bcrypt.compare(password, userData.password);
-
+            const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
-                return res.status(400).json({ error: 'Invalid credentials' });
+                return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             // Generate Token
-            const jwt = require('jsonwebtoken');
             const payload = {
-                uid: userData.uid,
-                email: userData.email,
-                name: userData.username || userData.displayName
+                uid: user._id.toString(),
+                email: user.email,
+                name: user.username
             };
 
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'default_secret_key_change_me', { expiresIn: '7d' });
@@ -115,7 +102,12 @@ module.exports = (db) => {
             res.json({
                 success: true,
                 access: token,
-                user: { uid: userData.uid, email: userData.email, username: userData.username }
+                user: {
+                    uid: user._id,
+                    email: user.email,
+                    username: user.username,
+                    avatar: user.avatar
+                }
             });
 
         } catch (error) {
@@ -130,22 +122,30 @@ module.exports = (db) => {
      */
     router.get('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid;
+            const userId = req.user.uid || req.user.user_id;
 
-            // Try to get user from 'users' collection first
-            let userDoc = await db.collection('users').doc(userId).get();
+            let user = null;
+            if (mongoose.Types.ObjectId.isValid(userId)) {
+                user = await User.findById(userId).select('-password');
+            } else if (req.user.email) {
+                user = await User.findOne({ email: req.user.email }).select('-password');
+            }
 
-            if (!userDoc.exists) {
-                // If not found, return basic info from token
+            if (!user) {
                 return res.json({
                     uid: userId,
                     email: req.user.email,
-                    username: req.user.name || req.user.email.split('@')[0],
-                    avatar: req.user.picture || null
+                    username: req.user.name || req.user.email?.split('@')[0] || "User",
+                    avatar: req.user.picture || null,
+                    isTemporary: true
                 });
             }
 
-            res.json({ id: userId, ...userDoc.data() });
+            res.json({
+                uid: user._id,
+                ...user.toObject()
+            });
+
         } catch (error) {
             console.error('Error fetching user profile:', error);
             res.status(500).json({ error: error.message });
@@ -158,22 +158,32 @@ module.exports = (db) => {
      */
     router.patch('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid;
+            const userId = req.user.uid || req.user.user_id;
             const { username, email, avatar } = req.body;
 
-            const updateData = {};
-            if (username) updateData.username = username;
-            if (email) updateData.email = email;
-            if (avatar) updateData.avatar = avatar;
-            updateData.updatedAt = new Date().toISOString();
+            let user = null;
+            if (mongoose.Types.ObjectId.isValid(userId)) {
+                user = await User.findById(userId);
+            } else if (req.user.email) {
+                user = await User.findOne({ email: req.user.email });
+            }
 
-            const userRef = db.collection('users').doc(userId);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found in database. Cannot update.' });
+            }
 
-            // Use set with merge: true to create if not exists
-            await userRef.set(updateData, { merge: true });
+            if (username) user.username = username;
+            if (email) user.email = email;
+            if (avatar) user.avatar = avatar;
 
-            const updatedDoc = await userRef.get();
-            res.json({ id: userId, ...updatedDoc.data() });
+            await user.save();
+
+            res.json({
+                uid: user._id,
+                ...user.toObject(),
+                password: undefined
+            });
+
         } catch (error) {
             console.error('Error updating profile:', error);
             res.status(500).json({ error: error.message });
