@@ -16,7 +16,6 @@ import {
     getCountFromServer,
     runTransaction,
     deleteDoc,
-    deleteDoc,
     getDocs,
     arrayUnion
 } from "firebase/firestore";
