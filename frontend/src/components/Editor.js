@@ -587,14 +587,7 @@ const CodeEditor = () => {
                     animate={{ width: showChat ? 320 : 0, opacity: showChat ? 1 : 0 }}
                     style={{ borderLeft: '1px solid #334155', display: showChat ? 'block' : 'none', background: '#1e293b' }}
                 >
-                    <div style={{ padding: '10px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 'bold' }}>Chat & AI</span>
-                        <div style={{ display: 'flex', gap: '5px' }}>
-                            <button onClick={() => setAiMode(!aiMode)} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '12px', background: aiMode ? 'linear-gradient(45deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer' }}>{aiMode ? 'AI ON 🤖' : 'AI OFF'}</button>
-                            <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'white' }}><FaShareAlt /></button>
-                        </div>
-                    </div>
-                    <div style={{ height: 'calc(100% - 50px)' }}>
+                    <div style={{ height: '100%' }}>
                         <MemoizedChatPanel
                             socket={null}
                             roomId={roomId}
@@ -606,6 +599,7 @@ const CodeEditor = () => {
                             onTyping={handleTyping}
                             aiMode={aiMode}
                             setAiMode={setAiMode}
+                            onClose={() => setShowChat(false)}
                         />
                     </div>
                 </motion.div>
