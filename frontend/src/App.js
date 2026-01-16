@@ -43,7 +43,7 @@ function App() {
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/test-spinner" element={
-                    <LoadingSpinner fullScreen={true} message="Initializing Flight Sequence..." />
+                    <LoadingSpinner fullScreen={true} message="Loading..." />
                   } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>

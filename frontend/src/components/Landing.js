@@ -49,7 +49,7 @@ function Landing() {
   ];
 
   if (isCreating) {
-    return <LoadingSpinner message="Initializing Secure Environment..." fullScreen={true} />;
+    return <LoadingSpinner message="Loading..." fullScreen={true} />;
   }
 
   return (
