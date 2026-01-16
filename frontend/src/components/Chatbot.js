@@ -6,7 +6,7 @@ import config from '../config';
 import { useAuth } from '../contexts/AuthContext';
 import useVoice from '../hooks/useVoice';
 
-const Chatbot = ({ isOpen, onClose, context = null }) => {
+const Chatbot = ({ isOpen, onClose, context = null, initialMessage = null }) => {
     const { user } = useAuth();
     const [messages, setMessages] = useState([
         {
@@ -21,6 +21,21 @@ const Chatbot = ({ isOpen, onClose, context = null }) => {
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const [voiceMode, setVoiceMode] = useState(false);
+
+    useEffect(() => {
+        if (initialMessage) {
+            setMessages(prev => {
+                const lastMsg = prev[prev.length - 1];
+                if (lastMsg && lastMsg.content === initialMessage) return prev;
+                return [...prev, {
+                    id: Date.now(),
+                    role: 'assistant',
+                    content: initialMessage,
+                    timestamp: new Date()
+                }];
+            });
+        }
+    }, [initialMessage]);
 
     const {
         isListening,

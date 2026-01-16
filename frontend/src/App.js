@@ -9,6 +9,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaperPlaneSpinner from './components/PaperPlaneSpinner';
 import './App.css';
+import { QUESTIONS_DATA } from './data/problemsData';
 
 // Lazy loading components for performance optimization
 const Landing = lazy(() => import('./components/Landing'));
@@ -96,6 +97,19 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
   const location = useLocation();
   const publicRoutes = ['/', '/login', '/signup'];
   const isPublic = publicRoutes.includes(location.pathname);
+  const [context, setContext] = React.useState('');
+  const [initialMessage, setInitialMessage] = React.useState(null);
+
+  React.useEffect(() => {
+    if (location.pathname === '/problems') {
+      const questionTitles = QUESTIONS_DATA.map(q => q.title).join(', ');
+      setContext(`User is viewing the Problems page. They can choose from these questions: ${questionTitles}. Guide them in choosing a problem based on their skill level.`);
+      setInitialMessage("👋 Hi! I can help you find a coding problem to solve. What kind of challenge are you looking for?");
+    } else {
+      setContext('');
+      setInitialMessage(null);
+    }
+  }, [location.pathname]);
 
   // If public route, show ChatWidget (always visible button/widget)
   if (isPublic) {
@@ -109,8 +123,6 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
   }
 
   // Otherwise (App/Dashboard), show the main Chatbot
-  // Exclude strict editor/room routes if needed? Assuming ChatPanel is enough there?
-  // User prompt said "Visible on all public routes...". Implies Auth bot is for rest.
   return (
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
       {!isChatOpen && (
@@ -131,7 +143,12 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
         </button>
       )}
       <Suspense fallback={null}>
-        <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+        <Chatbot
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          context={context}
+          initialMessage={initialMessage}
+        />
       </Suspense>
     </div>
   );
