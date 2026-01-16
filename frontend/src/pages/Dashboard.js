@@ -5,8 +5,7 @@ import { motion } from 'framer-motion';
 import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy, FaCode, FaBrain, FaArrowRight, FaBug, FaVial, FaMagic } from 'react-icons/fa';
 import RoomChoiceModal from '../components/RoomChoiceModal';
 import OnlineUsersModal from '../components/OnlineUsersModal';
-import ChatbotButton from '../components/ChatbotButton';
-import Loading from '../components/Loading';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 import config from '../config';
 
@@ -112,8 +111,8 @@ const Dashboard = () => {
         navigate(`/room/${roomId}`);
     };
 
-    if (loading) return <Loading message="Loading Dashboard..." size="fullscreen" />;
-    if (isCreating) return <Loading message="Initializing Secure Environment..." size="fullscreen" />;
+    if (loading) return <LoadingSpinner message="Loading Dashboard..." fullScreen={true} />;
+    if (isCreating) return <LoadingSpinner message="Initializing Secure Environment..." fullScreen={true} />;
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -464,8 +463,7 @@ const Dashboard = () => {
                 users={onlineUsers}
             />
 
-            {/* AI Chatbot */}
-            <ChatbotButton position="bottom-right" />
+
         </div>
     );
 };

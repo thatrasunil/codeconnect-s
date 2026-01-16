@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaLock, FaGoogle } from 'react-icons/fa';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Signup = () => {
     const [formData, setFormData] = useState({ username: '', email: '', password: '' });
@@ -44,6 +45,7 @@ const Signup = () => {
             position: 'relative',
             overflow: 'hidden'
         }}>
+            {isLoading && <LoadingSpinner fullScreen={true} message="Creating account..." />}
             {/* Background Accents */}
             <div style={{ position: 'absolute', top: '10%', left: '10%', width: '300px', height: '300px', background: 'var(--accent-secondary)', opacity: 0.1, filter: 'blur(80px)', borderRadius: '50%' }} />
             <div style={{ position: 'absolute', bottom: '10%', right: '10%', width: '300px', height: '300px', background: 'var(--accent-primary)', opacity: 0.1, filter: 'blur(80px)', borderRadius: '50%' }} />
