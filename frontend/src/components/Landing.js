@@ -8,7 +8,7 @@ import FlowDiagram3D from './Three/FlowDiagram3D';
 
 
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons'; import { createRoom as createFirestoreRoom } from '../services/firestoreService';
-import LoadingSpinner from './LoadingSpinner';
+import SecureLoading from './SecureLoading';
 import LandingPageChatbot from './LandingPageChatbot';
 
 function Landing() {
@@ -49,7 +49,7 @@ function Landing() {
   ];
 
   if (isCreating) {
-    return <LoadingSpinner message="Loading..." fullScreen={true} />;
+    return <SecureLoading message="Initializing Secure Environment..." />;
   }
 
   return (
