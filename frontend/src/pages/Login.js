@@ -40,7 +40,9 @@ const Login = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: "linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('/login-bg.jpg') center/cover no-repeat fixed",
+            background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
+            backgroundSize: "400% 400%",
+            animation: "gradient 15s ease infinite",
             position: 'relative',
             overflow: 'hidden'
         }}>
@@ -212,6 +214,13 @@ const Login = () => {
                     </Link>
                 </div>
             </motion.div>
+            <style>{`
+                    @keyframes gradient {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                `}</style>
         </div>
     );
 };
