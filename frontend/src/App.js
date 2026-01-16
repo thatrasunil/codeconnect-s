@@ -6,7 +6,7 @@ import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
-import Loading from './components/Loading';
+import LoadingSpinner from './components/LoadingSpinner';
 import PaperPlaneSpinner from './components/PaperPlaneSpinner';
 import './App.css';
 
@@ -36,16 +36,14 @@ function App() {
           <ToastProvider>
             <Router>
               <Navbar />
-              <Suspense fallback={<Loading />}>
+              <Suspense fallback={<LoadingSpinner fullScreen={true} message="Loading..." />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/test-spinner" element={
-                    <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
-                      <PaperPlaneSpinner size="large" text="Initializing Flight Sequence..." />
-                    </div>
+                    <LoadingSpinner fullScreen={true} message="Initializing Flight Sequence..." />
                   } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
