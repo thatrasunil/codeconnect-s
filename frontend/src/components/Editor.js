@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import './Editor.css';
 
 import { useAuth } from '../contexts/AuthContext';
 import ChatPanel from './ChatPanel';
@@ -66,6 +67,21 @@ const CodeEditor = () => {
     const [showChat, setShowChat] = useState(true);
     const [showInterview, setShowInterview] = useState(!!initialQuestionId);
     const [aiMode, setAiMode] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Adjust defaults for mobile
+    useEffect(() => {
+        if (isMobile) {
+            setShowChat(false);
+            setShowInterview(false);
+        }
+    }, [isMobile]);
 
     // Real-time Data
     const [participants, setParticipants] = useState([]);
@@ -370,26 +386,18 @@ const CodeEditor = () => {
     }
 
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white' }}>
+        <div className="editor-container">
             {/* Toolbar */}
-            <div style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155', background: '#1e293b' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div className="logo" style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>CodeConnect</div>
+            <div className="editor-toolbar">
+                <div className="editor-toolbar-left">
+                    <div className="editor-logo" onClick={() => navigate('/dashboard')}>CodeConnect</div>
 
                     {/* Room ID Badge */}
-                    <div style={{
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        color: '#60a5fa',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontSize: '0.85rem',
-                        fontWeight: '600',
-                        border: '1px solid rgba(59, 130, 246, 0.2)'
-                    }}>
+                    <div className="editor-room-badge">
                         Room: {roomId}
                     </div>
 
-                    <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+                    <div style={{ height: '24px', width: '1px', background: '#475569', margin: '0 5px' }}></div>
 
                     {/* Language Selector */}
                     <select
@@ -398,32 +406,35 @@ const CodeEditor = () => {
                             const newLang = e.target.value;
                             setLanguage(newLang);
                             localStorage.setItem(`editor_language_${roomId}`, newLang);
-                            // Also update remote
                             updateRoomCode(roomId, code, newLang);
                         }}
-                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none', maxWidth: isMobile ? '100px' : 'auto' }}
                     >
                         {SUPPORTED_LANGUAGES.map(lang => (
                             <option key={lang.id} value={lang.id}>{lang.name}</option>
                         ))}
                     </select>
 
-                    {/* Theme Selector */}
-                    <select
-                        value={theme}
-                        onChange={(e) => {
-                            const newTheme = e.target.value;
-                            setTheme(newTheme);
-                            localStorage.setItem(`editor_theme_${roomId}`, newTheme);
-                        }}
-                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
-                    >
-                        {SUPPORTED_THEMES.map(theme => (
-                            <option key={theme.id} value={theme.id}>{theme.name}</option>
-                        ))}
-                    </select>
+                    {!isMobile && (
+                        <>
+                            {/* Theme Selector */}
+                            <select
+                                value={theme}
+                                onChange={(e) => {
+                                    const newTheme = e.target.value;
+                                    setTheme(newTheme);
+                                    localStorage.setItem(`editor_theme_${roomId}`, newTheme);
+                                }}
+                                style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                            >
+                                {SUPPORTED_THEMES.map(theme => (
+                                    <option key={theme.id} value={theme.id}>{theme.name}</option>
+                                ))}
+                            </select>
+                            <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+                        </>
+                    )}
 
-                    <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
 
                     <button
                         className="btn"
@@ -434,65 +445,71 @@ const CodeEditor = () => {
                             color: 'white',
                             border: '1px solid #475569',
                             cursor: isRunning ? 'not-allowed' : 'pointer',
-                            opacity: isRunning ? 0.7 : 1
+                            opacity: isRunning ? 0.7 : 1,
+                            padding: '6px 12px'
                         }}
                         onClick={handleRunCode}
                         disabled={isRunning}
                     >
                         <FaPlay color="#10b981" style={{ animation: isRunning ? 'pulse 1s infinite' : 'none' }} />
-                        {isRunning ? 'Running...' : 'Run'}
+                        <span className={isMobile ? "hide-mobile" : ""}>{isRunning ? 'Running...' : 'Run'}</span>
                     </button>
-                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
-                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
-
-                    <div style={{ fontSize: '0.8rem', color: isSaving ? '#facc15' : '#94a3b8', fontStyle: 'italic', minWidth: '60px' }}>
-                        {isSaving ? 'Saving...' : 'Saved'}
-                    </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
-                    <button className="btn icon-btn" onClick={() => {
-                        const model = editorRef.current.getModel();
-                        const selection = editorRef.current.getSelection();
-                        const selectedCode = model.getValueInRange(selection) || code;
-                        handleAskAI(`Find bugs and suggest fixes for this code:\n${selectedCode}`);
-                        setShowChat(true);
-                        setAiMode(true);
-                    }} title="Debug with AI" style={{ color: '#ef4444', background: 'transparent', border: 'none' }}><FaRobot /> Debug</button>
+                <div className="editor-toolbar-right">
+                    {!isMobile && (
+                        <>
+                            <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
+                            <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
+                        </>
+                    )}
 
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                        <button className="btn" onClick={handleDownloadCode} title="Download File" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaDownload /></button>
-                        <button className="btn" onClick={handleCopyCode} title="Copy to Clipboard" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaCopy /></button>
-                        <button className="btn" onClick={handleSaveSnapshot} title="Save Snapshot" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaHistory /></button>
-                    </div>
+                    {/* Panel Toggles */}
+                    <button
+                        className={`btn ${showInterview ? 'active' : ''}`}
+                        onClick={() => setShowInterview(!showInterview)}
+                        title="Toggle Problem Panel"
+                        style={{ background: showInterview ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: '1px solid #475569', color: 'white' }}
+                    >
+                        <FaBook />
+                    </button>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', fontSize: '0.8rem' }}>
-                        <span style={{ color: '#94a3b8' }}>Participants: {participants.length}</span>
-                    </div>
+                    <button
+                        className={`btn ${showChat ? 'active' : ''}`}
+                        onClick={() => setShowChat(!showChat)}
+                        title="Toggle Chat"
+                        style={{ background: showChat ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: '1px solid #475569', color: 'white' }}
+                    >
+                        <FaShareAlt style={{ transform: 'scaleX(-1)' }} />
+                    </button>
+
+                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                {/* Left Panel */}
-                <motion.div
-                    initial={{ width: 350, opacity: 1 }}
-                    animate={{ width: showInterview ? 350 : 0, opacity: showInterview ? 1 : 0 }}
-                    style={{ borderRight: '1px solid #334155', display: showInterview ? 'block' : 'none', background: '#1e293b' }}
-                >
-                    <MemoizedProblemPanel
-                        socket={null}
-                        roomId={roomId}
-                        onPostQuestion={(text) => setCode(prev => text + prev)}
-                        questionId={initialQuestionId}
-                        isOpen={showInterview}
-                        onClose={() => setShowInterview(false)}
-                    />
-                </motion.div>
+            <div className="editor-main">
+                {/* Left Panel - Desktop */}
+                {!isMobile && showInterview && (
+                    <motion.div
+                        className="editor-sidebar-left"
+                        initial={{ width: 350, opacity: 1 }}
+                        animate={{ width: 350, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                    >
+                        <MemoizedProblemPanel
+                            socket={null}
+                            roomId={roomId}
+                            onPostQuestion={(text) => setCode(prev => text + prev)}
+                            questionId={initialQuestionId}
+                            isOpen={showInterview}
+                            onClose={() => setShowInterview(false)}
+                        />
+                    </motion.div>
+                )}
 
                 {/* Center Panel */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                     {userRole === 'INTERVIEWER' && (
                         <div style={{ background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
                             🎯 INTERVIEWER MODE - Read-Only View
@@ -507,7 +524,7 @@ const CodeEditor = () => {
                         onChange={handleEditorChange}
                         onMount={(editor) => { editorRef.current = editor; }}
                         options={{
-                            minimap: { enabled: editorSettings.minimap !== false },
+                            minimap: { enabled: editorSettings.minimap !== false && !isMobile }, // Disable minimap on mobile
                             fontSize: editorSettings.fontSize,
                             fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
                             wordWrap: editorSettings.wordWrap,
@@ -517,44 +534,21 @@ const CodeEditor = () => {
                             automaticLayout: true,
                             readOnly: !permissions.canEdit,
                             domReadOnly: !permissions.canEdit,
-
-                            // Autocomplete & IntelliSense
                             suggestOnTriggerCharacters: true,
-                            quickSuggestions: {
-                                other: true,
-                                comments: true,
-                                strings: true
-                            },
-                            parameterHints: {
-                                enabled: true
-                            },
+                            quickSuggestions: { other: true, comments: true, strings: true },
+                            parameterHints: { enabled: true },
                             suggestSelection: 'first',
                             acceptSuggestionOnCommitCharacter: true,
                             acceptSuggestionOnEnter: 'on',
                             snippetSuggestions: 'top',
                             wordBasedSuggestions: true,
-
-                            // Code Formatting
                             formatOnPaste: true,
                             formatOnType: true,
                             autoIndent: 'full',
-
-                            // Bracket Features
-                            bracketPairColorization: {
-                                enabled: editorSettings.bracketPairColorization !== false
-                            },
-                            guides: {
-                                bracketPairs: true,
-                                indentation: true
-                            },
-
-                            // Additional helpful features
-                            hover: {
-                                enabled: true
-                            },
-                            lightbulb: {
-                                enabled: true
-                            },
+                            bracketPairColorization: { enabled: editorSettings.bracketPairColorization !== false },
+                            guides: { bracketPairs: true, indentation: true },
+                            hover: { enabled: true },
+                            lightbulb: { enabled: true },
                             codeLens: true,
                             folding: true,
                             foldingStrategy: 'indentation',
@@ -581,34 +575,90 @@ const CodeEditor = () => {
                     />
                 </div>
 
-                {/* Right Panel */}
-                <motion.div
-                    initial={{ width: 320, opacity: 1 }}
-                    animate={{ width: showChat ? 320 : 0, opacity: showChat ? 1 : 0 }}
-                    style={{ borderLeft: '1px solid #334155', display: showChat ? 'block' : 'none', background: '#1e293b' }}
-                >
-                    <div style={{ height: '100%' }}>
-                        <MemoizedChatPanel
-                            socket={null}
-                            roomId={roomId}
-                            messages={messages}
-                            onSendMessage={handleSendMessage}
-                            onReaction={handleReaction}
-                            isOpen={true}
-                            currentTypingUsers={currentTypingUsers}
-                            onTyping={handleTyping}
-                            aiMode={aiMode}
-                            setAiMode={setAiMode}
-                            onClose={() => setShowChat(false)}
-                        />
-                    </div>
-                </motion.div>
+                {/* Right Panel - Desktop */}
+                {!isMobile && showChat && (
+                    <motion.div
+                        className="editor-sidebar-right"
+                        initial={{ width: 320, opacity: 1 }}
+                        animate={{ width: 320, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                    >
+                        <div style={{ height: '100%' }}>
+                            <MemoizedChatPanel
+                                socket={null}
+                                roomId={roomId}
+                                messages={messages}
+                                onSendMessage={handleSendMessage}
+                                onReaction={handleReaction}
+                                isOpen={true}
+                                currentTypingUsers={currentTypingUsers}
+                                onTyping={handleTyping}
+                                aiMode={aiMode}
+                                setAiMode={setAiMode}
+                                onClose={() => setShowChat(false)}
+                            />
+                        </div>
+                    </motion.div>
+                )}
             </div>
 
-            <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
-                {initialQuestionId && !showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaBook /></button>}
-                {!showChat && <button onClick={() => setShowChat(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt style={{ transform: 'scaleX(-1)' }} /></button>}
-            </div>
+            {/* Mobile Overlays */}
+            <AnimatePresence>
+                {isMobile && showInterview && (
+                    <motion.div
+                        className="editor-overlay"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+                    >
+                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ padding: '10px', background: '#1e293b', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 'bold' }}>Problem</span>
+                                <button onClick={() => setShowInterview(false)} className="btn" style={{ background: 'transparent', border: 'none', color: 'white' }}>Close</button>
+                            </div>
+                            <MemoizedProblemPanel
+                                socket={null}
+                                roomId={roomId}
+                                onPostQuestion={(text) => setCode(prev => text + prev)}
+                                questionId={initialQuestionId}
+                                isOpen={showInterview}
+                                onClose={() => setShowInterview(false)}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {isMobile && showChat && (
+                    <motion.div
+                        className="editor-overlay"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+                    >
+                        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                            {/* Chat Panel usually has its own header, but we ensure it fits */}
+                            <MemoizedChatPanel
+                                socket={null}
+                                roomId={roomId}
+                                messages={messages}
+                                onSendMessage={handleSendMessage}
+                                onReaction={handleReaction}
+                                isOpen={true}
+                                currentTypingUsers={currentTypingUsers}
+                                onTyping={handleTyping}
+                                aiMode={aiMode}
+                                setAiMode={setAiMode}
+                                onClose={() => setShowChat(false)}
+                            />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };

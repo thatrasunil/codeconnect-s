@@ -1,0 +1,116 @@
+/* Base layout */
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: #020617;
+    color: #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+
+.editor-main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Toolbar */
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid #334155;
+    background: #1e293b;
+    z-index: 40;
+}
+
+.editor-toolbar-left,
+.editor-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.editor-toolbar-left {
+    flex: 1;
+    min-width: 0;
+    /* Allow shrinking */
+}
+
+/* Sidebar containers (desktop) */
+.editor-sidebar-left {
+    border-right: 1px solid #334155;
+    background: #1e293b;
+    height: 100%;
+}
+
+.editor-sidebar-right {
+    border-left: 1px solid #334155;
+    background: #1e293b;
+    height: 100%;
+}
+
+/* Mobile overlays */
+.editor-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: #0f172a;
+    /* Match editor background */
+    height: 100%;
+    width: 100%;
+}
+
+/* Logo and Badge */
+.editor-logo {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #3b82f6;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.editor-room-badge {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    white-space: nowrap;
+}
+
+/* Mobile tweaks */
+@media (max-width: 768px) {
+    .editor-toolbar {
+        padding: 0.6rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .editor-toolbar-left {
+        gap: 0.5rem;
+    }
+
+    .editor-logo {
+        display: none;
+        /* Hide logo text on small mobile to save space */
+    }
+
+    .editor-room-badge {
+        font-size: 0.75rem;
+        padding: 2px 6px;
+    }
+
+    /* Hide less important buttons or labels on mobile */
+    .hide-mobile-label .btn-label {
+        display: none;
+    }
+
+    .hide-mobile {
+        display: none !important;
+    }
+}
