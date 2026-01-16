@@ -389,7 +389,15 @@ const CodeEditor = () => {
     return (
         <div className="editor-container">
             {/* Toolbar */}
-            <div className="editor-toolbar">
+            <div className="editor-toolbar" style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: isMobile ? '0.25rem' : '1rem',
+                padding: isMobile ? '0.5rem' : '0.8rem',
+                minHeight: isMobile ? '44px' : '50px',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+            }}>
                 <div className="editor-toolbar-left">
                     <div className="editor-logo" onClick={() => navigate('/dashboard')}>CodeConnect</div>
 
@@ -409,7 +417,17 @@ const CodeEditor = () => {
                             localStorage.setItem(`editor_language_${roomId}`, newLang);
                             updateRoomCode(roomId, code, newLang);
                         }}
-                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none', maxWidth: isMobile ? '100px' : 'auto' }}
+                        style={{
+                            background: '#334155',
+                            color: 'white',
+                            border: 'none',
+                            padding: '5px 10px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            width: isMobile ? '90px' : 'auto',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem'
+                        }}
                     >
                         {SUPPORTED_LANGUAGES.map(lang => (
                             <option key={lang.id} value={lang.id}>{lang.name}</option>
@@ -447,7 +465,12 @@ const CodeEditor = () => {
                             border: '1px solid #475569',
                             cursor: isRunning ? 'not-allowed' : 'pointer',
                             opacity: isRunning ? 0.7 : 1,
-                            padding: '6px 12px'
+                            minHeight: '40px',
+                            minWidth: isMobile ? '40px' : 'auto',
+                            padding: isMobile ? '0.4rem' : '0.6rem 1rem',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                         }}
                         onClick={handleRunCode}
                         disabled={isRunning}
