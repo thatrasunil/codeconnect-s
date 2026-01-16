@@ -481,12 +481,11 @@ const CodeEditor = () => {
                 </div>
 
                 <div className="editor-toolbar-right">
-                    {!isMobile ? (
-                        <>
-                            <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
-                            <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
-                        </>
-                    ) : null}
+                    {/* Desktop Actions */}
+                    <div className="hide-mobile-only" style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
+                        <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
+                    </div>
 
                     {/* Panel Toggles */}
                     <button
@@ -507,18 +506,32 @@ const CodeEditor = () => {
                         <FaShareAlt style={{ transform: 'scaleX(-1)' }} />
                     </button>
 
-                    {/* Mobile Menu Toggle (reusing Settings state or new state?) 
-                        Let's reuse setShowSettings for mobile menu toggle if we want to save state, 
-                        BUT SettingsModal uses showSettings too.
-                        Need a separate state for Mobile Menu.
-                    */}
-                    {!isMobile && (
-                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
-                    )}
+                    {/* Desktop Settings */}
+                    <button
+                        className="btn hide-mobile-only"
+                        style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }}
+                        onClick={() => setShowSettings(true)}
+                        title="Settings"
+                    >
+                        <FaCog />
+                    </button>
 
-                    {isMobile && (
-                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} title="Menu"><FaBars /></button>
-                    )}
+                    {/* Mobile Menu Toggle - Always rendered, hidden on desktop via CSS */}
+                    <button
+                        className="btn show-mobile-only"
+                        style={{
+                            display: 'flex',
+                            gap: '6px',
+                            background: 'transparent',
+                            color: 'white',
+                            border: '1px solid #475569',
+                            marginLeft: '5px'
+                        }}
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        title="Menu"
+                    >
+                        <FaBars />
+                    </button>
                 </div>
             </div>
 
