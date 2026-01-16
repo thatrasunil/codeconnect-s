@@ -9,7 +9,6 @@ import FlowDiagram3D from './Three/FlowDiagram3D';
 
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons'; import { createRoom as createFirestoreRoom } from '../services/firestoreService';
 import SecureLoading from './SecureLoading';
-import LandingPageChatbot from './LandingPageChatbot';
 
 function Landing() {
   const [roomId, setRoomId] = useState('');
@@ -455,7 +454,7 @@ function Landing() {
         </div>
       </footer>
 
-      <LandingPageChatbot />
+
 
 
       <style>{`

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook } from 'react-icons/fa';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Editor.css';
 
@@ -68,6 +68,7 @@ const CodeEditor = () => {
     const [showInterview, setShowInterview] = useState(!!initialQuestionId);
     const [aiMode, setAiMode] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -457,12 +458,12 @@ const CodeEditor = () => {
                 </div>
 
                 <div className="editor-toolbar-right">
-                    {!isMobile && (
+                    {!isMobile ? (
                         <>
                             <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
                             <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
                         </>
-                    )}
+                    ) : null}
 
                     {/* Panel Toggles */}
                     <button
@@ -483,7 +484,18 @@ const CodeEditor = () => {
                         <FaShareAlt style={{ transform: 'scaleX(-1)' }} />
                     </button>
 
-                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
+                    {/* Mobile Menu Toggle (reusing Settings state or new state?) 
+                        Let's reuse setShowSettings for mobile menu toggle if we want to save state, 
+                        BUT SettingsModal uses showSettings too.
+                        Need a separate state for Mobile Menu.
+                    */}
+                    {!isMobile && (
+                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
+                    )}
+
+                    {isMobile && (
+                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} title="Menu"><FaBars /></button>
+                    )}
                 </div>
             </div>
 
@@ -602,7 +614,40 @@ const CodeEditor = () => {
                 )}
             </div>
 
-            {/* Mobile Overlays */}
+            {/* Mobile Menu Overlay */}
+            <AnimatePresence>
+                {isMobile && isMobileMenuOpen && (
+                    <motion.div
+                        className="mobile-menu-overlay"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        style={{
+                            position: 'fixed', top: '60px', right: '10px', width: '200px',
+                            background: '#1e293b', border: '1px solid #475569', borderRadius: '8px',
+                            zIndex: 1000, padding: '10px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+                        }}
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {/* Mobile Actions */}
+                            <button className="btn" onClick={() => { handleGoogleMeet(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
+                                <FaVideo /> Google Meet
+                            </button>
+                            <button className="btn" onClick={() => { handleAIExplain(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: '#8b5cf6' }}>
+                                <FaRobot /> Explain Code
+                            </button>
+
+                            <div style={{ borderTop: '1px solid #334155', margin: '5px 0' }}></div>
+
+                            <button className="btn" onClick={() => { setShowSettings(true); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
+                                <FaCog /> Editor Settings
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Mobile Overlays - Chat & Problem */}
             <AnimatePresence>
                 {isMobile && showInterview && (
                     <motion.div

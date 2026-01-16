@@ -9,5 +9,8 @@ module.exports = (db, localRooms) => {
     // POST /api/chat/messages
     router.post('/messages', (req, res) => chatController.saveMessage(req, res, db, localRooms));
 
+    // POST /api/chat (Landing Widget)
+    router.post('/', (req, res) => chatController.handleLandingChat(req, res));
+
     return router;
 };

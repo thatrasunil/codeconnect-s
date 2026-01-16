@@ -24,6 +24,7 @@ const Debugging = lazy(() => import('./pages/Debugging'));
 const Testing = lazy(() => import('./pages/Testing'));
 const CodeGen = lazy(() => import('./pages/CodeGen'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
+const ChatWidget = lazy(() => import('./components/ChatWidget'));
 
 function App() {
 
@@ -80,8 +81,8 @@ function App() {
                 </Routes>
               </Suspense>
 
-              {/* Global Chatbot FAB & Component - Hidden on Landing Page */}
-              <GlobalChatbotWrapper setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
+              {/* Global Chatbot Dispatcher */}
+              <ChatbotDispatcher setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
             </Router>
           </ToastProvider>
         </ErrorBoundary>
@@ -90,15 +91,26 @@ function App() {
   );
 }
 
-// Wrapper to control Global Chatbot visibility
-const GlobalChatbotWrapper = ({ isChatOpen, setIsChatOpen }) => {
+// Dispatcher to control which chatbot to show
+const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
   const location = useLocation();
+  const publicRoutes = ['/', '/login', '/signup'];
+  const isPublic = publicRoutes.includes(location.pathname);
 
-  // Hide on Landing server-side or client-side? location.pathname
-  // Also hide on room if needed? No, user might want it.
-  // Definitely hide on Landing because it has its own.
-  if (location.pathname === '/') return null;
+  // If public route, show ChatWidget (always visible button/widget)
+  if (isPublic) {
+    return (
+      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+        <Suspense fallback={null}>
+          <ChatWidget />
+        </Suspense>
+      </div>
+    );
+  }
 
+  // Otherwise (App/Dashboard), show the main Chatbot
+  // Exclude strict editor/room routes if needed? Assuming ChatPanel is enough there?
+  // User prompt said "Visible on all public routes...". Implies Auth bot is for rest.
   return (
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
       {!isChatOpen && (
