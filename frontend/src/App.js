@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { FaRobot } from 'react-icons/fa';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
@@ -80,30 +80,8 @@ function App() {
                 </Routes>
               </Suspense>
 
-              {/* Global Chatbot FAB & Component */}
-              <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
-                {!isChatOpen && (
-                  <button
-                    onClick={() => setIsChatOpen(true)}
-                    style={{
-                      width: '60px', height: '60px', borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                      border: 'none', color: 'white', fontSize: '24px',
-                      boxShadow: '0 4px 20px rgba(99, 102, 241, 0.5)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'transform 0.2s'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <FaRobot size={24} />
-                  </button>
-                )}
-                <React.Suspense fallback={null}>
-                  <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-                </React.Suspense>
-              </div>
-
+              {/* Global Chatbot FAB & Component - Hidden on Landing Page */}
+              <GlobalChatbotWrapper setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
             </Router>
           </ToastProvider>
         </ErrorBoundary>
@@ -111,5 +89,41 @@ function App() {
     </div>
   );
 }
+
+// Wrapper to control Global Chatbot visibility
+const GlobalChatbotWrapper = ({ isChatOpen, setIsChatOpen }) => {
+  const location = useLocation();
+
+  // Hide on Landing server-side or client-side? location.pathname
+  // Also hide on room if needed? No, user might want it.
+  // Definitely hide on Landing because it has its own.
+  if (location.pathname === '/') return null;
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+      {!isChatOpen && (
+        <button
+          onClick={() => setIsChatOpen(true)}
+          style={{
+            width: '60px', height: '60px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            border: 'none', color: 'white', fontSize: '24px',
+            boxShadow: '0 4px 20px rgba(99, 102, 241, 0.5)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'transform 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          <FaRobot size={24} />
+        </button>
+      )}
+      <Suspense fallback={null}>
+        <Chatbot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      </Suspense>
+    </div>
+  );
+};
+
 
 export default App;
