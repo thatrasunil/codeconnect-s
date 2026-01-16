@@ -40,7 +40,7 @@ const Login = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%)',
+            background: "linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.85)), url('/login-bg.jpg') center/cover no-repeat fixed",
             position: 'relative',
             overflow: 'hidden'
         }}>

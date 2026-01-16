@@ -26,7 +26,8 @@ const allowedOrigins = [
   "https://codeconnect-zeta-pied.vercel.app",
   "https://codeconnect-frontend.vercel.app",
   "https://codeshare-production-b2f2.up.railway.app",
-  "https://code-connect-beige-rho.vercel.app"  // New Vercel deployment
+  "https://code-connect-beige-rho.vercel.app",
+  /\.vercel\.app$/
 ];
 
 const io = new Server(server, {

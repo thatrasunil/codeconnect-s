@@ -123,16 +123,16 @@ const Dashboard = () => {
     };
 
     return (
-        <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', minHeight: 'calc(100vh - 80px)' }}>
+        <div className="dashboard-container">
 
             {/* Header Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
+                className="dashboard-header"
                 style={{
                     marginBottom: '3rem',
                     background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(59, 130, 246, 0.1))',
-                    padding: '3rem',
                     borderRadius: '24px',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
                     position: 'relative',
@@ -140,17 +140,17 @@ const Dashboard = () => {
                 }}
             >
                 <div style={{ position: 'relative', zIndex: 1 }}>
-                    <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem', lineHeight: 1.2 }}>
+                    <h1 className="welcome-title">
                         {getGreeting()}, <span className="gradient-text">{user?.username}</span>
                     </h1>
-                    <p style={{ color: '#94a3b8', fontSize: '1.2rem', maxWidth: '600px' }}>
+                    <p className="welcome-subtitle">
                         Ready to level up your coding skills? Start a session or tackle a new challenge from our library.
                     </p>
-                    <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-                        <button onClick={() => setIsModalOpen(true)} className="btn primary-btn" style={{ padding: '0.8rem 2rem', fontSize: '1.1rem', borderRadius: '12px' }}>
+                    <div className="header-actions">
+                        <button onClick={() => setIsModalOpen(true)} className="btn primary-btn action-btn">
                             <FaPlus /> Custom Session
                         </button>
-                        <Link to="/problems" className="btn" style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', padding: '0.8rem 2rem', fontSize: '1.1rem', borderRadius: '12px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Link to="/problems" className="btn secondary-btn action-btn">
                             <FaCode /> Browse Problems
                         </Link>
                     </div>
@@ -303,6 +303,17 @@ const Dashboard = () => {
             </div>
 
             <style>{`
+                .dashboard-container {
+                    padding: 2rem;
+                    max-width: 1400px;
+                    margin: 0 auto;
+                    min-height: calc(100vh - 80px);
+                }
+                @media (max-width: 768px) {
+                    .dashboard-container {
+                        padding: 1rem;
+                    }
+                }
                 .dashboard-grid {
                     display: grid;
                     grid-template-columns: 3fr 1fr;
@@ -364,15 +375,66 @@ const Dashboard = () => {
                     text-decoration: none;
                 }
 
+                .dashboard-header {
+                    padding: 3rem;
+                }
+                .welcome-title {
+                    fontSize: 3rem;
+                    fontWeight: 800;
+                    marginBottom: 1rem;
+                    lineHeight: 1.2;
+                }
+                .welcome-subtitle {
+                    color: #94a3b8;
+                    fontSize: 1.2rem;
+                    maxWidth: 600px;
+                }
+                .header-actions {
+                    marginTop: 2rem;
+                    display: flex;
+                    gap: 1rem;
+                }
+                .action-btn {
+                    padding: 0.8rem 2rem;
+                    fontSize: 1.1rem;
+                    borderRadius: 12px;
+                    display: flex;
+                    alignItems: center;
+                    gap: 10px;
+                    text-decoration: none;
+                }
+                .secondary-btn {
+                    background: rgba(255, 255, 255, 0.1);
+                    color: white;
+                }
+
                 @media (max-width: 1024px) {
                     .dashboard-grid {
                         grid-template-columns: 1fr;
                     }
+                    /* Ensure leaderboard is visible below main content on tablet/mobile */
                     .leaderboard-column {
-                        display: none; /* Optional: hide sticky leaderboard on tablet/mobile or move it */
+                        display: block; 
                     }
                 }
+
                 @media (max-width: 768px) {
+                    .dashboard-header {
+                        padding: 1.5rem;
+                    }
+                    .welcome-title {
+                        fontSize: 2rem;
+                    }
+                    .welcome-subtitle {
+                        fontSize: 1rem;
+                    }
+                    .header-actions {
+                        flex-direction: column;
+                    }
+                    .action-btn {
+                        width: 100%;
+                        justify-content: center;
+                    }
                     .quick-actions-grid {
                         grid-template-columns: 1fr;
                     }

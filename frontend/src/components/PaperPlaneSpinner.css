@@ -1,0 +1,115 @@
+.paper-plane-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* --- The Paper Plane (SVG Wrapper) --- */
+.plane-svg {
+    width: 100px;
+    height: auto;
+    z-index: 10;
+    /* Bobbing animation to simulate flight stability */
+    animation: planeBob 2s ease-in-out infinite;
+    filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes planeBob {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-10px) rotate(2deg);
+    }
+}
+
+/* --- Clouds --- */
+.cloud {
+    position: absolute;
+    opacity: 0.8;
+    z-index: 1;
+    /* Behind plane by default, can be overridden */
+}
+
+/* Construction of a simple CSS Cloud using box-shadows or SVG. 
+   Here we'll use a simple SVG cloud structure or CSS shapes.
+   Let's use a class to style an SVG cloud for smoothness. */
+.cloud-svg {
+    fill: #e2e8f0;
+    /* Slate-200 */
+    animation: cloudFloat 4s linear infinite;
+}
+
+/* Cloud Animations: Moving left to right or vice versa to simulate speed */
+@keyframes cloudFloat {
+    0% {
+        transform: translateX(50px) scale(0.9);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.8;
+    }
+
+    90% {
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(-50px) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Different cloud instances with delays/positions */
+.cloud-1 {
+    top: 10%;
+    right: 10%;
+    width: 50px;
+    animation: cloudFloat 3s linear infinite;
+    animation-delay: 0s;
+}
+
+.cloud-2 {
+    bottom: 20%;
+    left: 15%;
+    width: 40px;
+    z-index: 5;
+    /* In front? */
+    animation: cloudFloatReverse 4s linear infinite;
+    animation-delay: 1s;
+}
+
+.cloud-3 {
+    top: 40%;
+    right: -20px;
+    width: 30px;
+    opacity: 0.6;
+    animation: cloudFloat 5s linear infinite;
+    animation-delay: 2s;
+}
+
+@keyframes cloudFloatReverse {
+    0% {
+        transform: translateX(-40px) scale(0.9);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 0.8;
+    }
+
+    80% {
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(40px) scale(1);
+        opacity: 0;
+    }
+}

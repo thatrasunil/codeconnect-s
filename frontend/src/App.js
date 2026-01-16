@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
 import Loading from './components/Loading';
+import PaperPlaneSpinner from './components/PaperPlaneSpinner';
 import './App.css';
 
 // Lazy loading components for performance optimization
@@ -41,6 +42,11 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/test-spinner" element={
+                    <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+                      <PaperPlaneSpinner size="large" text="Initializing Flight Sequence..." />
+                    </div>
+                  } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <Dashboard />
