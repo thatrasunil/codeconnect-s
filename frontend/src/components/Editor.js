@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars, FaPencilAlt } from 'react-icons/fa';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars, FaPencilAlt, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Editor.css';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import ChatPanel from './ChatPanel';
 import ProblemPanel from './ProblemPanel';
 import OutputPanel from './OutputPanel';
@@ -41,7 +42,8 @@ const CodeEditor = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { user } = useAuth();
+    const { user, login } = useAuth();
+    const { toast } = useToast(); // Initialize toast hook
 
     // Auth State
     const [isLocked, setIsLocked] = useState(false); // Can interpret private field from firestore later
