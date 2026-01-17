@@ -239,6 +239,13 @@ const ChatPanel = ({
         }
     }, [showEmojiPicker]);
 
+    // Auto-focus textarea when replying
+    useEffect(() => {
+        if (replyingTo && textareaRef.current) {
+            textareaRef.current.focus();
+        }
+    }, [replyingTo]);
+
     const activeTab = aiMode ? 'ai' : 'team';
     const handleTabChange = (tab) => {
         if (setAiMode) setAiMode(tab === 'ai');
