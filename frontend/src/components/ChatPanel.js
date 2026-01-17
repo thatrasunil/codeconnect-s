@@ -175,21 +175,19 @@ const ChatPanel = ({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                {/* Sender Info (Only for others) */}
-                {!isMe && (
-                    <div className={styles.senderInfo}>
-                        {isAI ? (
-                            <div className={styles.avatar} style={{ background: 'linear-gradient(45deg, #8b5cf6, #ec4899)' }}>
-                                <FaRobot size={12} />
-                            </div>
-                        ) : (
-                            <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
-                                {String(msg.senderName || '?').charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <span className={styles.senderName}>{isAI ? 'Gemini AI' : msg.senderName}</span>
-                    </div>
-                )}
+                {/* Sender Info (Always show) */}
+                <div className={styles.senderInfo}>
+                    {isAI ? (
+                        <div className={styles.avatar} style={{ background: 'linear-gradient(45deg, #8b5cf6, #ec4899)' }}>
+                            <FaRobot size={12} />
+                        </div>
+                    ) : (
+                        <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
+                            {String(msg.senderName || '?').charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    <span className={styles.senderName}>{isAI ? 'Gemini AI' : msg.senderName}</span>
+                </div>
 
                 {/* Bubble */}
                 <div className={styles.bubble}>

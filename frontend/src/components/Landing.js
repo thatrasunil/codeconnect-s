@@ -11,18 +11,35 @@ import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoMode
 import SecureLoading from './SecureLoading';
 
 function Landing() {
-  const [roomId, setRoomId] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const navigate = useNavigate();
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [guestName, setGuestName] = useState('');
 
-  const createRoom = async () => {
+  const initiateCreateRoom = () => {
+    const storedName = localStorage.getItem('codeconnect_guest_name');
+    if (storedName) {
+      createRoom(storedName);
+    } else {
+      setShowNameModal(true);
+    }
+  };
+
+  const handleNameSubmit = (e) => {
+    e.preventDefault();
+    if (!guestName.trim()) return;
+    localStorage.setItem('codeconnect_guest_name', guestName);
+    setShowNameModal(false);
+    createRoom(guestName);
+  };
+
+  const createRoom = async (name) => {
     setIsCreating(true);
     try {
       const newRoom = await createFirestoreRoom({
         title: "Untitled Room",
         ownerId: "guest", // Guest user
         isPublic: true,
-        language: "javascript"
+        language: "javascript",
+        ownerName: name // Pass the name
       });
 
       if (newRoom.id) {
@@ -34,6 +51,10 @@ function Landing() {
       setIsCreating(false);
     }
   };
+
+  const [roomId, setRoomId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  const navigate = useNavigate();
 
   const joinRoom = () => {
     if (roomId) {
@@ -53,6 +74,66 @@ function Landing() {
 
   return (
     <div className="landing-page">
+
+      {/* Name Modal */}
+      {showNameModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)'
+        }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card"
+            style={{
+              padding: '2rem', width: '90%', maxWidth: '400px',
+              background: '#1e293b', border: '1px solid #334155'
+            }}
+          >
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'white' }}>Enter your name</h3>
+            <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Please enter a display name to join the room.</p>
+            <form onSubmit={handleNameSubmit}>
+              <input
+                autoFocus
+                type="text"
+                placeholder="Your Name (e.g. Alex)"
+                value={guestName}
+                onChange={e => setGuestName(e.target.value)}
+                style={{
+                  width: '100%', padding: '0.8rem', borderRadius: '8px',
+                  background: '#0f172a', border: '1px solid #334155',
+                  color: 'white', marginBottom: '1.5rem', outline: 'none'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowNameModal(false)}
+                  style={{
+                    padding: '0.6rem 1.2rem', borderRadius: '8px',
+                    background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!guestName.trim()}
+                  style={{
+                    padding: '0.6rem 1.2rem', borderRadius: '8px',
+                    background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer',
+                    fontWeight: '600', opacity: !guestName.trim() ? 0.5 : 1
+                  }}
+                >
+                  Continue
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
       {/* Dynamic Background Accents */}
       <motion.div animate={{ rotate: 360 }} transition={{ duration: 100, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'var(--accent-primary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
       <motion.div animate={{ rotate: -360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '20%', right: '-5%', width: '400px', height: '400px', background: 'var(--accent-secondary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
@@ -89,7 +170,7 @@ function Landing() {
 
             <div className="action-buttons" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
               <motion.button
-                onClick={createRoom}
+                onClick={initiateCreateRoom}
                 className="btn"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

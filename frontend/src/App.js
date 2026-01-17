@@ -122,6 +122,11 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
     );
   }
 
+  // Hide chatbot on room pages
+  if (location.pathname.startsWith('/room/')) {
+    return null;
+  }
+
   // Otherwise (App/Dashboard), show the main Chatbot
   return (
     <React.Fragment>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars } from 'react-icons/fa';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Editor.css';
 
@@ -131,7 +131,13 @@ const CodeEditor = () => {
         });
 
         // Join the room
-        const myUser = user || { uid: 'guest_' + Math.floor(Math.random() * 1000), username: 'Guest' };
+        let myUser = user;
+        if (!myUser) {
+            const guestName = localStorage.getItem('codeconnect_guest_name') || 'Guest';
+            // Try to keep consistent uid if stored, otherwise random is fine for ephemeral
+            // We use a simpler random ID here, but in a real app better session management is needed
+            myUser = { uid: 'guest_' + Math.floor(Math.random() * 10000), username: guestName };
+        }
         joinRoom(roomId, myUser);
 
         return () => {
@@ -508,7 +514,7 @@ const CodeEditor = () => {
                         title="Toggle Chat"
                         style={{ background: showChat ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: '1px solid #475569', color: 'white' }}
                     >
-                        <FaShareAlt style={{ transform: 'scaleX(-1)' }} />
+                        <FaComments />
                     </button>
 
                     {/* Desktop Settings */}
