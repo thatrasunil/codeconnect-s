@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FaBook, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import config from '../config';
+import ProblemService from '../services/problemService';
 
 const ProblemPanel = ({ questionId, isOpen, onClose }) => {
     const [problem, setProblem] = useState(null);
@@ -15,8 +16,6 @@ const ProblemPanel = ({ questionId, isOpen, onClose }) => {
             setLoading(true);
             try {
                 setLoading(true);
-                // Use the new ProblemService
-                const ProblemService = (await import('../services/problemService')).default;
                 const data = await ProblemService.fetchProblem(questionId);
                 setProblem(data);
             } catch (err) {

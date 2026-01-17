@@ -9,7 +9,7 @@ import { ToastProvider } from './contexts/ToastContext';
 import LoadingSpinner from './components/LoadingSpinner';
 import PaperPlaneSpinner from './components/PaperPlaneSpinner';
 import './App.css';
-import { QUESTIONS_DATA } from './data/problemsData';
+
 
 // Lazy loading components for performance optimization
 const Landing = lazy(() => import('./components/Landing'));
@@ -102,9 +102,18 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
 
   React.useEffect(() => {
     if (location.pathname === '/problems') {
-      const questionTitles = QUESTIONS_DATA.map(q => q.title).join(', ');
-      setContext(`User is viewing the Problems page. They can choose from these questions: ${questionTitles}. Guide them in choosing a problem based on their skill level.`);
-      setInitialMessage("👋 Hi! I can help you find a coding problem to solve. What kind of challenge are you looking for?");
+      import('./services/problemService').then(({ default: ProblemService }) => {
+        ProblemService.fetchAllProblems().then(questions => {
+          const questionTitles = questions.map(q => q.title).join(', ');
+          setContext(`User is viewing the Problems page. They can choose from these questions: ${questionTitles}. Guide them in choosing a problem based on their skill level.`);
+          setInitialMessage("👋 Hi! I can help you find a coding problem to solve. What kind of challenge are you looking for?");
+        }).catch(err => {
+          console.error("Failed to fetch problems for chatbot context", err);
+          // Fallback generic message
+          setContext("User is viewing the Problems page. Guide them in choosing a problem based on their skill level.");
+          setInitialMessage("👋 Hi! I can help you find a coding problem to solve. What kind of challenge are you looking for?");
+        });
+      });
     } else {
       setContext('');
       setInitialMessage(null);

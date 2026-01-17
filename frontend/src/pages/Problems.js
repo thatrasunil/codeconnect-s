@@ -5,7 +5,9 @@ import { FaPlay, FaSearch, FaCode, FaCheckCircle, FaStar, FaLayerGroup } from 'r
 import { createRoom } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
 
-import { QUESTIONS_DATA } from '../data/problemsData';
+
+
+import ProblemService from '../services/problemService';
 
 const Problems = () => {
     const navigate = useNavigate();
@@ -13,26 +15,41 @@ const Problems = () => {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        setTimeout(() => {
-            setQuestions(QUESTIONS_DATA);
-            setLoading(false);
-        }, 300);
+        const loadProblems = async () => {
+            try {
+                const data = await ProblemService.fetchAllProblems();
+                setQuestions(data);
+            } catch (err) {
+                console.error("Failed to load problems:", err);
+                setError("Failed to load problems. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadProblems();
     }, []);
 
     const handleSolve = async (question) => {
         try {
             const roomData = {
                 title: `Solving: ${question.title}`,
-                ownerId: user?.id || 'guest',
+                ownerId: user?.id || user?.uid || 'guest',
                 questionId: question.id,
-                language: 'javascript', // Default
+                language: question.language || 'javascript',
                 isPublic: false
             };
 
             const newRoom = await createRoom(roomData);
             if (newRoom.id) {
+                // Also assign the problem to the room in the backend to ensure linkage
+                try {
+                    await ProblemService.assignProblemToRoom(question.id, newRoom.id);
+                } catch (assignErr) {
+                    console.warn("Failed to implicitly assign problem:", assignErr);
+                }
                 navigate(`/room/${newRoom.id}?questionId=${question.id}`);
             }
         } catch (err) {
