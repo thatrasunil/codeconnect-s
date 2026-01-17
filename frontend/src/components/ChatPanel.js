@@ -4,7 +4,7 @@ import { useToast } from '../contexts/ToastContext';
 import {
     FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply,
     FaTimes, FaRobot, FaSmile, FaChevronRight, FaHeadphones,
-    FaComments,
+    FaComments, FaPause, FaPlay, FaCheck,
     FaEllipsisH, FaSearch, FaImage, FaFile
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -170,6 +170,7 @@ const ChatPanel = ({
     const { toast } = useToast();
     const [messageText, setMessageText] = useState('');
     const [isRecording, setIsRecording] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -404,6 +405,56 @@ const ChatPanel = ({
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
             setIsRecording(false);
+            setIsPaused(false);
+        }
+    };
+
+    const pauseRecording = () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.pause();
+            setIsPaused(true);
+            // Pause timer
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+                recordingIntervalRef.current = null;
+            }
+            toast.info("⏸️ Recording paused");
+        }
+    };
+
+    const resumeRecording = () => {
+        if (mediaRecorder && mediaRecorder.state === 'paused') {
+            mediaRecorder.resume();
+            setIsPaused(false);
+            // Resume timer
+            recordingIntervalRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+            toast.info("▶️ Recording resumed");
+        }
+    };
+
+    const cancelRecording = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            // Stop without triggering upload
+            mediaRecorder.ondataavailable = null;
+            mediaRecorder.onstop = () => {
+                // Clear timer
+                if (recordingIntervalRef.current) {
+                    clearInterval(recordingIntervalRef.current);
+                    recordingIntervalRef.current = null;
+                }
+                setRecordingTime(0);
+                setIsRecording(false);
+                setIsPaused(false);
+                toast.info("🗑️ Recording cancelled");
+            };
+            mediaRecorder.stop();
+
+            // Stop all tracks
+            if (mediaRecorder.stream) {
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+            }
         }
     };
 
@@ -651,21 +702,57 @@ const ChatPanel = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {/* Recording Timer */}
                             {isRecording && (
-                                <div className={styles.recordingTimer}>
-                                    <span className={styles.recordingDot}></span>
-                                    <span>{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
-                                </div>
+                                <>
+                                    <div className={styles.recordingTimer}>
+                                        <span className={styles.recordingDot}></span>
+                                        <span>{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
+                                    </div>
+
+                                    {/* Recording Controls */}
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        {/* Pause/Resume Button */}
+                                        <button
+                                            className={styles.recordingControlBtn}
+                                            onClick={isPaused ? resumeRecording : pauseRecording}
+                                            title={isPaused ? "Resume Recording" : "Pause Recording"}
+                                        >
+                                            {isPaused ? <FaPlay size={12} /> : <FaPause size={12} />}
+                                        </button>
+
+                                        {/* Stop/Send Button */}
+                                        <button
+                                            className={styles.recordingControlBtn}
+                                            style={{ background: 'rgba(34, 197, 94, 0.2)', borderColor: '#22c55e', color: '#22c55e' }}
+                                            onClick={stopRecordingAudio}
+                                            title="Stop & Send"
+                                        >
+                                            <FaCheck size={12} />
+                                        </button>
+
+                                        {/* Cancel Button */}
+                                        <button
+                                            className={styles.recordingControlBtn}
+                                            style={{ background: 'rgba(239, 68, 68, 0.2)', borderColor: '#ef4444', color: '#ef4444' }}
+                                            onClick={cancelRecording}
+                                            title="Cancel Recording"
+                                        >
+                                            <FaTimes size={12} />
+                                        </button>
+                                    </div>
+                                </>
                             )}
 
-                            <button
-                                className={`${styles.micBtn} ${isRecording || isListening ? styles.recording : ''}`}
-                                onMouseDown={voiceMode ? null : startRecordingAudio}
-                                onMouseUp={voiceMode ? null : stopRecordingAudio}
-                                onClick={voiceMode ? handleMicClick : null}
-                                title={voiceMode ? (isListening ? "Stop Listening" : "Start Dictation") : "Hold to Record"}
-                            >
-                                {isRecording || isListening ? <FaStop /> : <FaMicrophone />}
-                            </button>
+                            {!isRecording && (
+                                <button
+                                    className={`${styles.micBtn} ${isListening ? styles.recording : ''}`}
+                                    onMouseDown={voiceMode ? null : startRecordingAudio}
+                                    onMouseUp={voiceMode ? null : stopRecordingAudio}
+                                    onClick={voiceMode ? handleMicClick : null}
+                                    title={voiceMode ? (isListening ? "Stop Listening" : "Start Dictation") : "Hold to Record"}
+                                >
+                                    {isListening ? <FaStop /> : <FaMicrophone />}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
