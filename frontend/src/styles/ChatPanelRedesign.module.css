@@ -357,18 +357,18 @@
 }
 
 .emojiPicker {
-    position: absolute;
-    bottom: 45px;
-    left: 0;
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 12px;
     padding: 12px;
     width: 320px;
-    max-height: 350px;
+    max-height: 400px;
     overflow-y: auto;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: 100;
+    z-index: 1000;
     backdrop-filter: blur(10px);
 }
 
