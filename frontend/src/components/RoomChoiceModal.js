@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaPlus, FaSignInAlt, FaTimes, FaLock, FaGlobe } from 'react-icons/fa';
 
-const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin }) => {
+const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin, user }) => {
     const [roomId, setRoomId] = useState('');
-    const [mode, setMode] = useState('select'); // 'select', 'create'
+    const [mode, setMode] = useState('select'); // 'select', 'create', 'guest_name'
     const [isPrivate, setIsPrivate] = useState(false);
     const [password, setPassword] = useState('');
+    const [guestName, setGuestName] = useState('');
 
     const handleJoin = () => {
         if (roomId.trim()) {
@@ -15,6 +16,28 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin }) => {
     };
 
     const handleCreateSubmit = () => {
+        // Check if user is guest/anonymous
+        const username = user?.username || user?.displayName;
+        const isGuest = !username || username === 'Anonymous' || username === 'Guest';
+
+        if (isGuest && mode !== 'guest_name') {
+            // Retrieve stored name if any
+            const storedName = localStorage.getItem('codeconnect_guest_name');
+            if (storedName) {
+                onCreate({ isPublic: !isPrivate, password: isPrivate ? password : '', guestName: storedName });
+            } else {
+                setMode('guest_name');
+            }
+            return;
+        }
+
+        if (mode === 'guest_name') {
+            if (!guestName.trim()) return;
+            localStorage.setItem('codeconnect_guest_name', guestName);
+            onCreate({ isPublic: !isPrivate, password: isPrivate ? password : '', guestName });
+            return;
+        }
+
         onCreate({ isPublic: !isPrivate, password: isPrivate ? password : '' });
     };
 
@@ -23,6 +46,7 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin }) => {
         setIsPrivate(false);
         setPassword('');
         setRoomId('');
+        setGuestName('');
     };
 
     const handleClose = () => {
@@ -79,10 +103,10 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin }) => {
                             </button>
 
                             <h2 style={{ textAlign: 'center', marginBottom: '0.5rem', fontSize: '1.75rem', fontWeight: '800', color: 'white' }}>
-                                {mode === 'create' ? 'Create Room' : 'Start Collaborating'}
+                                {mode === 'create' ? 'Create Room' : mode === 'guest_name' ? 'Enter Your Name' : 'Start Collaborating'}
                             </h2>
                             <p style={{ textAlign: 'center', color: '#94a3b8', marginBottom: '2rem' }}>
-                                {mode === 'create' ? 'Configure your new session.' : 'Choose how you want to jump into code.'}
+                                {mode === 'create' ? 'Configure your new session.' : mode === 'guest_name' ? 'Please tell us who you are.' : 'Choose how you want to jump into code.'}
                             </p>
 
                             {mode === 'select' ? (
@@ -143,6 +167,44 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin }) => {
                                                 Join
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            ) : mode === 'guest_name' ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1' }}>What should we call you?</label>
+                                    <input
+                                        type="text"
+                                        value={guestName}
+                                        onChange={(e) => setGuestName(e.target.value)}
+                                        placeholder="Enter your name..."
+                                        style={{
+                                            width: '100%', padding: '0.875rem', borderRadius: '12px',
+                                            background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                                            color: 'white', outline: 'none'
+                                        }}
+                                        autoFocus
+                                    />
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                                        <button
+                                            onClick={() => setMode('create')}
+                                            style={{
+                                                flex: 1, padding: '0.875rem', borderRadius: '12px',
+                                                background: 'rgba(255,255,255,0.05)', color: 'white',
+                                                border: 'none', cursor: 'pointer', fontWeight: '600'
+                                            }}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            onClick={handleCreateSubmit}
+                                            style={{
+                                                flex: 1, padding: '0.875rem', borderRadius: '12px',
+                                                background: '#6366f1', color: 'white',
+                                                border: 'none', cursor: 'pointer', fontWeight: '600'
+                                            }}
+                                        >
+                                            Continue
+                                        </button>
                                     </div>
                                 </div>
                             ) : (

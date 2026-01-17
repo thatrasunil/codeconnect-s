@@ -87,7 +87,7 @@ const Dashboard = () => {
             const roomData = {
                 ...options,
                 ownerId: user?.id,
-                ownerName: user?.username || "Anonymous"
+                ownerName: options.guestName || user?.username || "Anonymous"
             };
 
             const newRoom = await createRoom(roomData);
@@ -454,7 +454,7 @@ const Dashboard = () => {
                 onClose={() => setIsModalOpen(false)}
                 onCreate={handleCreateRoom}
                 onJoin={handleJoinRoom}
-
+                user={user}
             />
 
             <OnlineUsersModal

@@ -299,7 +299,8 @@ const CodeEditor = () => {
             fileUrl,
             parentId,
             // User avatar etc can be added here
-            avatar: user?.photoURL || null
+            avatar: user?.photoURL || null,
+            senderName: user?.username || user?.displayName || 'Guest'
         };
 
         try {
