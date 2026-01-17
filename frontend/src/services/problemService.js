@@ -114,36 +114,7 @@ class ProblemService {
         }
     }
 
-    /**
-     * Submit solution for testing and AI verification
-     */
-    static async submitSolution(problemId, code, language, userId, userName, roomId) {
-        try {
-            const response = await fetch(`${config.BACKEND_URL}/api/problems/${problemId}/submit`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    code,
-                    language,
-                    userId,
-                    userName,
-                    roomId
-                })
-            });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to submit solution');
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('Error submitting solution:', error);
-            throw error;
-        }
-    }
 
     /**
      * Get AI-generated hint
