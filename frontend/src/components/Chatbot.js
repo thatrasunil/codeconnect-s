@@ -192,7 +192,7 @@ const Chatbot = ({ isOpen, onClose, context = null, initialMessage = null }) => 
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
-                    zIndex: 1000,
+                    zIndex: 99999,
                     border: '1px solid rgba(139, 92, 246, 0.3)'
                 }}
             >

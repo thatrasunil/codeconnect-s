@@ -399,40 +399,44 @@ const CodeEditor = () => {
                 justifyContent: 'space-between'
             }}>
                 <div className="editor-toolbar-left">
-                    <div className="editor-logo" onClick={() => navigate('/dashboard')}>CodeConnect</div>
+                    {!isMobile && (
+                        <>
+                            <div className="editor-logo" onClick={() => navigate('/dashboard')}>CodeConnect</div>
 
-                    {/* Room ID Badge */}
-                    <div className="editor-room-badge">
-                        Room: {roomId}
-                    </div>
+                            {/* Room ID Badge */}
+                            <div className="editor-room-badge">
+                                Room: {roomId}
+                            </div>
 
-                    <div className="toolbar-separator"></div>
+                            <div className="toolbar-separator"></div>
 
-                    {/* Language Selector */}
-                    <select
-                        value={language}
-                        onChange={(e) => {
-                            const newLang = e.target.value;
-                            setLanguage(newLang);
-                            localStorage.setItem(`editor_language_${roomId}`, newLang);
-                            updateRoomCode(roomId, code, newLang);
-                        }}
-                        style={{
-                            background: '#334155',
-                            color: 'white',
-                            border: 'none',
-                            padding: '5px 10px',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            outline: 'none',
-                            width: isMobile ? '90px' : 'auto',
-                            fontSize: isMobile ? '0.75rem' : '0.875rem'
-                        }}
-                    >
-                        {SUPPORTED_LANGUAGES.map(lang => (
-                            <option key={lang.id} value={lang.id}>{lang.name}</option>
-                        ))}
-                    </select>
+                            {/* Language Selector */}
+                            <select
+                                value={language}
+                                onChange={(e) => {
+                                    const newLang = e.target.value;
+                                    setLanguage(newLang);
+                                    localStorage.setItem(`editor_language_${roomId}`, newLang);
+                                    updateRoomCode(roomId, code, newLang);
+                                }}
+                                style={{
+                                    background: '#334155',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '5px 10px',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    width: 'auto',
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                {SUPPORTED_LANGUAGES.map(lang => (
+                                    <option key={lang.id} value={lang.id}>{lang.name}</option>
+                                ))}
+                            </select>
+                        </>
+                    )}
 
                     {!isMobile && (
                         <>
@@ -483,6 +487,7 @@ const CodeEditor = () => {
                 <div className="editor-toolbar-right">
                     {/* Desktop Actions */}
                     <div className="hide-mobile-only" style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleDownloadCode} title="Save to Device"><FaGoogleDrive /> Save</button>
                         <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
                         <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
                     </div>
@@ -667,18 +672,69 @@ const CodeEditor = () => {
                         }}
                     >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {/* Mobile Actions */}
-                            <button className="btn" onClick={() => { handleGoogleMeet(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
-                                <FaVideo /> Google Meet
-                            </button>
-                            <button className="btn" onClick={() => { handleAIExplain(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: '#8b5cf6' }}>
-                                <FaRobot /> Explain Code
-                            </button>
+                            {/* Header Info */}
+                            <div style={{ paddingBottom: '10px', borderBottom: '1px solid #334155' }}>
+                                <div onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }} style={{ fontWeight: 'bold', color: '#3b82f6', marginBottom: '4px', cursor: 'pointer' }}>CodeConnect</div>
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Room: {roomId}</div>
+                                <div style={{ fontSize: '0.8rem', color: isSaving ? '#fbbf24' : '#4ade80' }}>
+                                    {isSaving ? 'Saving...' : 'Saved'}
+                                </div>
+                                <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                                    Participants: {participants.length || 1}
+                                </div>
+                            </div>
+
+                            {/* Selectors */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <select
+                                    value={language}
+                                    onChange={(e) => {
+                                        setLanguage(e.target.value);
+                                        localStorage.setItem(`editor_language_${roomId}`, e.target.value);
+                                        updateRoomCode(roomId, code, e.target.value);
+                                    }}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
+                                >
+                                    {SUPPORTED_LANGUAGES.map(lang => (
+                                        <option key={lang.id} value={lang.id}>{lang.name}</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    value={theme}
+                                    onChange={(e) => {
+                                        setTheme(e.target.value);
+                                        localStorage.setItem(`editor_theme_${roomId}`, e.target.value);
+                                    }}
+                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
+                                >
+                                    {SUPPORTED_THEMES.map(theme => (
+                                        <option key={theme.id} value={theme.id}>{theme.name}</option>
+                                    ))}
+                                </select>
+                            </div>
 
                             <div style={{ borderTop: '1px solid #334155', margin: '5px 0' }}></div>
 
+                            {/* Actions */}
+                            <button className="btn" onClick={() => { handleRunCode(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981' }}>
+                                <FaPlay /> Run Code
+                            </button>
+
+                            <button className="btn" onClick={() => { handleGoogleMeet(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
+                                <FaVideo /> Meet
+                            </button>
+
+                            <button className="btn" onClick={() => { handleAIExplain(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: '#8b5cf6' }}>
+                                <FaRobot /> Explain
+                            </button>
+
+                            <button className="btn" onClick={() => { handleDownloadCode(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: '#34d399' }}>
+                                <FaGoogleDrive /> Save to Drive
+                            </button>
+
                             <button className="btn" onClick={() => { setShowSettings(true); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
-                                <FaCog /> Editor Settings
+                                <FaCog /> Settings
                             </button>
                         </div>
                     </motion.div>

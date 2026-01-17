@@ -124,11 +124,12 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
 
   // Otherwise (App/Dashboard), show the main Chatbot
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+    <React.Fragment>
       {!isChatOpen && (
         <button
           onClick={() => setIsChatOpen(true)}
           style={{
+            position: 'fixed', bottom: '20px', right: '20px', zIndex: 99999,
             width: '60px', height: '60px', borderRadius: '50%',
             background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
             border: 'none', color: 'white', fontSize: '24px',
@@ -138,6 +139,7 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
           }}
           onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
           onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+          title="AI Assistant"
         >
           <FaRobot size={24} />
         </button>
@@ -150,7 +152,7 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
           initialMessage={initialMessage}
         />
       </Suspense>
-    </div>
+    </React.Fragment>
   );
 };
 
