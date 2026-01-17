@@ -193,6 +193,14 @@ const CodeEditor = () => {
     const handleRunCode = async () => {
         if (isRunning) return; // Prevent multiple simultaneous runs
 
+        // Save current code to Firestore BEFORE running to prevent template reset
+        try {
+            await updateRoomCode(roomId, code, language);
+            lastSavedCodeRef.current = code;
+        } catch (err) {
+            console.error("Failed to save code before execution:", err);
+        }
+
         setIsRunning(true);
         setOutput([{ type: 'info', content: `⚡ Running ${language} code...` }]);
 
