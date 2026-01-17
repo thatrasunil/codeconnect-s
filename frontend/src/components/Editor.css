@@ -45,14 +45,23 @@
 }
 
 .editor-toolbar-left {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 0;
   overflow-x: auto;
+  margin-right: auto;
+  /* Push center/right sections */
+}
+
+.editor-toolbar-center {
+  flex: 0 0 auto;
+  justify-content: center;
 }
 
 .editor-toolbar-right {
   flex-shrink: 0;
+  margin-left: auto;
 }
+
 
 .toolbar-separator {
   height: 24px;
