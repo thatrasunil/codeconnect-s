@@ -130,20 +130,33 @@ module.exports = (db) => {
             }
 
             // Get problem details
+            let problem = null;
             const problemDoc = await db.collection('problems').doc(problemId).get();
 
-            if (!problemDoc.exists) {
-                return res.status(404).json({ error: 'Problem not found' });
+            if (problemDoc.exists) {
+                problem = problemDoc.data();
+            } else {
+                // Check if client provided problem metadata (hybrid mode)
+                if (req.body.testCases) {
+                    problem = {
+                        id: problemId,
+                        title: req.body.title || 'Unknown Problem',
+                        testCases: req.body.testCases,
+                        difficulty: 'Medium', // Default
+                        description: 'Provided by client'
+                    };
+                } else {
+                    return res.status(404).json({ error: 'Problem not found in DB and no test data provided' });
+                }
             }
-
-            const problem = problemDoc.data();
 
             // Run tests
             console.log(`Running tests for problem ${problemId}...`);
             const testResults = await TestExecutor.validateSolution(
                 code,
                 language,
-                problem.testCases || []
+                problem.testCases || [],
+                req.body.functionName // Pass function name for driver generation
             );
 
             // If tests pass, verify with AI

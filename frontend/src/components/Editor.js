@@ -280,6 +280,99 @@ const CodeEditor = () => {
         }
     };
 
+    const handleSubmitSolution = async () => {
+        if (isRunning || !initialQuestionId) return;
+
+        // Save current code
+        try {
+            await updateRoomCode(roomId, code, language);
+        } catch (err) {
+            console.error("Failed to save before submit:", err);
+        }
+
+        setIsRunning(true);
+        setOutput([{ type: 'info', content: `🤖 Submitting and Verifying ${language} solution...` }]);
+
+        try {
+            // Import dynamically to avoid circular dependency issues if any
+            const ProblemService = (await import('../services/problemService')).default;
+
+            const result = await ProblemService.submitSolution({
+                problemId: initialQuestionId,
+                code,
+                language,
+                userId: user?.id || user?.uid || 'guest',
+                userName: user?.username || 'Guest',
+                roomId
+            });
+
+            if (result.success) {
+                // Formatting success output
+                const tests = result.testResults;
+                const ai = result.aiVerification;
+                const score = ai?.score || (tests.allPassed ? 100 : 0);
+
+                const outputLines = [
+                    { type: 'success', content: `✅ Solution Accepted! Score: ${score}/100` },
+                    { type: 'info', content: `📊 Test Cases: ${tests.passed}/${tests.totalTests} Passed` },
+                    { type: 'info', content: `⏱️ Time: ${tests.executionTime} | 💾 Memory: ${tests.memoryUsage || 'N/A'}` }
+                ];
+
+                if (ai && ai.feedbacks) {
+                    outputLines.push({ type: 'info', content: '--- AI Feedback ---' });
+                    ai.feedbacks.forEach(f => {
+                        outputLines.push({ type: f.type === 'Error' ? 'error' : 'info', content: `• ${f.type}: ${f.message}` });
+                    });
+                }
+
+                // If there is complexity analysis
+                if (ai && ai.timeComplexity) {
+                    outputLines.push({ type: 'info', content: `📈 Time: ${ai.timeComplexity} | Space: ${ai.spaceComplexity}` });
+                }
+
+                setOutput(outputLines);
+                toast.success(`Solution Correct! Score: ${score}`);
+
+                // Simple confetti effect? maybe later
+            } else {
+                // Handle failure
+                const tests = result.testResults;
+                const errorLines = [
+                    { type: 'error', content: '❌ Solution Rejected' },
+                    { type: 'error', content: `Failed ${tests.failedTests} test cases.` }
+                ];
+
+                // Show first failed test case details if available
+                const firstFail = tests.cases?.find(c => !c.passed);
+                if (firstFail) {
+                    errorLines.push({ type: 'error', content: `Failed Input: ${JSON.stringify(firstFail.input)}` });
+                    errorLines.push({ type: 'error', content: `Expected: ${firstFail.expectedOutput}` });
+                    errorLines.push({ type: 'error', content: `Actual: ${firstFail.actualOutput}` });
+                    if (firstFail.error) errorLines.push({ type: 'error', content: `Error: ${firstFail.error}` });
+                }
+
+                if (result.aiVerification?.feedbacks) {
+                    errorLines.push({ type: 'info', content: '--- AI Hints ---' });
+                    result.aiVerification.feedbacks.forEach(f => {
+                        errorLines.push({ type: 'info', content: `• ${f.message}` });
+                    });
+                }
+
+                setOutput(errorLines);
+                toast.error('Solution Incorrect. Check output for details.');
+            }
+
+        } catch (err) {
+            console.error("Submission error:", err);
+            setOutput([
+                { type: 'error', content: '❌ Submission Failed' },
+                { type: 'error', content: err.message || 'Server error during verification' }
+            ]);
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
     const handleSettingsChange = (newSettings) => {
         setEditorSettings(newSettings);
         localStorage.setItem(`editor_settings_${roomId}`, JSON.stringify(newSettings));
@@ -578,6 +671,32 @@ const CodeEditor = () => {
                         <FaPlay color="#10b981" style={{ animation: isRunning ? 'pulse 1s infinite' : 'none' }} />
                         <span className={isMobile ? "hide-mobile" : ""}>{isRunning ? 'Running...' : 'Run'}</span>
                     </button>
+
+                    {showInterview && (
+                        <button
+                            className="btn"
+                            style={{
+                                display: 'flex',
+                                gap: '6px',
+                                background: 'rgba(59, 130, 246, 0.2)',
+                                color: '#60a5fa',
+                                border: '1px solid #3b82f6',
+                                cursor: isRunning ? 'not-allowed' : 'pointer',
+                                opacity: isRunning ? 0.7 : 1,
+                                minHeight: '40px',
+                                minWidth: isMobile ? '40px' : 'auto',
+                                padding: isMobile ? '0.4rem' : '0.6rem 1rem',
+                                fontSize: isMobile ? '0.75rem' : '0.875rem',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            onClick={handleSubmitSolution}
+                            disabled={isRunning}
+                        >
+                            <FaRobot />
+                            <span className={isMobile ? "hide-mobile" : ""}>Submit</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="editor-toolbar-right">

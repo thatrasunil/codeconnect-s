@@ -10,7 +10,7 @@ class TestExecutor {
      * @param {number} timeout - Timeout in milliseconds (default: 5000)
      * @returns {Promise<Object>} Test results
      */
-    static async executeCode(code, language, testCases, timeout = 5000) {
+    static async executeCode(code, language, testCases, functionName = null, timeout = 5000) {
         const languageMap = {
             'javascript': 'javascript',
             'python': 'python',
@@ -32,7 +32,7 @@ class TestExecutor {
                 const startTime = Date.now();
 
                 // Prepare code with test case input
-                const fullCode = this.prepareCode(code, testCase.input, language);
+                const fullCode = this.prepareCode(code, testCase.input, language, functionName);
 
                 const response = await fetch('https://emkc.org/api/v2/piston/execute', {
                     method: 'POST',
@@ -104,9 +104,54 @@ class TestExecutor {
     /**
      * Prepare code with test case input
      */
-    static prepareCode(code, input, language) {
-        // For now, just return the code as-is
-        // In production, you'd wrap it with input handling based on language
+    /**
+     * Prepare code with test case input
+     */
+    static prepareCode(code, input, language, functionName) {
+        // If functionName provided, wrap it with a driver
+        if (functionName) {
+            if (language === 'javascript') {
+                // Handle array inputs properly for JS
+                const formattedInput = Array.isArray(input) ? input.map(arg => JSON.stringify(arg)).join(', ') : JSON.stringify(input);
+                // Note: user input structure in testCases is array of args usually: [arg1, arg2]
+
+                return `
+${code}
+
+// Driver Code
+try {
+    const result = ${functionName}(${formattedInput});
+    console.log(JSON.stringify(result));
+} catch (e) {
+    console.error(e.message);
+}
+`;
+            } else if (language === 'python') {
+                // Simple Python driver
+                let args = input;
+                if (Array.isArray(input)) {
+                    args = input.map(arg => JSON.stringify(arg)).join(', ');
+                } else {
+                    args = JSON.stringify(input);
+                }
+
+                return `
+import json
+import sys
+
+${code}
+
+# Driver Code
+try:
+    result = ${functionName}(${args})
+    print(json.dumps(result))
+except Exception as e:
+    print(str(e), file=sys.stderr)
+`;
+            }
+        }
+
+        // Default: return code as-is (requires user to write print statements)
         return code;
     }
 
@@ -117,9 +162,9 @@ class TestExecutor {
      * @param {Array} testCases - Array of test case objects
      * @returns {Promise<Object>} Validation results
      */
-    static async validateSolution(code, language, testCases) {
+    static async validateSolution(code, language, testCases, functionName = null) {
         try {
-            const results = await this.executeCode(code, language, testCases);
+            const results = await this.executeCode(code, language, testCases, functionName);
 
             const passedTests = results.filter(r => r.passed).length;
             const totalTests = results.length;

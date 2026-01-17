@@ -1,5 +1,6 @@
 // Problem Service - API client for problem-related operations
 import config from '../config';
+import { QUESTIONS_DATA } from '../data/problemsData';
 
 class ProblemService {
     /**
@@ -7,13 +8,20 @@ class ProblemService {
      */
     static async fetchProblem(problemId) {
         try {
+            // If ID doesn't look like a mongoID (24 hex chars) or integer DB ID, checks static first?
+            // Actually, let's try API and fall back.
             const response = await fetch(`${config.BACKEND_URL}/api/problems/${problemId}`);
             if (!response.ok) {
+                // 404 or other error
+                const staticProblem = QUESTIONS_DATA.find(q => q.id === problemId);
+                if (staticProblem) return staticProblem;
                 throw new Error('Failed to fetch problem');
             }
             return await response.json();
         } catch (error) {
-            console.error('Error fetching problem:', error);
+            console.warn('Backend unavailable or problem not found, checking static data:', error);
+            const staticProblem = QUESTIONS_DATA.find(q => q.id === problemId);
+            if (staticProblem) return staticProblem;
             throw error;
         }
     }
@@ -30,11 +38,62 @@ class ProblemService {
 
             const response = await fetch(`${config.BACKEND_URL}/api/problems?${params}`);
             if (!response.ok) {
-                throw new Error('Failed to fetch problems');
+                throw new Error('Failed to fetch problems from API');
             }
+            const data = await response.json();
+
+            // If API returns empty, valid but empty, fallback? 
+            // Or mostly if it errors.
+            if (data && data.length > 0) return data;
+
+            // If API returns empty list, maybe we want static data? 
+            // Let's assume user prefers static if API is empty/error.
+            console.warn('API returned no problems, using static fallback.');
+            return QUESTIONS_DATA;
+        } catch (error) {
+            console.warn('Backend unavailable, using static problem data:', error);
+            // Filter static data if needed based on filters
+            let data = [...QUESTIONS_DATA];
+            if (filters.difficulty) {
+                data = data.filter(p => p.difficulty === filters.difficulty);
+            }
+            return data;
+        }
+    }
+
+    /**
+     * Submit solution for verification
+     * @param {Object} submission - { problemId, code, language, userId, ... }
+     */
+    static async submitSolution(submission) {
+        try {
+            // Augment submission with static data if available
+            // This ensures backend has test cases even if DB is empty
+            const problem = QUESTIONS_DATA.find(q => q.id === submission.problemId);
+            const enrichedSubmission = {
+                ...submission,
+                testCases: problem?.testCases || [],
+                functionName: problem?.functionName || null
+            };
+
+            const response = await fetch(`${config.BACKEND_URL}/api/problems/${submission.problemId}/submit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(enrichedSubmission)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Submission failed');
+            }
+
             return await response.json();
         } catch (error) {
-            console.error('Error fetching problems:', error);
+            console.error('Error submitting solution:', error);
+            // Optional: Fallback to client-side verification if backend fails?
+            // For now, simple throw.
             throw error;
         }
     }
