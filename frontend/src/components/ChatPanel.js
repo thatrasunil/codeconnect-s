@@ -33,11 +33,13 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply }) => {
                         <FaRobot size={12} />
                     </div>
                 ) : (
-                    <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
-                        {String(msg.senderName || '?').charAt(0).toUpperCase()}
+                    <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName || (isMe ? (user?.username || 'You') : 'Guest')).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
+                        {String(msg.senderName || (isMe ? (user?.username || 'You') : 'Guest')).charAt(0).toUpperCase()}
                     </div>
                 )}
-                <span className={styles.senderName}>{isAI ? 'Gemini AI' : msg.senderName}</span>
+                <span className={styles.senderName}>
+                    {isAI ? 'Gemini AI' : (msg.senderName || (isMe ? (user?.username || 'You') : 'Guest'))}
+                </span>
             </div>
 
             {/* Bubble */}
