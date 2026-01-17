@@ -889,6 +889,26 @@ const CodeEditor = () => {
             </AnimatePresence>
 
             <AnimatePresence>
+                {isMobile && showWhiteboard && (
+                    <motion.div
+                        className="editor-overlay"
+                        initial={{ x: '100%' }}
+                        animate={{ x: 0 }}
+                        exit={{ x: '100%' }}
+                        transition={{ type: 'tween', ease: 'easeInOut', duration: 0.3 }}
+                    >
+                        <Whiteboard
+                            roomId={roomId}
+                            isOpen={showWhiteboard}
+                            onClose={() => setShowWhiteboard(false)}
+                            onAddDrawing={handleAddDrawing}
+                            drawings={whiteboardDrawings}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
                 {isMobile && showChat && (
                     <motion.div
                         className="editor-overlay"

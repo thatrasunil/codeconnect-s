@@ -208,6 +208,56 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
         link.click();
     };
 
+    // Touch support
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const handleTouchStart = (e) => {
+            if (e.cancelable) e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            // Create mock event that getMousePos can read (clientX/Y)
+            // But getMousePos uses clientX/Y directly from event.
+            // We can call startDrawing with a mock object.
+            startDrawing({
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => { }
+            });
+        };
+
+        const handleTouchMove = (e) => {
+            if (e.cancelable) e.preventDefault();
+            const touch = e.touches[0];
+            draw({
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => { }
+            });
+        };
+
+        const handleTouchEnd = (e) => {
+            if (e.cancelable) e.preventDefault();
+            const touch = e.changedTouches[0];
+            stopDrawing({
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                preventDefault: () => { }
+            });
+        };
+
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd);
+
+        return () => {
+            canvas.removeEventListener('touchstart', handleTouchStart);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [isDrawing, tool, color]); // Dependencies to refresh listeners if state changes
+
     if (!isOpen) return null;
 
     return (
