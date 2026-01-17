@@ -94,7 +94,12 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages })
                 ) : msg.type === 'AUDIO' ? (
                     <audio controls src={msg.attachmentUrl || msg.fileUrl} style={{ maxWidth: '200px' }} />
                 ) : (
-                    <div style={{ whiteSpace: 'pre-wrap' }}>{String(msg.content || '')}</div>
+                    <div style={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        overflowWrap: 'break-word',
+                        maxWidth: '100%'
+                    }}>{String(msg.content || '')}</div>
                 )}
 
                 {/* Timestamp */}
