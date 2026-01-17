@@ -173,10 +173,21 @@ const ChatPanel = ({
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [replyingTo, setReplyingTo] = useState(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const emojiPickerRef = useRef(null);
     const [voiceMode, setVoiceMode] = useState(false);
     const textareaRef = useRef(null);
+
+    // Emoji categories
+    const emojiCategories = {
+        'Smileys': ['😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋'],
+        'Gestures': ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖐', '🖖', '👋', '🤝', '🙏'],
+        'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥️'],
+        'Objects': ['💻', '⌨️', '🖥', '🖨', '🖱', '💾', '💿', '📱', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙', '🎚', '🎛', '⏱', '⏰', '📡'],
+        'Symbols': ['✅', '❌', '⭐', '🌟', '💫', '✨', '🔥', '💯', '🎯', '🎪', '🎨', '🎭', '🎬', '🎤', '🎧', '🎵', '🎶', '🎼', '🎹', '🎸']
+    };
 
     const {
         isListening,
@@ -214,6 +225,19 @@ const ChatPanel = ({
             stopSpeaking();
         }
     }, [messages, voiceMode, speak, stopSpeaking]);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        if (showEmojiPicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [showEmojiPicker]);
 
     const activeTab = aiMode ? 'ai' : 'team';
     const handleTabChange = (tab) => {
@@ -300,6 +324,22 @@ const ChatPanel = ({
         } else {
             isRecording ? stopRecordingAudio() : startRecordingAudio();
         }
+    };
+
+    const handleEmojiClick = (emoji) => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const newText = messageText.substring(0, start) + emoji + messageText.substring(end);
+            setMessageText(newText);
+            // Set cursor position after emoji
+            setTimeout(() => {
+                textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+                textarea.focus();
+            }, 0);
+        }
+        setShowEmojiPicker(false);
     };
 
     if (!isOpen) return null;
@@ -446,6 +486,57 @@ const ChatPanel = ({
                         <FaPaperclip />
                     </button>
                     <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileUpload} />
+
+                    {/* Emoji Picker Button */}
+                    <div style={{ position: 'relative' }} ref={emojiPickerRef}>
+                        <button
+                            className={styles.emojiBtn}
+                            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                            title="Add Emoji"
+                        >
+                            <FaSmile />
+                        </button>
+
+                        {/* Emoji Picker Popup */}
+                        <AnimatePresence>
+                            {showEmojiPicker && (
+                                <motion.div
+                                    className={styles.emojiPicker}
+                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {Object.entries(emojiCategories).map(([category, emojis]) => (
+                                        <div key={category} style={{ marginBottom: '12px' }}>
+                                            <div style={{
+                                                fontSize: '0.7rem',
+                                                color: '#94a3b8',
+                                                fontWeight: 600,
+                                                marginBottom: '6px',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.5px'
+                                            }}>
+                                                {category}
+                                            </div>
+                                            <div className={styles.emojiGrid}>
+                                                {emojis.map((emoji, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        className={styles.emojiItem}
+                                                        onClick={() => handleEmojiClick(emoji)}
+                                                        title={emoji}
+                                                    >
+                                                        {emoji}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
 
                     <textarea
                         ref={textareaRef}
