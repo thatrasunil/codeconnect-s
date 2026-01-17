@@ -11,7 +11,10 @@ from .views import (
 from .views_interview import QuestionListView, InterviewSessionView, InterviewHistoryView
 from .views_execution import ExecuteCodeView, SubmitSolutionView
 from .views_roles import AssignRoleView, RoomPermissionsView, RoomParticipantsRolesView
-from .views_mongodb import get_questions as mongo_get_questions, save_quiz_result as mongo_save_quiz_result
+from .views_mongodb import (
+    get_problems, get_problem, create_problem,
+    mongo_get_questions, save_quiz_result as mongo_save_quiz_result
+)
 
 urlpatterns = [
     path('api/leaderboard', LeaderboardView.as_view(), name='leaderboard'),
@@ -63,6 +66,10 @@ urlpatterns = [
     path('api/quizzes/<str:id>', QuizDetailView.as_view(), name='quiz-detail'),
     path('api/quizzes/<str:quiz_id>/submit', QuizSubmitView.as_view(), name='quiz-submit'),
     # MongoDB Routes
+    path('api/problems', get_problems, name='get_problems'),
+    path('api/problems/create', create_problem, name='create_problem'), # Protected
+    path('api/problems/<str:problem_id>', get_problem, name='get_problem'),
+    
     path('api/v2/questions', mongo_get_questions, name='mongo_question_list'),
     path('api/v2/quiz/save', mongo_save_quiz_result, name='mongo_save_quiz_result'),
 

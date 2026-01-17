@@ -11,5 +11,5 @@ google-generativeai
 requests
 dj-database-url
 psycopg2-binary
-pymongo==4.6.0
+pymongo[srv]==4.6.1
 dnspython==2.4.2
