@@ -13,12 +13,32 @@ import useVoice from '../hooks/useVoice';
 import styles from '../styles/ChatPanelRedesign.module.css';
 
 // Extracted MessageItem Component
-const MessageItem = React.memo(({ msg, user, onReaction, onReply }) => {
+const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages }) => {
     const [isHovered, setIsHovered] = useState(false);
     const isMe = msg.userId === (user?.username || user?.uid);
     const isAI = msg.userId === 'Gemini AI';
     const timestamp = msg.createdAt || msg.timestamp || new Date();
     const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Find parent message if this is a reply
+    const parentMessage = msg.parentId && allMessages ? allMessages.find(m => m.id === msg.parentId) : null;
+
+    // Get preview text for parent message
+    const getParentPreview = () => {
+        if (!parentMessage) return 'Message not found';
+
+        switch (parentMessage.type) {
+            case 'IMAGE':
+                return '📷 Image';
+            case 'AUDIO':
+                return '🎵 Voice Message';
+            case 'FILE':
+                return '📎 File';
+            default:
+                const content = String(parentMessage.content || '');
+                return content.length > 50 ? content.substring(0, 50) + '...' : content;
+        }
+    };
 
     return (
         <div
@@ -47,12 +67,24 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply }) => {
                 {/* Reply Context */}
                 {msg.parentId && (
                     <div style={{
-                        fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px',
-                        background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: '4px',
-                        borderLeft: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px'
+                        fontSize: '0.75rem', color: 'rgba(255,255,255,0.85)', marginBottom: '6px',
+                        background: 'rgba(0,0,0,0.3)', padding: '6px 10px', borderRadius: '6px',
+                        borderLeft: '3px solid rgba(139, 92, 246, 0.6)', display: 'flex', flexDirection: 'column', gap: '2px'
                     }}>
-                        <FaReply size={10} />
-                        <em>Replying...</em>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
+                            <FaReply size={10} />
+                            <span>Replying to {parentMessage?.senderName || 'User'}</span>
+                        </div>
+                        <div style={{
+                            fontSize: '0.7rem',
+                            color: 'rgba(255,255,255,0.6)',
+                            fontStyle: 'italic',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {getParentPreview()}
+                        </div>
                     </div>
                 )}
 
@@ -320,7 +352,7 @@ const ChatPanel = ({
                         <p>No messages yet. Start the conversation!</p>
                     </div>
                 ) : (
-                    filteredMessages.map(msg => <MessageItem key={msg.id || Math.random()} msg={msg} user={user} onReaction={onReaction} onReply={setReplyingTo} />)
+                    filteredMessages.map(msg => <MessageItem key={msg.id || Math.random()} msg={msg} user={user} onReaction={onReaction} onReply={setReplyingTo} allMessages={filteredMessages} />)
                 )}
 
                 {/* Typing Indicator */}
