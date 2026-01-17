@@ -28,7 +28,8 @@ import {
     toggleMessageReaction,
     subscribeToWhiteboard,
     addWhiteboardAction,
-    clearWhiteboard
+    clearWhiteboard,
+    cleanupRoomData
 } from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
@@ -408,6 +409,20 @@ const CodeEditor = () => {
         }
     };
 
+    const handleEndSession = async () => {
+        if (window.confirm("Are you sure you want to end this session? This will delete all messages, drawings, and session data permanently.")) {
+            try {
+                await cleanupRoomData(roomId);
+                toast.success("Session ended successfully. Data cleared.");
+                navigate('/dashboard');
+            } catch (err) {
+                console.error("Error ending session:", err);
+                toast.error("Failed to end session completely.");
+                navigate('/dashboard'); // Exit anyway
+            }
+        }
+    };
+
     if (isLocked) {
         return (
             // Lock Screen (Simplified, as password logic requires valid backend usually)
@@ -567,6 +582,17 @@ const CodeEditor = () => {
                         style={{ background: showChat ? 'rgba(59, 130, 246, 0.2)' : 'transparent', border: '1px solid #475569', color: 'white' }}
                     >
                         <FaComments />
+                    </button>
+
+                    <div style={{ width: '1px', height: '20px', background: '#334155', margin: '0 4px' }}></div>
+
+                    <button
+                        className="btn"
+                        onClick={handleEndSession}
+                        title="End Session & Clear Data"
+                        style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444' }}
+                    >
+                        <FaTimes /> <span className="hide-mobile-only" style={{ marginLeft: '4px' }}>End Session</span>
                     </button>
 
                     {/* Desktop Settings */}

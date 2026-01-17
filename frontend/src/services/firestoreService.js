@@ -564,3 +564,42 @@ export const clearWhiteboard = async (roomId) => {
     }
 };
 
+
+/**
+ * Cleanup room data (End Session)
+ */
+export const cleanupRoomData = async (roomId) => {
+    try {
+        // Delete all subcollections and related documents
+
+        // 1. Delete Messages
+        const messagesQ = query(collection(db, "messages"), where("roomId", "==", roomId));
+        const messagesSnap = await getDocs(messagesQ);
+        const deletePromises = [];
+        messagesSnap.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
+
+        // 2. Delete Whiteboard
+        const whiteboardQ = query(collection(db, "whiteboard"), where("roomId", "==", roomId));
+        const whiteboardSnap = await getDocs(whiteboardQ);
+        whiteboardSnap.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
+
+        // 3. Delete Room Members
+        const membersQ = query(collection(db, "roomMembers"), where("roomId", "==", roomId));
+        const membersSnap = await getDocs(membersQ);
+        membersSnap.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
+
+        // 4. Delete Typing Indicators (subcollection)
+        const typingSnap = await getDocs(collection(db, "rooms", roomId, "typing"));
+        typingSnap.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
+
+        // 5. Delete Room Document
+        deletePromises.push(deleteDoc(doc(db, "rooms", roomId)));
+
+        await Promise.all(deletePromises);
+        console.log("✅ Room cleaned up:", roomId);
+        return true;
+    } catch (error) {
+        console.error("❌ Error cleaning up room:", error);
+        throw error;
+    }
+};
