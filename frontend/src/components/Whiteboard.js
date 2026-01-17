@@ -84,10 +84,13 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
         };
     };
 
+    const currentPathRef = useRef([]);
+
     const startDrawing = (e) => {
         const pos = getMousePos(e);
         setIsDrawing(true);
         setStartPos(pos);
+        currentPathRef.current = [pos];
 
         if (tool === 'pen' || tool === 'eraser') {
             const ctx = canvasRef.current.getContext('2d');
@@ -99,11 +102,12 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
     const draw = (e) => {
         if (!isDrawing) return;
 
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const container = canvasRef.current;
+        const ctx = container.getContext('2d');
         const pos = getMousePos(e);
 
         if (tool === 'pen' || tool === 'eraser') {
+            currentPathRef.current.push(pos);
             ctx.strokeStyle = tool === 'eraser' ? '#FFFFFF' : color;
             ctx.lineWidth = strokeWidth;
             ctx.lineCap = 'round';
@@ -118,20 +122,19 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
         if (!isDrawing) return;
 
         const pos = getMousePos(e);
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const container = canvasRef.current;
+        const ctx = container.getContext('2d');
 
         let action = null;
 
         if (tool === 'pen' || tool === 'eraser') {
-            // For pen/eraser, we'd need to track all points during drawing
-            // For simplicity, we'll create a simple stroke
+            currentPathRef.current.push(pos);
             action = {
                 type: 'stroke',
                 tool: tool,
                 color: tool === 'eraser' ? '#FFFFFF' : color,
                 width: strokeWidth,
-                points: [startPos, pos],
+                points: currentPathRef.current,
                 timestamp: Date.now()
             };
         } else if (tool === 'line' || tool === 'rect' || tool === 'circle') {
@@ -174,6 +177,7 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
 
         setIsDrawing(false);
         setStartPos(null);
+        currentPathRef.current = [];
     };
 
     const clearCanvas = () => {
