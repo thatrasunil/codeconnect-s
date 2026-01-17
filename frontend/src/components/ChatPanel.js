@@ -242,7 +242,10 @@ const ChatPanel = ({
     // Auto-focus textarea when replying
     useEffect(() => {
         if (replyingTo && textareaRef.current) {
-            textareaRef.current.focus();
+            // Small delay to ensure the reply context is rendered first
+            setTimeout(() => {
+                textareaRef.current?.focus();
+            }, 100);
         }
     }, [replyingTo]);
 
