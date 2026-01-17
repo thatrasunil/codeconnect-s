@@ -509,10 +509,11 @@ export const fetchUserRooms = async (userId) => {
  * Subscribe to whiteboard drawings
  */
 export const subscribeToWhiteboard = (roomId, callback) => {
+    // Note: Removed orderBy("timestamp") to avoid needing a composite index.
+    // We sort client-side instead.
     const q = query(
         collection(db, "whiteboard"),
-        where("roomId", "==", roomId),
-        orderBy("timestamp", "asc")
+        where("roomId", "==", roomId)
     );
 
     return onSnapshot(q, (snapshot) => {
@@ -520,6 +521,14 @@ export const subscribeToWhiteboard = (roomId, callback) => {
         snapshot.forEach((doc) => {
             drawings.push({ id: doc.id, ...doc.data() });
         });
+
+        // Sort by timestamp asc
+        drawings.sort((a, b) => {
+            const t1 = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+            const t2 = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+            return t1 - t2;
+        });
+
         callback(drawings);
     }, (error) => {
         console.error("❌ Whiteboard subscription error:", error);
