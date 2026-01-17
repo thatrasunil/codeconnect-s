@@ -280,16 +280,18 @@
 }
 
 .replyContext {
-    background: rgba(30, 41, 59, 0.8);
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border-left: 3px solid #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border-left: 4px solid #3b82f6;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     font-size: 0.85rem;
     color: #cbd5e1;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
 }
 
 .inputWrapper {

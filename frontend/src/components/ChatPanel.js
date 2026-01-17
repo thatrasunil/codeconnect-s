@@ -376,32 +376,58 @@ const ChatPanel = ({
             <div className={styles.inputContainer}>
                 {replyingTo && (
                     <div className={styles.replyContext}>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
-                                <FaReply size={12} style={{ color: '#8b5cf6' }} />
-                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <FaReply size={13} style={{ color: '#60a5fa', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.8rem', color: '#60a5fa', fontWeight: 700 }}>
                                     Replying to {replyingTo.senderName || 'User'}
                                 </span>
                             </div>
                             <div style={{
-                                fontSize: '0.7rem',
-                                color: '#cbd5e1',
-                                fontStyle: 'italic',
+                                fontSize: '0.85rem',
+                                color: '#e2e8f0',
+                                lineHeight: '1.4',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                maxWidth: '90%'
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                maxWidth: '100%',
+                                paddingLeft: '19px'
                             }}>
                                 {replyingTo.type === 'IMAGE' ? '📷 Image' :
                                     replyingTo.type === 'AUDIO' ? '🎵 Voice Message' :
                                         replyingTo.type === 'FILE' ? '📎 File' :
-                                            (String(replyingTo.content || '').length > 60
-                                                ? String(replyingTo.content).substring(0, 60) + '...'
-                                                : String(replyingTo.content || ''))}
+                                            String(replyingTo.content || '')}
                             </div>
                         </div>
-                        <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
-                            <FaTimes />
+                        <button
+                            onClick={() => setReplyingTo(null)}
+                            style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.3)',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '6px',
+                                borderRadius: '6px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '28px',
+                                height: '28px',
+                                flexShrink: 0,
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                                e.currentTarget.style.transform = 'scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                e.currentTarget.style.transform = 'scale(1)';
+                            }}
+                        >
+                            <FaTimes size={12} />
                         </button>
                     </div>
                 )}
