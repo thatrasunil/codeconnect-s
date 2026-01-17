@@ -170,6 +170,7 @@ const ChatPanel = ({
     const { toast } = useToast();
     const [messageText, setMessageText] = useState('');
     const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [replyingTo, setReplyingTo] = useState(null);
@@ -177,6 +178,7 @@ const ChatPanel = ({
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
     const emojiPickerRef = useRef(null);
+    const recordingIntervalRef = useRef(null);
     const [voiceMode, setVoiceMode] = useState(false);
     const textareaRef = useRef(null);
 
@@ -330,6 +332,13 @@ const ChatPanel = ({
                 // Stop all tracks
                 stream.getTracks().forEach(t => t.stop());
 
+                // Clear timer
+                if (recordingIntervalRef.current) {
+                    clearInterval(recordingIntervalRef.current);
+                    recordingIntervalRef.current = null;
+                }
+                setRecordingTime(0);
+
                 // Upload the audio
                 try {
                     const formData = new FormData();
@@ -361,12 +370,24 @@ const ChatPanel = ({
                 console.error("Recording error:", event.error);
                 toast.error("Recording failed");
                 stream.getTracks().forEach(t => t.stop());
+                if (recordingIntervalRef.current) {
+                    clearInterval(recordingIntervalRef.current);
+                    recordingIntervalRef.current = null;
+                }
+                setRecordingTime(0);
             };
 
             recorder.start();
             setMediaRecorder(recorder);
             setIsRecording(true);
-            toast.info("Recording... Hold to continue");
+            setRecordingTime(0);
+
+            // Start timer
+            recordingIntervalRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+
+            toast.info("🎙️ Recording...");
         } catch (err) {
             console.error("Microphone error:", err);
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -627,15 +648,25 @@ const ChatPanel = ({
                             <FaPaperPlane size={14} />
                         </button>
                     ) : (
-                        <button
-                            className={`${styles.micBtn} ${isRecording || isListening ? styles.recording : ''}`}
-                            onMouseDown={voiceMode ? null : startRecordingAudio}
-                            onMouseUp={voiceMode ? null : stopRecordingAudio}
-                            onClick={voiceMode ? handleMicClick : null}
-                            title={voiceMode ? (isListening ? "Stop Listening" : "Start Dictation") : "Hold to Record"}
-                        >
-                            {isRecording || isListening ? <FaStop /> : <FaMicrophone />}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {/* Recording Timer */}
+                            {isRecording && (
+                                <div className={styles.recordingTimer}>
+                                    <span className={styles.recordingDot}></span>
+                                    <span>{Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}</span>
+                                </div>
+                            )}
+
+                            <button
+                                className={`${styles.micBtn} ${isRecording || isListening ? styles.recording : ''}`}
+                                onMouseDown={voiceMode ? null : startRecordingAudio}
+                                onMouseUp={voiceMode ? null : stopRecordingAudio}
+                                onClick={voiceMode ? handleMicClick : null}
+                                title={voiceMode ? (isListening ? "Stop Listening" : "Start Dictation") : "Hold to Record"}
+                            >
+                                {isRecording || isListening ? <FaStop /> : <FaMicrophone />}
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
