@@ -13,6 +13,9 @@ import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
 import Whiteboard from './Whiteboard';
 import config from '../config';
+import useRoomMessages from '../hooks/useRoomMessages';
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
 import {
     incrementUserStats,
@@ -22,7 +25,6 @@ import {
     subscribeToRoomMembers,
     subscribeToTyping,
     joinRoom,
-    sendMessage,
     updateRoomCode,
     updateTypingStatus,
     updateUserStatus,
@@ -94,7 +96,7 @@ const CodeEditor = () => {
 
     // Real-time Data
     const [participants, setParticipants] = useState([]);
-    const [messages, setMessages] = useState([]);
+    const messages = useRoomMessages(roomId);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
     const [whiteboardDrawings, setWhiteboardDrawings] = useState([]);
     const [userRole, setUserRole] = useState('CANDIDATE');
@@ -132,7 +134,9 @@ const CodeEditor = () => {
             }
         });
 
-        const unsubMessages = subscribeToMessages(roomId, setMessages);
+        // Removed explicit subscribeToMessages since useRoomMessages hook handles it
+        // const unsubMessages = subscribeToMessages(roomId, setMessages);
+
         const unsubMembers = subscribeToRoomMembers(roomId, setParticipants);
         const unsubTyping = subscribeToTyping(roomId, (users) => {
             const myUserId = user?.username || 'Guest';
@@ -152,7 +156,7 @@ const CodeEditor = () => {
 
         return () => {
             unsubscribe();
-            unsubMessages();
+            // unsubMessages(); // Handled by hook
             unsubMembers();
             unsubTyping();
             unsubWhiteboard();
@@ -323,7 +327,24 @@ const CodeEditor = () => {
         };
 
         try {
-            await sendMessage(roomId, msgData);
+            if (text.trim() || msgData.type !== 'TEXT') {
+                const messagesRef = collection(db, "rooms", roomId, "messages");
+                await addDoc(messagesRef, {
+                    content: text, // Using 'content' to match existing UI usage in ChatPanel (msg.content)
+                    // The user provided 'text' in snippet but ChatPanel uses 'content'. 
+                    // Let's stick to 'content' for internal consistency with ChatPanel.js or check ChatPanel.js
+                    // ChatPanel uses: String(msg.content || '')
+                    // So we must use 'content' key, BUT the user snippet used 'text'.
+                    // I will use 'content' because the rest of the app expects it (MessageItem).
+                    userId: msgData.userId,
+                    type: msgData.type,
+                    fileUrl: msgData.fileUrl || null,
+                    parentId: msgData.parentId || null,
+                    senderName: msgData.senderName,
+                    avatar: msgData.avatar,
+                    createdAt: serverTimestamp(),
+                });
+            }
 
             if (user?.id && !aiMode && type === 'TEXT') {
                 incrementUserStats(user.id, 'message');
@@ -353,17 +374,26 @@ const CodeEditor = () => {
             const data = await res.json();
             const aiResponse = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || '');
 
-            await sendMessage(roomId, {
+
+
+            const messagesRef = collection(db, "rooms", roomId, "messages");
+            await addDoc(messagesRef, {
                 userId: 'Gemini AI',
                 content: aiResponse,
-                type: 'AI_RESPONSE'
+                type: 'AI_RESPONSE',
+                senderName: 'Gemini AI',
+                createdAt: serverTimestamp(),
             });
 
         } catch (err) {
-            await sendMessage(roomId, {
+
+            const messagesRef = collection(db, "rooms", roomId, "messages");
+            await addDoc(messagesRef, {
                 userId: 'System',
                 content: `AI Error: ${err.message}`,
-                type: 'TEXT'
+                type: 'TEXT',
+                senderName: 'System',
+                createdAt: serverTimestamp(),
             });
         }
     };
