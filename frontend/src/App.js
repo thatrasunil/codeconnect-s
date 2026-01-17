@@ -114,11 +114,11 @@ const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
   // If public route, show ChatWidget (always visible button/widget)
   if (isPublic) {
     return (
-      <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999 }}>
+      <React.Fragment>
         <Suspense fallback={null}>
           <ChatWidget />
         </Suspense>
-      </div>
+      </React.Fragment>
     );
   }
 

@@ -91,106 +91,130 @@ const ChatWidget = () => {
     };
 
     return (
-        <div className={styles.chatbotContainer} style={{ zIndex: 99999 }}>
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        className={styles.chatWindow}
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    >
-                        {/* Header */}
-                        <div className={styles.header}>
-                            <div className={styles.titleContainer}>
-                                <div className={styles.logo}>
-                                    <FaRobot />
+        <div className={styles.chatbotContainer} style={{
+            zIndex: 99999,
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            pointerEvents: 'none' // Allow clicking through empty space
+        }}>
+            <div style={{ pointerEvents: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            className={styles.chatWindow}
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        >
+                            {/* Header */}
+                            <div className={styles.header}>
+                                <div className={styles.titleContainer}>
+                                    <div className={styles.logo}>
+                                        <FaRobot />
+                                    </div>
+                                    <div className={styles.headerText}>
+                                        <h3>Ask CodeConnect</h3>
+                                        <p>Support & FAQ</p>
+                                    </div>
                                 </div>
-                                <div className={styles.headerText}>
-                                    <h3>Ask CodeConnect</h3>
-                                    <p>Support & FAQ</p>
-                                </div>
+                                <button onClick={toggleChat} className={styles.closeButton}>
+                                    <FaChevronDown />
+                                </button>
                             </div>
-                            <button onClick={toggleChat} className={styles.closeButton}>
-                                <FaChevronDown />
-                            </button>
-                        </div>
 
-                        {/* Messages */}
-                        <div className={styles.messagesContainer}>
-                            {messages.map((msg) => (
-                                <div key={msg.id} className={`${styles.message} ${msg.type === 'user' ? styles.userMessage : styles.aiMessage}`}>
-                                    {msg.text}
-                                    {/* <span className={styles.timestamp}>
+                            {/* Messages */}
+                            <div className={styles.messagesContainer}>
+                                {messages.map((msg) => (
+                                    <div key={msg.id} className={`${styles.message} ${msg.type === 'user' ? styles.userMessage : styles.aiMessage}`}>
+                                        {msg.text}
+                                        {/* <span className={styles.timestamp}>
                                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span> */}
-                                </div>
-                            ))}
-
-                            {isTyping && (
-                                <div className={`${styles.message} ${styles.aiMessage}`}>
-                                    <div className={styles.typingIndicator}>
-                                        <div className={styles.dot}></div>
-                                        <div className={styles.dot}></div>
-                                        <div className={styles.dot}></div>
                                     </div>
+                                ))}
+
+                                {isTyping && (
+                                    <div className={`${styles.message} ${styles.aiMessage}`}>
+                                        <div className={styles.typingIndicator}>
+                                            <div className={styles.dot}></div>
+                                            <div className={styles.dot}></div>
+                                            <div className={styles.dot}></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            {/* Quick Actions (Chips) */}
+                            {!isTyping && quickReplies.length > 0 && (
+                                <div className={styles.quickActions}>
+                                    {quickReplies.map((action, i) => (
+                                        <button
+                                            key={i}
+                                            className={styles.actionBtn}
+                                            onClick={() => handleSendMessage(action)}
+                                        >
+                                            {action}
+                                        </button>
+                                    ))}
                                 </div>
                             )}
 
-                            <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Quick Actions (Chips) */}
-                        {!isTyping && quickReplies.length > 0 && (
-                            <div className={styles.quickActions}>
-                                {quickReplies.map((action, i) => (
-                                    <button
-                                        key={i}
-                                        className={styles.actionBtn}
-                                        onClick={() => handleSendMessage(action)}
-                                    >
-                                        {action}
-                                    </button>
-                                ))}
+                            {/* Input */}
+                            <div className={styles.inputArea}>
+                                <input
+                                    type="text"
+                                    className={styles.inputField}
+                                    placeholder="Ask something about CodeConnect..."
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
+                                    disabled={isTyping}
+                                />
+                                <button
+                                    className={styles.sendButton}
+                                    onClick={() => handleSendMessage(inputValue)}
+                                    disabled={!inputValue.trim() || isTyping}
+                                >
+                                    <FaPaperPlane size={14} />
+                                </button>
                             </div>
-                        )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                        {/* Input */}
-                        <div className={styles.inputArea}>
-                            <input
-                                type="text"
-                                className={styles.inputField}
-                                placeholder="Ask something about CodeConnect..."
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(inputValue)}
-                                disabled={isTyping}
-                            />
-                            <button
-                                className={styles.sendButton}
-                                onClick={() => handleSendMessage(inputValue)}
-                                disabled={!inputValue.trim() || isTyping}
-                            >
-                                <FaPaperPlane size={14} />
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* FAB */}
-            <motion.button
-                className={`${styles.fab} ${isOpen ? styles.open : ''}`}
-                onClick={toggleChat}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                title="Ask CodeConnect"
-            >
-                <span className={styles.fabIcon}>
-                    {isOpen ? <FaTimes /> : <FaComments />}
-                </span>
-            </motion.button>
+                {/* FAB */}
+                <motion.button
+                    className={`${styles.fab} ${isOpen ? styles.open : ''}`}
+                    onClick={toggleChat}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    title="Ask CodeConnect"
+                    style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                        color: 'white',
+                        border: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)'
+                    }}
+                >
+                    <span className={styles.fabIcon}>
+                        {isOpen ? <FaTimes /> : <FaComments />}
+                    </span>
+                </motion.button>
+            </div>
         </div>
     );
 };
