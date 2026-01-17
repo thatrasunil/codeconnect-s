@@ -1,15 +1,29 @@
 import React from 'react';
 import './PaperPlaneSpinner.css';
 
-const PaperPlaneSpinner = ({ size = "medium", text = "Loading..." }) => {
+const PaperPlaneSpinner = ({ size = "medium", text = "Loading...", fullScreen = false }) => {
     // Map size prop to pixel dimensions
     const containerSize = size === "small" ? 100 : size === "large" ? 300 : 200;
     const planeSize = size === "small" ? 40 : size === "large" ? 120 : 80;
 
+    const containerStyle = fullScreen ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: '#0f172a', // Match app background
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column' // Ensure text is below if needed, though PaperPlaneContainer is flex too
+    } : { width: containerSize, height: containerSize };
+
     return (
         <div
-            className="paper-plane-container"
-            style={{ width: containerSize, height: containerSize }}
+            className={`paper-plane-container ${fullScreen ? 'full-screen' : ''}`}
+            style={containerStyle}
         >
             {/* Cloud 1 (Top Right) */}
             <div className="cloud cloud-1">

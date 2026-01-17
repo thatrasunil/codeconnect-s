@@ -406,7 +406,7 @@ const CodeEditor = () => {
                         Room: {roomId}
                     </div>
 
-                    <div style={{ height: '24px', width: '1px', background: '#475569', margin: '0 5px' }}></div>
+                    <div className="toolbar-separator"></div>
 
                     {/* Language Selector */}
                     <select
@@ -450,7 +450,7 @@ const CodeEditor = () => {
                                     <option key={theme.id} value={theme.id}>{theme.name}</option>
                                 ))}
                             </select>
-                            <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+                            <div className="toolbar-separator"></div>
                         </>
                     )}
 
@@ -564,49 +564,51 @@ const CodeEditor = () => {
                         </div>
                     )}
 
-                    <Editor
-                        height="100%"
-                        theme={theme}
-                        language={language}
-                        value={code}
-                        onChange={handleEditorChange}
-                        onMount={(editor) => { editorRef.current = editor; }}
-                        options={{
-                            minimap: { enabled: editorSettings.minimap !== false && !isMobile }, // Disable minimap on mobile
-                            fontSize: editorSettings.fontSize,
-                            fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
-                            wordWrap: editorSettings.wordWrap,
-                            lineNumbers: editorSettings.lineNumbers,
-                            tabSize: editorSettings.tabSize,
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                            readOnly: !permissions.canEdit,
-                            domReadOnly: !permissions.canEdit,
-                            suggestOnTriggerCharacters: true,
-                            quickSuggestions: { other: true, comments: true, strings: true },
-                            parameterHints: { enabled: true },
-                            suggestSelection: 'first',
-                            acceptSuggestionOnCommitCharacter: true,
-                            acceptSuggestionOnEnter: 'on',
-                            snippetSuggestions: 'top',
-                            wordBasedSuggestions: true,
-                            formatOnPaste: true,
-                            formatOnType: true,
-                            autoIndent: 'full',
-                            bracketPairColorization: { enabled: editorSettings.bracketPairColorization !== false },
-                            guides: { bracketPairs: true, indentation: true },
-                            hover: { enabled: true },
-                            lightbulb: { enabled: true },
-                            codeLens: true,
-                            folding: true,
-                            foldingStrategy: 'indentation',
-                            showFoldingControls: 'always',
-                            matchBrackets: 'always',
-                            autoClosingBrackets: 'always',
-                            autoClosingQuotes: 'always',
-                            autoSurround: 'languageDefined',
-                        }}
-                    />
+                    <div className="editor-code-wrapper">
+                        <Editor
+                            height="100%"
+                            theme={theme}
+                            language={language}
+                            value={code}
+                            onChange={handleEditorChange}
+                            onMount={(editor) => { editorRef.current = editor; }}
+                            options={{
+                                minimap: { enabled: editorSettings.minimap !== false && !isMobile }, // Disable minimap on mobile
+                                fontSize: editorSettings.fontSize,
+                                fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
+                                wordWrap: editorSettings.wordWrap,
+                                lineNumbers: editorSettings.lineNumbers,
+                                tabSize: editorSettings.tabSize,
+                                scrollBeyondLastLine: false,
+                                automaticLayout: true,
+                                readOnly: !permissions.canEdit,
+                                domReadOnly: !permissions.canEdit,
+                                suggestOnTriggerCharacters: true,
+                                quickSuggestions: { other: true, comments: true, strings: true },
+                                parameterHints: { enabled: true },
+                                suggestSelection: 'first',
+                                acceptSuggestionOnCommitCharacter: true,
+                                acceptSuggestionOnEnter: 'on',
+                                snippetSuggestions: 'top',
+                                wordBasedSuggestions: true,
+                                formatOnPaste: true,
+                                formatOnType: true,
+                                autoIndent: 'full',
+                                bracketPairColorization: { enabled: editorSettings.bracketPairColorization !== false },
+                                guides: { bracketPairs: true, indentation: true },
+                                hover: { enabled: true },
+                                lightbulb: { enabled: true },
+                                codeLens: true,
+                                folding: true,
+                                foldingStrategy: 'indentation',
+                                showFoldingControls: 'always',
+                                matchBrackets: 'always',
+                                autoClosingBrackets: 'always',
+                                autoClosingQuotes: 'always',
+                                autoSurround: 'languageDefined',
+                            }}
+                        />
+                    </div>
 
                     <MemoizedOutputPanel
                         isOpen={output.length > 0}

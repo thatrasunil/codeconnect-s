@@ -38,14 +38,14 @@ function App() {
           <ToastProvider>
             <Router>
               <Navbar />
-              <Suspense fallback={<LoadingSpinner fullScreen={true} message="Loading..." />}>
+              <Suspense fallback={<PaperPlaneSpinner fullScreen={true} text="Loading..." />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/test-spinner" element={
-                    <LoadingSpinner fullScreen={true} message="Loading..." />
+                    <PaperPlaneSpinner fullScreen={true} text="Loading..." />
                   } />
                   <Route path="/dashboard" element={
                     <ProtectedRoute>

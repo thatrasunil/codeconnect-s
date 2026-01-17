@@ -15,15 +15,6 @@ const OutputPanel = ({ isOpen, output, onClose, isRunning, onClear }) => {
             {isOpen && (
                 <div
                     className="output-panel"
-                    style={{
-                        height: '30%', // Occupy bottom 30% of parent when docked
-                        minHeight: '150px',
-                        background: '#1e1e1e', // VS Code terminal dark
-                        borderTop: '1px solid #334155',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        // Remove absolute positioning to allow flexbox in parent to handle it
-                    }}
                 >
                     <div className="output-header" style={{
                         display: 'flex',
