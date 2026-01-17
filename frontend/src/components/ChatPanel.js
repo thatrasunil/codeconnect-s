@@ -376,11 +376,31 @@ const ChatPanel = ({
             <div className={styles.inputContainer}>
                 {replyingTo && (
                     <div className={styles.replyContext}>
-                        <div>
-                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Replying to</span>
-                            <span style={{ fontWeight: 600 }}>{replyingTo.senderName || 'User'}</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+                                <FaReply size={12} style={{ color: '#8b5cf6' }} />
+                                <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
+                                    Replying to {replyingTo.senderName || 'User'}
+                                </span>
+                            </div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                color: '#cbd5e1',
+                                fontStyle: 'italic',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                maxWidth: '90%'
+                            }}>
+                                {replyingTo.type === 'IMAGE' ? '📷 Image' :
+                                    replyingTo.type === 'AUDIO' ? '🎵 Voice Message' :
+                                        replyingTo.type === 'FILE' ? '📎 File' :
+                                            (String(replyingTo.content || '').length > 60
+                                                ? String(replyingTo.content).substring(0, 60) + '...'
+                                                : String(replyingTo.content || ''))}
+                            </div>
                         </div>
-                        <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                        <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}>
                             <FaTimes />
                         </button>
                     </div>
