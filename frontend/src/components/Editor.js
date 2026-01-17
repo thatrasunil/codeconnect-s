@@ -552,6 +552,15 @@ const CodeEditor = () => {
                     </button>
 
                     <button
+                        className={`btn ${showWhiteboard ? 'active' : ''}`}
+                        onClick={() => setShowWhiteboard(!showWhiteboard)}
+                        title="Toggle Whiteboard"
+                        style={{ background: showWhiteboard ? 'rgba(139, 92, 246, 0.2)' : 'transparent', border: '1px solid #475569', color: 'white' }}
+                    >
+                        <FaPencilAlt />
+                    </button>
+
+                    <button
                         className={`btn ${showChat ? 'active' : ''}`}
                         onClick={() => setShowChat(!showChat)}
                         title="Toggle Chat"
@@ -702,6 +711,24 @@ const CodeEditor = () => {
                                 onClose={() => setShowChat(false)}
                             />
                         </div>
+                    </motion.div>
+                )}
+
+                {/* Whiteboard Panel - Desktop */}
+                {!isMobile && showWhiteboard && (
+                    <motion.div
+                        className="editor-sidebar-right"
+                        initial={{ width: 400, opacity: 1 }}
+                        animate={{ width: 400, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                    >
+                        <Whiteboard
+                            roomId={roomId}
+                            isOpen={showWhiteboard}
+                            onClose={() => setShowWhiteboard(false)}
+                            onAddDrawing={handleAddDrawing}
+                            drawings={whiteboardDrawings}
+                        />
                     </motion.div>
                 )}
             </div>
