@@ -12,6 +12,109 @@ import config from '../config';
 import useVoice from '../hooks/useVoice';
 import styles from '../styles/ChatPanelRedesign.module.css';
 
+// Extracted MessageItem Component
+const MessageItem = React.memo(({ msg, user, onReaction, onReply }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const isMe = msg.userId === (user?.username || user?.uid);
+    const isAI = msg.userId === 'Gemini AI';
+    const timestamp = msg.createdAt || msg.timestamp || new Date();
+    const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return (
+        <div
+            className={`${styles.messageRow} ${isMe ? styles.me : styles.other} ${isAI ? styles.ai : ''}`}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+            {/* Sender Info (Always show) */}
+            <div className={styles.senderInfo}>
+                {isAI ? (
+                    <div className={styles.avatar} style={{ background: 'linear-gradient(45deg, #8b5cf6, #ec4899)' }}>
+                        <FaRobot size={12} />
+                    </div>
+                ) : (
+                    <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
+                        {String(msg.senderName || '?').charAt(0).toUpperCase()}
+                    </div>
+                )}
+                <span className={styles.senderName}>{isAI ? 'Gemini AI' : msg.senderName}</span>
+            </div>
+
+            {/* Bubble */}
+            <div className={styles.bubble}>
+                {/* Reply Context */}
+                {msg.parentId && (
+                    <div style={{
+                        fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px',
+                        background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: '4px',
+                        borderLeft: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px'
+                    }}>
+                        <FaReply size={10} />
+                        <em>Replying...</em>
+                    </div>
+                )}
+
+                {/* Content */}
+                {msg.type === 'IMAGE' ? (
+                    <img src={msg.attachmentUrl || msg.fileUrl} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+                ) : msg.type === 'AUDIO' ? (
+                    <audio controls src={msg.attachmentUrl || msg.fileUrl} style={{ maxWidth: '200px' }} />
+                ) : (
+                    <div style={{ whiteSpace: 'pre-wrap' }}>{String(msg.content || '')}</div>
+                )}
+
+                {/* Timestamp */}
+                <div className={styles.msgTime} style={{ textAlign: isMe ? 'right' : 'left', marginTop: '4px', color: 'rgba(255,255,255,0.6)' }}>
+                    {time}
+                </div>
+
+                {/* Actions (Hover Only) */}
+                <AnimatePresence>
+                    {isHovered && (
+                        <motion.div
+                            className={styles.reactionBar}
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            style={{ right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0 }}
+                        >
+                            {['👍', '❤️', '😂', '🔥', '🤔'].map(emoji => (
+                                <button
+                                    key={emoji}
+                                    className={styles.reactionBtn}
+                                    onClick={() => onReaction && onReaction(msg.id, emoji)}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                            <div style={{ width: 1, background: '#475569', margin: '0 2px' }}></div>
+                            <button onClick={() => onReply && onReply(msg)} className={styles.reactionBtn} style={{ color: '#94a3b8' }}>
+                                <FaReply size={12} />
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Reactions Display */}
+            {msg.reactions && msg.reactions.length > 0 && (
+                <div className={styles.activeReactions} style={{ justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+                    {Object.entries(msg.reactions.reduce((acc, curr) => {
+                        const emoji = curr.emoji || curr;
+                        acc[emoji] = (acc[emoji] || 0) + 1;
+                        return acc;
+                    }, {})).map(([emoji, count]) => (
+                        <div key={emoji} className={styles.reactionPill}>
+                            <span>{emoji}</span>
+                            <span style={{ fontWeight: 'bold' }}>{count}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+});
+
 const ChatPanel = ({
     roomId,
     messages,
@@ -160,110 +263,6 @@ const ChatPanel = ({
         }
     };
 
-    // --- Renderers ---
-
-    const MessageItem = ({ msg }) => {
-        const [isHovered, setIsHovered] = useState(false);
-        const isMe = msg.userId === (user?.username || user?.uid);
-        const isAI = msg.userId === 'Gemini AI';
-        const timestamp = msg.createdAt || msg.timestamp || new Date();
-        const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        return (
-            <div
-                className={`${styles.messageRow} ${isMe ? styles.me : styles.other} ${isAI ? styles.ai : ''}`}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-            >
-                {/* Sender Info (Always show) */}
-                <div className={styles.senderInfo}>
-                    {isAI ? (
-                        <div className={styles.avatar} style={{ background: 'linear-gradient(45deg, #8b5cf6, #ec4899)' }}>
-                            <FaRobot size={12} />
-                        </div>
-                    ) : (
-                        <div className={styles.avatar} style={{ background: `hsl(${Math.abs((String(msg.senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)` }}>
-                            {String(msg.senderName || '?').charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    <span className={styles.senderName}>{isAI ? 'Gemini AI' : msg.senderName}</span>
-                </div>
-
-                {/* Bubble */}
-                <div className={styles.bubble}>
-                    {/* Reply Context */}
-                    {msg.parentId && (
-                        <div style={{
-                            fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', marginBottom: '4px',
-                            background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: '4px',
-                            borderLeft: '2px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', gap: '5px'
-                        }}>
-                            <FaReply size={10} />
-                            <em>Replying...</em>
-                        </div>
-                    )}
-
-                    {/* Content */}
-                    {msg.type === 'IMAGE' ? (
-                        <img src={msg.attachmentUrl || msg.fileUrl} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-                    ) : msg.type === 'AUDIO' ? (
-                        <audio controls src={msg.attachmentUrl || msg.fileUrl} style={{ maxWidth: '200px' }} />
-                    ) : (
-                        <div style={{ whiteSpace: 'pre-wrap' }}>{String(msg.content || '')}</div>
-                    )}
-
-                    {/* Timestamp */}
-                    <div className={styles.msgTime} style={{ textAlign: isMe ? 'right' : 'left', marginTop: '4px', color: 'rgba(255,255,255,0.6)' }}>
-                        {time}
-                    </div>
-
-                    {/* Actions (Hover Only) */}
-                    <AnimatePresence>
-                        {isHovered && (
-                            <motion.div
-                                className={styles.reactionBar}
-                                initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                                style={{ right: isMe ? 0 : 'auto', left: isMe ? 'auto' : 0 }}
-                            >
-                                {['👍', '❤️', '😂', '🔥', '🤔'].map(emoji => (
-                                    <button
-                                        key={emoji}
-                                        className={styles.reactionBtn}
-                                        onClick={() => onReaction && onReaction(msg.id, emoji)}
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
-                                <div style={{ width: 1, background: '#475569', margin: '0 2px' }}></div>
-                                <button onClick={() => setReplyingTo(msg)} className={styles.reactionBtn} style={{ color: '#94a3b8' }}>
-                                    <FaReply size={12} />
-                                </button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-
-                {/* Reactions Display */}
-                {msg.reactions && msg.reactions.length > 0 && (
-                    <div className={styles.activeReactions} style={{ justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                        {Object.entries(msg.reactions.reduce((acc, curr) => {
-                            const emoji = curr.emoji || curr;
-                            acc[emoji] = (acc[emoji] || 0) + 1;
-                            return acc;
-                        }, {})).map(([emoji, count]) => (
-                            <div key={emoji} className={styles.reactionPill}>
-                                <span>{emoji}</span>
-                                <span style={{ fontWeight: 'bold' }}>{count}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     if (!isOpen) return null;
 
     const filteredMessages = messages.filter(msg => {
@@ -319,7 +318,7 @@ const ChatPanel = ({
                         <p>No messages yet. Start the conversation!</p>
                     </div>
                 ) : (
-                    filteredMessages.map(msg => <MessageItem key={msg.id || Math.random()} msg={msg} />)
+                    filteredMessages.map(msg => <MessageItem key={msg.id || Math.random()} msg={msg} user={user} onReaction={onReaction} onReply={setReplyingTo} />)
                 )}
 
                 {/* Typing Indicator */}

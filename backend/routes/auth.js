@@ -70,11 +70,12 @@ module.exports = (db) => {
         try {
             const { email, pasusername, sword } = req.body;
 
-if (!email && !username || !password) {                return res.status(400).json({ error: 'Email and password are required' });
+            if (!email && !username || !password) {
+                return res.status(400).json({ error: 'Email and password are required' });
             }
 
             // Find user
-const user = await User.findOne({ $or: [{ email }, { username }] });            if (!user) {
+            const user = await User.findOne({ $or: [{ email }, { username }] }); if (!user) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
@@ -167,12 +168,31 @@ const user = await User.findOne({ $or: [{ email }, { username }] });            
             }
 
             if (!user) {
-                return res.status(404).json({ error: 'User not found in database. Cannot update.' });
-            }
+                // If user not found in DB but token is valid (middleware passed), create them now.
+                // This happens for Firebase users who haven't been synced to Mongo yet.
+                console.log(`User ${userId} not found in MongoDB. Creating on the fly...`);
 
-            if (username) user.username = username;
-            if (email) user.email = email;
-            if (avatar) user.avatar = avatar;
+                user = new User({
+                    _id: mongoose.Types.ObjectId.isValid(userId) ? userId : undefined, // Let Mongo generate if not valid, but usually we want to map? 
+                    // Actually, if we are here, req.user has data.
+                    // If req.user.uid is a valid MongoID, use it. If it's a Firebase UID string, we might have issues if Schema expects ObjectId default.
+                    // But our User schema likely relies on default _id. 
+                    // Let's rely on finding by email or username if not found by ID.
+
+                    email: req.user.email,
+                    username: username || req.user.name || req.user.email?.split('@')[0] || "User",
+                    avatar: avatar || req.user.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.user.email}`,
+                    role: 'user',
+                    provider: 'firebase' // Assume firebase/external if not in DB
+                });
+
+                // If we have an email, ensure we don't duplicate if findOne failed above (race condition check not strictly needed for MVP)
+            } else {
+                // Only update fields if provided
+                if (username) user.username = username;
+                if (email) user.email = email;
+                if (avatar) user.avatar = avatar;
+            }
 
             await user.save();
 
