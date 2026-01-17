@@ -15,25 +15,34 @@ const Whiteboard = ({ roomId, isOpen, onClose, onAddDrawing, drawings = [] }) =>
     const colors = ['#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFFFFF'];
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        const handleResize = () => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const container = canvas.parentElement;
+            const ctx = canvas.getContext('2d');
 
-        const ctx = canvas.getContext('2d');
-        const container = canvas.parentElement;
+            // Save current image data if needed, or just redraw from history
+            // Since we have 'drawings' prop, we can just redraw from that source of truth
 
-        // Set canvas size
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
 
-        // Set white background
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Set white background
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Redraw all drawings from Firestore
-        drawings.forEach(drawing => {
-            drawAction(ctx, drawing);
-        });
-    }, [drawings]);
+            // Redraw all drawings
+            drawings.forEach(drawing => {
+                drawAction(ctx, drawing);
+            });
+        };
+
+        // Initial draw
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [drawings, isOpen]); // Add isOpen dependency to ensure correct sizing when opened
 
     const drawAction = (ctx, action) => {
         if (!ctx || !action) return;
