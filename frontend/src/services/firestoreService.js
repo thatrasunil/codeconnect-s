@@ -504,3 +504,63 @@ export const fetchUserRooms = async (userId) => {
         return [];
     }
 };
+
+/**
+ * Subscribe to whiteboard drawings
+ */
+export const subscribeToWhiteboard = (roomId, callback) => {
+    const q = query(
+        collection(db, "whiteboard"),
+        where("roomId", "==", roomId),
+        orderBy("timestamp", "asc")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const drawings = [];
+        snapshot.forEach((doc) => {
+            drawings.push({ id: doc.id, ...doc.data() });
+        });
+        callback(drawings);
+    }, (error) => {
+        console.error("❌ Whiteboard subscription error:", error);
+    });
+};
+
+/**
+ * Add a drawing action to whiteboard
+ */
+export const addWhiteboardAction = async (roomId, action) => {
+    try {
+        await addDoc(collection(db, "whiteboard"), {
+            roomId,
+            ...action,
+            timestamp: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("❌ Error adding whiteboard action:", error);
+    }
+};
+
+/**
+ * Clear whiteboard
+ */
+export const clearWhiteboard = async (roomId) => {
+    try {
+        const q = query(
+            collection(db, "whiteboard"),
+            where("roomId", "==", roomId)
+        );
+        const snapshot = await getDocs(q);
+
+        const deletePromises = [];
+        snapshot.forEach((doc) => {
+            deletePromises.push(deleteDoc(doc.ref));
+        });
+
+        await Promise.all(deletePromises);
+        console.log("✅ Whiteboard cleared");
+    } catch (error) {
+        console.error("❌ Error clearing whiteboard:", error);
+    }
+};
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars } from 'react-icons/fa';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars, FaPencilAlt } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Editor.css';
 
@@ -10,6 +10,7 @@ import ChatPanel from './ChatPanel';
 import ProblemPanel from './ProblemPanel';
 import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
+import Whiteboard from './Whiteboard';
 import config from '../config';
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
 import {
@@ -24,7 +25,10 @@ import {
     updateRoomCode,
     updateTypingStatus,
     updateUserStatus,
-    toggleMessageReaction
+    toggleMessageReaction,
+    subscribeToWhiteboard,
+    addWhiteboardAction,
+    clearWhiteboard
 } from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
@@ -66,6 +70,7 @@ const CodeEditor = () => {
     // Panels
     const [showChat, setShowChat] = useState(true);
     const [showInterview, setShowInterview] = useState(!!initialQuestionId);
+    const [showWhiteboard, setShowWhiteboard] = useState(false);
     const [aiMode, setAiMode] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -88,6 +93,7 @@ const CodeEditor = () => {
     const [participants, setParticipants] = useState([]);
     const [messages, setMessages] = useState([]);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
+    const [whiteboardDrawings, setWhiteboardDrawings] = useState([]);
     const [userRole, setUserRole] = useState('CANDIDATE');
 
     // For now assume everyone can edit if they have access
@@ -129,6 +135,7 @@ const CodeEditor = () => {
             const myUserId = user?.username || 'Guest';
             setCurrentTypingUsers(users.filter(u => u !== myUserId));
         });
+        const unsubWhiteboard = subscribeToWhiteboard(roomId, setWhiteboardDrawings);
 
         // Join the room
         let myUser = user;
@@ -145,6 +152,7 @@ const CodeEditor = () => {
             unsubMessages();
             unsubMembers();
             unsubTyping();
+            unsubWhiteboard();
             // Optional: Leave room / mark offline
         };
     }, [roomId, user]); // Removed unnecessary deps
@@ -385,6 +393,18 @@ const CodeEditor = () => {
             }
         } catch (err) {
             console.error("Failed to add reaction", err);
+        }
+    };
+
+    const handleAddDrawing = async (action) => {
+        try {
+            if (action.type === 'clear') {
+                await clearWhiteboard(roomId);
+            } else {
+                await addWhiteboardAction(roomId, action);
+            }
+        } catch (err) {
+            console.error("Failed to add drawing:", err);
         }
     };
 
