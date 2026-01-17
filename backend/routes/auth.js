@@ -68,10 +68,10 @@ module.exports = (db) => {
      */
     router.post('/login', async (req, res) => {
         try {
-            const { email, pasusername, sword } = req.body;
+            const { email, username, password } = req.body;
 
-            if (!email && !username || !password) {
-                return res.status(400).json({ error: 'Email and password are required' });
+            if ((!email && !username) || !password) {
+                return res.status(400).json({ error: 'Email/Username and password are required' });
             }
 
             // Find user
@@ -183,6 +183,7 @@ module.exports = (db) => {
                     username: username || req.user.name || req.user.email?.split('@')[0] || "User",
                     avatar: avatar || req.user.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.user.email}`,
                     role: 'user',
+                    password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8), // Dummy password to satisfy required field
                     provider: 'firebase' // Assume firebase/external if not in DB
                 });
 
