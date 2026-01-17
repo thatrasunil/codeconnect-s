@@ -253,9 +253,12 @@ const config = {
 2. Ask questions or request explanations
 3. Use "Explain" button for selected code analysis
 
-## 🆕 Recent Updates (v3.0.0)
+## 🆕 Recent Updates (v3.1.0)
 
 ### Major Features ✅
+- ✅ **Collaborative Whiteboard**: Real-time shared canvas with drawing tools (pen, shapes), color picker, and instant sync across all users.
+- ✅ **Advanced Voice Chat**: Integrated voice messaging with record, pause, resume, and cancel capabilities.
+- ✅ **Session Management**: "End Session" functionality to securely wipe room data and improved connection persistence.
 - ✅ **Google Gemini AI Integration**: Real AI-powered code generation, debugging, and testing
 - ✅ **Firebase Migration**: Complete transition from backend API to Firestore
 - ✅ **Problem Solver Mode**: Conditional problem panel display
@@ -269,6 +272,7 @@ const config = {
 - ✅ Problem Library with beginner to advanced challenges
 
 ### UI/UX Improvements ✅
+- ✅ **Enhanced Editor Toolbar**: Improved layout and visibility for all screen sizes
 - ✅ Responsive layouts for Dashboard, Problems, and all Advanced Tools
 - ✅ Responsive Landing page with adaptive 3D elements
 - ✅ Glassmorphic design system
