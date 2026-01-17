@@ -423,7 +423,21 @@ const CodeEditor = () => {
                                     const newLang = e.target.value;
                                     setLanguage(newLang);
                                     localStorage.setItem(`editor_language_${roomId}`, newLang);
-                                    updateRoomCode(roomId, code, newLang);
+
+                                    // Language Template Logic
+                                    const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.id === language);
+                                    const newLangObj = SUPPORTED_LANGUAGES.find(l => l.id === newLang);
+
+                                    const isDefaultTemplate = currentLangObj && code.trim() === currentLangObj.template?.trim();
+                                    const isEmpty = !code || code.trim() === '' || code === '// Write your code here...';
+
+                                    if (isEmpty || isDefaultTemplate) {
+                                        const newCode = newLangObj?.template || '';
+                                        setCode(newCode);
+                                        updateRoomCode(roomId, newCode, newLang);
+                                    } else {
+                                        updateRoomCode(roomId, code, newLang);
+                                    }
                                 }}
                                 style={{
                                     background: '#334155',
@@ -695,9 +709,24 @@ const CodeEditor = () => {
                                 <select
                                     value={language}
                                     onChange={(e) => {
-                                        setLanguage(e.target.value);
-                                        localStorage.setItem(`editor_language_${roomId}`, e.target.value);
-                                        updateRoomCode(roomId, code, e.target.value);
+                                        const newLang = e.target.value;
+                                        setLanguage(newLang);
+                                        localStorage.setItem(`editor_language_${roomId}`, newLang);
+
+                                        // Language Template Logic
+                                        const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.id === language);
+                                        const newLangObj = SUPPORTED_LANGUAGES.find(l => l.id === newLang);
+
+                                        const isDefaultTemplate = currentLangObj && code.trim() === currentLangObj.template?.trim();
+                                        const isEmpty = !code || code.trim() === '' || code === '// Write your code here...';
+
+                                        if (isEmpty || isDefaultTemplate) {
+                                            const newCode = newLangObj?.template || '';
+                                            setCode(newCode);
+                                            updateRoomCode(roomId, newCode, newLang);
+                                        } else {
+                                            updateRoomCode(roomId, code, newLang);
+                                        }
                                     }}
                                     style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
                                 >
