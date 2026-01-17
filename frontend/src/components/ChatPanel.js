@@ -295,34 +295,92 @@ const ChatPanel = ({
     };
 
     const startRecordingAudio = async () => {
-        if (!user) return;
+        if (!user) {
+            toast.error("Please login to send voice messages");
+            return;
+        }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            const chunks = [];
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'audio/webm' });
-                const formData = new FormData(); formData.append('file', blob, 'voice.webm');
-                const token = localStorage.getItem('token');
-                const res = await fetch(`${config.BACKEND_URL}/api/upload`, {
-                    method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    onSendMessage("Voice Message", 'AUDIO', data.url, replyingTo?.id);
-                    setReplyingTo(null);
+
+            // Check for supported audio formats
+            let mimeType = 'audio/webm';
+            if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                    mimeType = 'audio/mp4';
+                } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+                    mimeType = 'audio/ogg';
+                } else {
+                    mimeType = ''; // Let browser choose
                 }
+            }
+
+            const options = mimeType ? { mimeType } : {};
+            const recorder = new MediaRecorder(stream, options);
+            const chunks = [];
+
+            recorder.ondataavailable = e => {
+                if (e.data.size > 0) {
+                    chunks.push(e.data);
+                }
+            };
+
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: mimeType || 'audio/webm' });
+
+                // Stop all tracks
+                stream.getTracks().forEach(t => t.stop());
+
+                // Upload the audio
+                try {
+                    const formData = new FormData();
+                    const extension = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+                    formData.append('file', blob, `voice_${Date.now()}.${extension}`);
+
+                    const token = localStorage.getItem('token');
+                    const res = await fetch(`${config.BACKEND_URL}/api/upload`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        onSendMessage("Voice Message", 'AUDIO', data.url, replyingTo?.id);
+                        setReplyingTo(null);
+                        toast.success("Voice message sent!");
+                    } else {
+                        toast.error("Failed to upload voice message");
+                    }
+                } catch (uploadErr) {
+                    console.error("Upload error:", uploadErr);
+                    toast.error("Failed to upload voice message");
+                }
+            };
+
+            recorder.onerror = (event) => {
+                console.error("Recording error:", event.error);
+                toast.error("Recording failed");
                 stream.getTracks().forEach(t => t.stop());
             };
+
             recorder.start();
             setMediaRecorder(recorder);
             setIsRecording(true);
-        } catch (err) { toast.error("Mic access denied"); }
+            toast.info("Recording... Hold to continue");
+        } catch (err) {
+            console.error("Microphone error:", err);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                toast.error("Microphone access denied. Please allow microphone permissions.");
+            } else if (err.name === 'NotFoundError') {
+                toast.error("No microphone found");
+            } else {
+                toast.error("Failed to start recording");
+            }
+        }
     };
 
     const stopRecordingAudio = () => {
-        if (mediaRecorder?.state !== 'inactive') {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
             setIsRecording(false);
         }
