@@ -141,6 +141,50 @@ class ExecuteCodeView(APIView):
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
 
+            elif language == 'c':
+                # Create temporary C file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.c', delete=False, encoding='utf-8') as f:
+                    f.write(code)
+                    c_path = f.name
+                    # Output executable path (remove .c and add .exe for Windows or nothing for Linux)
+                    # For safety, we explicitly use a new temp name for exe
+                    exe_path = c_path[:-2] + '.exe'
+                
+                try:
+                    # Compile
+                    compile_process = subprocess.run(
+                        ['gcc', c_path, '-o', exe_path],
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    if compile_process.returncode != 0:
+                        return {
+                            'output': '',
+                            'error': f"Compilation Error:\n{compile_process.stderr}",
+                            'runtime': 0
+                        }
+                    
+                    # Execute
+                    run_process = subprocess.run(
+                        [exe_path],
+                        input=str(input_data) if input_data else '',
+                        text=True,
+                        capture_output=True,
+                        timeout=TIMEOUT
+                    )
+                    
+                    return {
+                        'output': run_process.stdout,
+                        'error': run_process.stderr,
+                        'runtime': 0
+                    }
+                finally:
+                    if os.path.exists(c_path):
+                        os.remove(c_path)
+                    if os.path.exists(exe_path):
+                        os.remove(exe_path)
+
             else:
                 return {'output': '', 'error': f'Language {language} not supported', 'runtime': 0}
 

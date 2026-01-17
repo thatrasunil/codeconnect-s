@@ -9,6 +9,11 @@ export const SUPPORTED_LANGUAGES = [
         name: 'Python',
         template: `# Write your Python code here\nprint("Hello, World!")\n\ndef main():\n    # Your code goes here\n    pass\n\nif __name__ == "__main__":\n    main()`
     },
+    {
+        id: 'c',
+        name: 'C',
+        template: `// Write your C code here\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`
+    },
 ];
 
 export const SUPPORTED_THEMES = [
