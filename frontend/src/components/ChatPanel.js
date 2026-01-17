@@ -17,8 +17,24 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages })
     const [isHovered, setIsHovered] = useState(false);
     const isMe = msg.userId === (user?.username || user?.uid);
     const isAI = msg.userId === 'Gemini AI';
-    const timestamp = msg.createdAt || msg.timestamp || new Date();
-    const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Helper to safely get Date object from Firestore Timestamp or other formats
+    const getMessageDate = (msg) => {
+        const ts = msg.createdAt || msg.timestamp;
+        if (!ts) return new Date();
+        // Check if it's a Firestore Timestamp (has toDate method)
+        if (ts && typeof ts.toDate === 'function') {
+            return ts.toDate();
+        }
+        // Otherwise try standard Date constructor (for ISO strings or numbers)
+        return new Date(ts);
+    };
+
+    const timestamp = getMessageDate(msg);
+    // Check if date is valid
+    const isValidDate = !isNaN(timestamp.getTime());
+    const time = isValidDate
+        ? timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '';
 
     // Find parent message if this is a reply
     const parentMessage = msg.parentId && allMessages ? allMessages.find(m => m.id === msg.parentId) : null;
