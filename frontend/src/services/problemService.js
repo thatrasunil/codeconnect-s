@@ -17,7 +17,9 @@ class ProblemService {
                 if (staticProblem) return staticProblem;
                 throw new Error('Failed to fetch problem');
             }
-            return await response.json();
+            const remote = await response.json();
+            const local = QUESTIONS_DATA.find(q => q.id === remote.id);
+            return local ? { ...local, ...remote } : remote;
         } catch (error) {
             console.warn('Backend unavailable or problem not found, checking static data:', error);
             const staticProblem = QUESTIONS_DATA.find(q => q.id === problemId);
@@ -44,7 +46,13 @@ class ProblemService {
 
             // If API returns empty, valid but empty, fallback? 
             // Or mostly if it errors.
-            if (data && data.length > 0) return data;
+            if (data && data.length > 0) {
+                // Merge with static data to ensure we have content/topics if backend is incomplete
+                return data.map(p => {
+                    const local = QUESTIONS_DATA.find(q => q.id === p.id);
+                    return local ? { ...local, ...p } : p;
+                });
+            }
 
             // If API returns empty list, maybe we want static data? 
             // Let's assume user prefers static if API is empty/error.
