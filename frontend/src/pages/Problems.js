@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaPlay, FaSearch, FaCode, FaCheckCircle, FaStar, FaLayerGroup } from 'react-icons/fa';
+import { FaPlay, FaSearch, FaCode, FaCheckCircle, FaStar, FaLayerGroup, FaUsers, FaFilter } from 'react-icons/fa';
 import { createRoom } from '../services/firestoreService';
 import { useAuth } from '../contexts/AuthContext';
-
 
 
 import ProblemService from '../services/problemService';
@@ -13,8 +12,10 @@ const Problems = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [questions, setQuestions] = useState([]);
+    const [filteredQuestions, setFilteredQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedTopic, setSelectedTopic] = useState('All');
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -22,6 +23,7 @@ const Problems = () => {
             try {
                 const data = await ProblemService.fetchAllProblems();
                 setQuestions(data);
+                setFilteredQuestions(data);
             } catch (err) {
                 console.error("Failed to load problems:", err);
                 setError("Failed to load problems. Please try again later.");
@@ -31,6 +33,22 @@ const Problems = () => {
         };
         loadProblems();
     }, []);
+
+    useEffect(() => {
+        let result = questions;
+
+        // 1. Search Filter
+        if (searchTerm) {
+            result = result.filter(q => q.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        }
+
+        // 2. Topic Filter
+        if (selectedTopic !== 'All') {
+            result = result.filter(q => q.topic === selectedTopic);
+        }
+
+        setFilteredQuestions(result);
+    }, [searchTerm, selectedTopic, questions]);
 
     const handleSolve = async (question) => {
         try {
@@ -44,7 +62,6 @@ const Problems = () => {
 
             const newRoom = await createRoom(roomData);
             if (newRoom.id) {
-                // Also assign the problem to the room in the backend to ensure linkage
                 try {
                     await ProblemService.assignProblemToRoom(question.id, newRoom.id);
                 } catch (assignErr) {
@@ -66,40 +83,79 @@ const Problems = () => {
         { title: 'Advanced', description: 'Master sophisticated data structures and optimization.', difficulty: 'Hard', color: '#ef4444' }
     ];
 
+    // Extract unique topics
+    const topics = ['All', ...new Set(questions.map(q => q.topic).filter(Boolean))];
+
     return (
         <div style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', minHeight: 'calc(100vh - 80px)' }}>
 
-            {/* Minimal Header */}
-            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            {/* Header with Team Challenge CTA */}
+            <div style={{ textAlign: 'center', marginBottom: '3rem', position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', position: 'absolute', top: 0, right: 0, width: '100%' }}>
+                    <button
+                        onClick={() => navigate('/teams')}
+                        className="glass-card"
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '8px',
+                            padding: '10px 20px', cursor: 'pointer',
+                            background: 'rgba(99, 102, 241, 0.2)', border: '1px solid #6366f1',
+                            color: 'white', fontWeight: 'bold'
+                        }}
+                    >
+                        <FaUsers /> Team Challenges
+                    </button>
+                </div>
+
                 <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem', background: 'linear-gradient(to right, #f59e0b, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Learning Path
+                    Problem Library
                 </h1>
                 <p style={{ color: '#94a3b8', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
-                    A structured curriculum to take you from beginner to expert.
+                    Practice algorithms, data structures, and prepare for interviews.
                 </p>
-                <div style={{ position: 'relative', maxWidth: '500px', margin: '2rem auto 0' }}>
-                    <FaSearch style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                    <input
-                        type="text"
-                        placeholder="Search any problem..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px',
-                            background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'white',
-                            outline: 'none', fontSize: '1rem'
-                        }}
-                    />
+
+                {/* Search and Filter Bar */}
+                <div style={{ margin: '2rem auto 0', maxWidth: '800px', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
+                        <FaSearch style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                        <input
+                            type="text"
+                            placeholder="Search problems..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%', padding: '1rem 1rem 1rem 3rem', borderRadius: '12px',
+                                background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'white',
+                                outline: 'none', fontSize: '1rem'
+                            }}
+                        />
+                    </div>
+
+                    {/* Topic Filter */}
+                    <div style={{ position: 'relative', minWidth: '200px' }}>
+                        <FaFilter style={{ position: 'absolute', left: '1.2rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                        <select
+                            value={selectedTopic}
+                            onChange={(e) => setSelectedTopic(e.target.value)}
+                            style={{
+                                width: '100%', padding: '1rem 2rem 1rem 3rem', borderRadius: '12px',
+                                background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: 'white',
+                                outline: 'none', fontSize: '1rem', appearance: 'none', cursor: 'pointer'
+                            }}
+                        >
+                            {topics.map(topic => (
+                                <option key={topic} value={topic} style={{ background: '#1e293b' }}>
+                                    {topic}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 
             {/* Sections */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem' }}>
                 {sections.map(section => {
-                    const sectionQuestions = questions.filter(q =>
-                        q.difficulty === section.difficulty &&
-                        q.title.toLowerCase().includes(searchTerm.toLowerCase())
-                    );
+                    const sectionQuestions = filteredQuestions.filter(q => q.difficulty === section.difficulty);
 
                     if (sectionQuestions.length === 0) return null;
 
