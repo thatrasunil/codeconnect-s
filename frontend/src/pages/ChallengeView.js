@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { teamService } from '../services/teamService';
-import { problemsData } from '../data/problemsData';
+import { QUESTIONS_DATA as problemsData } from '../data/problemsData';
 import './Dashboard.css';
 
 const ChallengeView = () => {
