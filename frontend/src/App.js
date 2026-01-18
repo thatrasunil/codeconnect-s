@@ -27,6 +27,11 @@ const CodeGen = lazy(() => import('./pages/CodeGen'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
 const ChatWidget = lazy(() => import('./components/ChatWidget'));
 
+// Team Pages
+const Teams = lazy(() => import('./pages/Teams'));
+const TeamDashboard = lazy(() => import('./pages/TeamDashboard'));
+const ChallengeView = lazy(() => import('./pages/ChallengeView'));
+
 function App() {
 
 
