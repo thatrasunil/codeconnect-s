@@ -174,7 +174,6 @@ module.exports = (db) => {
             const { teamId } = req.params;
             const snapshot = await db.collection('teamChallenges')
                 .where('teamId', '==', teamId)
-                .orderBy('createdAt', 'desc')
                 .get();
 
             const challenges = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
