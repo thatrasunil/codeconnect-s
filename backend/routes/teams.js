@@ -11,6 +11,7 @@ module.exports = (db) => {
     router.post('/create', async (req, res) => {
         try {
             const { name, ownerId, description, isPublic } = req.body;
+            console.log('Create Team Request Body:', req.body); // DEBUG LOG
 
             if (!name || !ownerId) {
                 return res.status(400).json({ error: 'Team name and ownerId are required' });
@@ -101,7 +102,6 @@ module.exports = (db) => {
             // Efficient query using array-contains
             const snapshot = await db.collection('teams')
                 .where('memberIds', 'array-contains', userId)
-                .orderBy('createdAt', 'desc')
                 .get();
 
             const teams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
