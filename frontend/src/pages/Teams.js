@@ -23,7 +23,7 @@ const Teams = () => {
 
     const loadTeams = async () => {
         try {
-            const data = await teamService.getMyTeams(user.uid);
+            const data = await teamService.getMyTeams(user.id);
             setTeams(data);
         } catch (err) {
             console.error(err);
@@ -36,7 +36,7 @@ const Teams = () => {
         e.preventDefault();
         if (!joinTeamId) return;
         try {
-            await teamService.joinTeam(joinTeamId, user.uid);
+            await teamService.joinTeam(joinTeamId, user.id);
             setJoinTeamId('');
             loadTeams();
             alert('Joined team successfully!');
@@ -49,7 +49,7 @@ const Teams = () => {
         e.preventDefault();
         if (!newTeamName) return;
         try {
-            await teamService.createTeam(newTeamName, user.uid);
+            await teamService.createTeam(newTeamName, user.id);
             setNewTeamName('');
             setShowCreateModal(false);
             loadTeams();
@@ -155,7 +155,7 @@ const Teams = () => {
                                 <div style={{ width: '50px', height: '50px', borderRadius: '12px', background: `linear-gradient(135deg, ${getRandomColor(team.name)}, ${getRandomColor(team.id)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
                                     {team.name.charAt(0).toUpperCase()}
                                 </div>
-                                {team.ownerId === user.uid && (
+                                {team.ownerId === user.id && (
                                     <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                         <FaCrown size={10} /> OWNER
                                     </span>
