@@ -12,6 +12,11 @@ const CreateChallengeModal = ({ teamId, onClose, onCreated }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Filter states
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterTopic, setFilterTopic] = useState('All');
+    const [filterDifficulty, setFilterDifficulty] = useState('All');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -86,25 +91,61 @@ const CreateChallengeModal = ({ teamId, onClose, onCreated }) => {
                     </div>
 
                     <div className="form-group problem-selection">
-                        <label>Select Problems ({selectedProblems.length})</label>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <label style={{ margin: 0 }}>Select Problems ({selectedProblems.length})</label>
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                                <button type="button" className="btn-xs" onClick={() => setSelectedProblems(QUESTIONS_DATA.map(p => p.id))}>Select All</button>
+                                <button type="button" className="btn-xs" onClick={() => setSelectedProblems([])}>Clear</button>
+                            </div>
+                        </div>
+
+                        {/* Filters */}
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                            <input
+                                type="text"
+                                placeholder="Search problems..."
+                                className="glass-input"
+                                style={{ flex: 1, padding: '5px 10px' }}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                            <select className="glass-select" onChange={(e) => setFilterTopic(e.target.value)} style={{ padding: '5px' }}>
+                                <option value="All">All Topics</option>
+                                {[...new Set(QUESTIONS_DATA.map(p => p.topic))].map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <select className="glass-select" onChange={(e) => setFilterDifficulty(e.target.value)} style={{ padding: '5px' }}>
+                                <option value="All">All Levels</option>
+                                <option value="Easy">Easy</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Hard">Hard</option>
+                            </select>
+                        </div>
+
                         <div className="problems-list-scroll">
-                            {QUESTIONS_DATA.map(problem => (
-                                <div
-                                    key={problem.id}
-                                    className={`problem-item ${selectedProblems.includes(problem.id) ? 'selected' : ''}`}
-                                    onClick={() => toggleProblem(problem.id)}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedProblems.includes(problem.id)}
-                                        readOnly
-                                    />
-                                    <span className="problem-title">{problem.title}</span>
-                                    <span className={`difficulty-tag ${problem.difficulty.toLowerCase()}`}>
-                                        {problem.difficulty}
-                                    </span>
-                                </div>
-                            ))}
+                            {QUESTIONS_DATA
+                                .filter(p => {
+                                    const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
+                                    const matchesTopic = filterTopic === 'All' || p.topic === filterTopic;
+                                    const matchesDiff = filterDifficulty === 'All' || p.difficulty === filterDifficulty;
+                                    return matchesSearch && matchesTopic && matchesDiff;
+                                })
+                                .map(problem => (
+                                    <div
+                                        key={problem.id}
+                                        className={`problem-item ${selectedProblems.includes(problem.id) ? 'selected' : ''}`}
+                                        onClick={() => toggleProblem(problem.id)}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedProblems.includes(problem.id)}
+                                            readOnly
+                                        />
+                                        <span className="problem-title">{problem.title}</span>
+                                        <span style={{ fontSize: '0.8em', color: '#aaa', marginRight: '10px' }}>{problem.topic}</span>
+                                        <span className={`difficulty-tag ${problem.difficulty.toLowerCase()}`}>
+                                            {problem.difficulty}
+                                        </span>
+                                    </div>
+                                ))}
                         </div>
                     </div>
 
