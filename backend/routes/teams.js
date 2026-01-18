@@ -22,12 +22,15 @@ module.exports = (db) => {
                 description: description || '',
                 isPublic: isPublic !== false, // Default to true
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                // Map for details (roles, join date)
                 members: {
                     [ownerId]: {
                         role: 'owner',
                         joinedAt: new Date().toISOString()
                     }
                 },
+                // Array for efficient querying "My Teams"
+                memberIds: [ownerId],
                 memberCount: 1
             };
 
@@ -71,6 +74,7 @@ module.exports = (db) => {
                         role: 'member',
                         joinedAt: new Date().toISOString()
                     },
+                    memberIds: admin.firestore.FieldValue.arrayUnion(userId),
                     memberCount: admin.firestore.FieldValue.increment(1)
                 });
             });
@@ -84,7 +88,7 @@ module.exports = (db) => {
 
     /**
      * GET /api/teams/my-teams
-     * Get teams for a user
+     * Get teams for a user (Owned + Joined)
      */
     router.get('/my-teams', async (req, res) => {
         try {
@@ -94,31 +98,13 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'userId is required' });
             }
 
-            // Firestore doesn't support querying keys of a map effectively without complex indexing
-            // A better schema for querying "my teams" is to have a subcollection or array of member IDs
-            // However, since we defined members as a map, we might need a separate index or query.
-            // Alternative: `where('members.' + userId + '.role', '>=', '')` works if we index, but dynamic keys are bad for indexing.
-            // Let's rely on a separate 'memberIds' array for querying if the map is used for details.
-            // Actually, for this implementation, let's fetch all teams (if small scale) or refine schema.
-            // REFINED SCHEMA STRATEGY: Add `memberIds` array to `teams` doc for efficient querying.
+            // Efficient query using array-contains
+            const snapshot = await db.collection('teams')
+                .where('memberIds', 'array-contains', userId)
+                .orderBy('createdAt', 'desc')
+                .get();
 
-            // Since we just created the schema, let's assume we add `memberIds` array on create/join.
-            // Updated Create/Join logic below implicitly, but for now, let's query all teams and filter in memory (NOT SCALABLE but works for MVP).
-            // OR better: Create a composite query if possible.
-
-            // Re-visiting 'create': I'll add `memberIds` array there too.
-            // But since I already wrote the 'create' endpoint above without it, I should fix it.
-            // Wait, I can't look back and edit the block I just wrote in the same tool call? 
-            // Correct. I will assume I'll fix the data structure in a follow-up or use a client-side filter for now if data is small.
-            // Actually, I'll filter by ownerId for now as a fallback, and implement a better query later.
-
-            // MVP Approach: Query teams where ownerId == userId (Owned teams)
-            // AND potentially we need a separate collection `teamMembers` for scalable many-to-many.
-            // For now, let's stick to the prompt's simplicity. I'll modify `create` and `join` in the next iteration to maintain `memberIds` array.
-
-            const ownedTeams = await db.collection('teams').where('ownerId', '==', userId).get();
-            const teams = [];
-            ownedTeams.forEach(doc => teams.push({ id: doc.id, ...doc.data() }));
+            const teams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
             res.json(teams);
         } catch (error) {

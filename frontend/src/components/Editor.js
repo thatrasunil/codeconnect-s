@@ -297,13 +297,16 @@ const CodeEditor = () => {
             // Import dynamically to avoid circular dependency issues if any
             const ProblemService = (await import('../services/problemService')).default;
 
+            const teamChallengeId = queryParams.get('teamChallengeId');
+
             const result = await ProblemService.submitSolution({
                 problemId: initialQuestionId,
                 code,
                 language,
                 userId: user?.id || user?.uid || 'guest',
                 userName: user?.username || 'Guest',
-                roomId
+                roomId,
+                teamChallengeId
             });
 
             if (result.success) {

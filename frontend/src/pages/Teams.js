@@ -11,6 +11,7 @@ const Teams = () => {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newTeamName, setNewTeamName] = useState('');
+    const [joinTeamId, setJoinTeamId] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -26,6 +27,18 @@ const Teams = () => {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleJoinTeam = async () => {
+        if (!joinTeamId) return;
+        try {
+            await teamService.joinTeam(joinTeamId, user.uid);
+            setJoinTeamId('');
+            loadTeams();
+            alert('Joined team successfully!');
+        } catch (err) {
+            alert('Failed to join team: ' + err.message);
         }
     };
 
@@ -46,9 +59,22 @@ const Teams = () => {
             <div className="hero-section">
                 <h1 className="hero-title">My Teams</h1>
                 <p className="hero-subtitle">Collaborate and compete with your friends.</p>
-                <button className="primary-btn" onClick={() => setShowCreateModal(true)}>
-                    + Create New Team
-                </button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '1rem' }}>
+                    <button className="primary-btn" onClick={() => setShowCreateModal(true)}>
+                        + Create New Team
+                    </button>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <input
+                            type="text"
+                            placeholder="Enter Team ID to Join"
+                            className="glass-input"
+                            value={joinTeamId}
+                            onChange={(e) => setJoinTeamId(e.target.value)}
+                            style={{ maxWidth: '180px' }}
+                        />
+                        <button className="secondary-btn" onClick={handleJoinTeam}>Join</button>
+                    </div>
+                </div>
             </div>
 
             <div className="dashboard-content">
@@ -58,6 +84,17 @@ const Teams = () => {
                     <div className="glass-card" style={{ textAlign: 'center', padding: '2rem' }}>
                         <h2>No Teams Found</h2>
                         <p>Join a team or create one to get started!</p>
+                        <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <input
+                                type="text"
+                                placeholder="Enter Invite Code / Team ID"
+                                className="glass-input"
+                                value={joinTeamId}
+                                onChange={(e) => setJoinTeamId(e.target.value)}
+                                style={{ maxWidth: '200px' }}
+                            />
+                            <button className="secondary-btn" onClick={handleJoinTeam}>Join</button>
+                        </div>
                     </div>
                 ) : (
                     <div className="rooms-grid">

@@ -4,9 +4,14 @@ import { teamService } from '../services/teamService';
 import { QUESTIONS_DATA as problemsData } from '../data/problemsData';
 import './Dashboard.css';
 
+import { createRoom } from '../services/firestoreService';
+import { useAuth } from '../contexts/AuthContext';
+import ProblemService from '../services/problemService';
+
 const ChallengeView = () => {
     const { teamId, challengeId } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [leaderboard, setLeaderboard] = useState([]);
     const [challengeProblems, setChallengeProblems] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,12 +24,6 @@ const ChallengeView = () => {
 
     const loadData = async () => {
         try {
-            // 1. Get Leaderboard (which we also partially assume gives us challenge context via backend, but let's be explicit)
-            // Actually, we need challenge details first to get the problem IDs.
-            // But our service `getChallenges` returns all. We don't have a single `getChallenge`.
-            // Let's assume `getChallenges` is cached or fast enough to just filter, or add `getChallenge` endpoint.
-            // For now, let's just use `getChallenges` and filter related to the team.
-
             const challenges = await teamService.getChallenges(teamId);
             const challenge = challenges.find(c => c.id === challengeId);
 
@@ -34,7 +33,6 @@ const ChallengeView = () => {
                 setChallengeProblems(relevantProblems);
             }
 
-            // 2. Get Leaderboard
             const lbData = await teamService.getLeaderboard(challengeId);
             setLeaderboard(lbData);
         } catch (err) {
@@ -44,9 +42,28 @@ const ChallengeView = () => {
         }
     };
 
-    const navigateToProblem = (problemId) => {
-        // Pass teamChallengeId via query params so Editor knows to track it
-        navigate(`/problems/${problemId}?teamChallengeId=${challengeId}`);
+    const navigateToProblem = async (problemId) => {
+        try {
+            // Find problem details to get language/title
+            const problem = problemsData.find(p => p.id === problemId);
+
+            const roomData = {
+                title: `Challenge: ${problem?.title || 'Problem'}`,
+                ownerId: user?.id || user?.uid || 'guest',
+                questionId: problemId,
+                language: problem?.language || 'javascript',
+                isPublic: false
+            };
+
+            const newRoom = await createRoom(roomData);
+            if (newRoom.id) {
+                // Link problem to room implicitly if needed, but mainly nav
+                navigate(`/room/${newRoom.id}?questionId=${problemId}&teamChallengeId=${challengeId}`);
+            }
+        } catch (err) {
+            console.error("Failed to start challenge session:", err);
+            alert("Could not start session.");
+        }
     };
 
     return (
