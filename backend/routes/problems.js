@@ -169,6 +169,7 @@ module.exports = (db) => {
             // Save solution to Firestore
             const solutionData = {
                 roomId: roomId || null,
+                teamChallengeId: req.body.teamChallengeId || null, // Link submission to a challenge
                 problemId,
                 userId,
                 userName: userName || 'Anonymous',

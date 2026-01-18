@@ -43,6 +43,21 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<Signup />} />
+                  <Route path="/teams" element={
+                    <ProtectedRoute>
+                      <Teams />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/teams/:teamId" element={
+                    <ProtectedRoute>
+                      <TeamDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/teams/:teamId/challenge/:challengeId" element={
+                    <ProtectedRoute>
+                      <ChallengeView />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/test-spinner" element={
                     <PaperPlaneSpinner fullScreen={true} text="Loading..." />

@@ -628,5 +628,816 @@ function search(nums, target) {
 Given an array of integers \`nums\` which is sorted in ascending order, and an integer \`target\`, write a function to search \`target\` in \`nums\`. If \`target\` exists, return its index. Otherwise, return \`-1\`.
 You must write an algorithm with \`O(log n)\` runtime complexity.
 `
+    },
+    // --- Additional Problems from User List ---
+
+    // Arrays & Strings
+    {
+        id: 'longest-common-prefix',
+        title: 'Longest Common Prefix',
+        difficulty: 'Easy',
+        topic: 'Arrays and Strings',
+        functionName: 'longestCommonPrefix',
+        template: `/**
+ * @param {string[]} strs
+ * @return {string}
+ */
+function longestCommonPrefix(strs) {
+    
+}`,
+        testCases: [
+            { input: [["flower", "flow", "flight"]], expected: "fl" },
+            { input: [["dog", "racecar", "car"]], expected: "" }
+        ],
+        content: `### Description
+Write a function to find the longest common prefix string amongst an array of strings.
+If there is no common prefix, return an empty string "".`
+    },
+    {
+        id: 'string-compression',
+        title: 'String Compression Encoder',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'compress',
+        template: `/**
+ * @param {character[]} chars
+ * @return {number}
+ */
+function compress(chars) {
+    
+}`,
+        testCases: [
+            { input: [["a", "a", "b", "b", "c", "c", "c"]], expected: 6 },
+            { input: [["a"]], expected: 1 }
+        ],
+        content: `### Description
+Given an array of characters, compress it in-place. The length after compression must be always smaller than or equal to the original array.
+Return the new length of the array.`
+    },
+    {
+        id: 'ransom-note',
+        title: 'Ransom Note Construction',
+        difficulty: 'Easy',
+        topic: 'Arrays and Strings',
+        functionName: 'canConstruct',
+        template: `/**
+ * @param {string} ransomNote
+ * @param {string} magazine
+ * @return {boolean}
+ */
+function canConstruct(ransomNote, magazine) {
+    
+}`,
+        testCases: [
+            { input: ["a", "b"], expected: false },
+            { input: ["aa", "aab"], expected: true }
+        ],
+        content: `### Description
+Given two strings ransomNote and magazine, return true if ransomNote can be constructed from magazine and false otherwise.`
+    },
+    {
+        id: 'reverse-words',
+        title: 'Reverse Words in a String',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'reverseWords',
+        template: `/**
+ * @param {string} s
+ * @return {string}
+ */
+function reverseWords(s) {
+    
+}`,
+        testCases: [
+            { input: ["the sky is blue"], expected: "blue is sky the" },
+            { input: ["  hello world  "], expected: "world hello" }
+        ],
+        content: `### Description
+Given an input string s, reverse the order of the words.
+A word is defined as a sequence of non-space characters. The words in s will be separated by at least one space.`
+    },
+    {
+        id: 'valid-palindrome-alphanumeric',
+        title: 'Palindrome String Check',
+        difficulty: 'Easy',
+        topic: 'Arrays and Strings',
+        functionName: 'isPalindrome',
+        template: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+function isPalindrome(s) {
+    
+}`,
+        testCases: [
+            { input: ["A man, a plan, a canal: Panama"], expected: true },
+            { input: ["race a car"], expected: false }
+        ],
+        content: `### Description
+A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.`
+    },
+    {
+        id: 'merge-sorted-array',
+        title: 'Merge Sorted Arrays',
+        difficulty: 'Easy',
+        topic: 'Arrays and Strings',
+        functionName: 'merge',
+        template: `/**
+ * @param {number[]} nums1
+ * @param {number} m
+ * @param {number[]} nums2
+ * @param {number} n
+ * @return {void} Do not return anything, modify nums1 in-place instead.
+ */
+function merge(nums1, m, nums2, n) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 0, 0, 0], 3, [2, 5, 6], 3], expected: [1, 2, 2, 3, 5, 6] },
+            { input: [[1], 1, [], 0], expected: [1] }
+        ],
+        content: `### Description
+You are given two integer arrays nums1 and nums2, sorted in non-decreasing order, and two integers m and n, representing the number of elements in nums1 and nums2 respectively.
+Merge nums1 and nums2 into a single array sorted in non-decreasing order.`
+    },
+    {
+        id: 'merge-intervals',
+        title: 'Interval Merge',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'mergeIntervals',
+        template: `/**
+ * @param {number[][]} intervals
+ * @return {number[][]}
+ */
+function mergeIntervals(intervals) {
+    
+}`,
+        testCases: [
+            { input: [[[1, 3], [2, 6], [8, 10], [15, 18]]], expected: [[1, 6], [8, 10], [15, 18]] },
+            { input: [[[1, 4], [4, 5]]], expected: [[1, 5]] }
+        ],
+        content: `### Description
+Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping intervals.`
+    },
+    {
+        id: 'insert-interval',
+        title: 'Insert Interval',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'insert',
+        template: `/**
+ * @param {number[][]} intervals
+ * @param {number[]} newInterval
+ * @return {number[][]}
+ */
+function insert(intervals, newInterval) {
+    
+}`,
+        testCases: [
+            { input: [[[1, 3], [6, 9]], [2, 5]], expected: [[1, 5], [6, 9]] }
+        ],
+        content: `### Description
+You are given an array of non-overlapping intervals intervals where intervals[i] = [starti, endi] represent the start and the end of the ith interval and intervals is sorted in ascending order by starti.`
+    },
+    {
+        id: 'spiral-matrix',
+        title: 'Spiral Matrix Traversal',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'spiralOrder',
+        template: `/**
+ * @param {number[][]} matrix
+ * @return {number[]}
+ */
+function spiralOrder(matrix) {
+    
+}`,
+        testCases: [
+            { input: [[[1, 2, 3], [4, 5, 6], [7, 8, 9]]], expected: [1, 2, 3, 6, 9, 8, 7, 4, 5] }
+        ],
+        content: `### Description
+Given an m x n matrix, return all elements of the matrix in spiral order.`
+    },
+    {
+        id: 'set-matrix-zeroes',
+        title: 'Set Matrix Zeroes',
+        difficulty: 'Medium',
+        topic: 'Arrays and Strings',
+        functionName: 'setZeroes',
+        template: `/**
+ * @param {number[][]} matrix
+ * @return {void} Do not return anything, modify matrix in-place instead.
+ */
+function setZeroes(matrix) {
+    
+}`,
+        testCases: [
+            { input: [[[1, 1, 1], [1, 0, 1], [1, 1, 1]]], expected: [[1, 0, 1], [0, 0, 0], [1, 0, 1]] }
+        ],
+        content: `### Description
+Given an m x n integer matrix matrix, if an element is 0, set its entire row and column to 0's.`
+    },
+
+    // Hashing, Stacks & Queues
+    {
+        id: 'implement-queue-using-stacks',
+        title: 'Implement Queue using Stacks',
+        difficulty: 'Easy',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'MyQueue',
+        isClass: true,
+        template: `
+var MyQueue = function() {
+    
+};
+MyQueue.prototype.push = function(x) {
+    
+};
+MyQueue.prototype.pop = function() {
+    
+};
+MyQueue.prototype.peek = function() {
+    
+};
+MyQueue.prototype.empty = function() {
+    
+};`,
+        testCases: [],
+        content: `### Description
+Implement a first in first out (FIFO) queue using only two stacks.`
+    },
+    {
+        id: 'implement-stack-using-queues',
+        title: 'Implement Stack using Queues',
+        difficulty: 'Easy',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'MyStack',
+        isClass: true,
+        template: `
+var MyStack = function() {
+    
+};
+MyStack.prototype.push = function(x) {
+    
+};
+MyStack.prototype.pop = function() {
+    
+};
+MyStack.prototype.top = function() {
+    
+};
+MyStack.prototype.empty = function() {
+    
+};`,
+        testCases: [],
+        content: `### Description
+Implement a last in first out (LIFO) stack using only two queues.`
+    },
+    {
+        id: 'next-greater-element-i',
+        title: 'Next Greater Element I',
+        difficulty: 'Easy',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'nextGreaterElement',
+        template: `/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number[]}
+ */
+function nextGreaterElement(nums1, nums2) {
+    
+}`,
+        testCases: [
+            { input: [[4, 1, 2], [1, 3, 4, 2]], expected: [-1, 3, -1] }
+        ],
+        content: `### Description
+The next greater element of some element x in an array is the first greater element that is to the right of x in the same array.`
+    },
+    {
+        id: 'daily-temperatures',
+        title: 'Daily Temperatures',
+        difficulty: 'Medium',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'dailyTemperatures',
+        template: `/**
+ * @param {number[]} temperatures
+ * @return {number[]}
+ */
+function dailyTemperatures(temperatures) {
+    
+}`,
+        testCases: [
+            { input: [[73, 74, 75, 71, 69, 72, 76, 73]], expected: [1, 1, 4, 2, 1, 1, 0, 0] }
+        ],
+        content: `### Description
+Given an array of integers temperatures represents the daily temperatures, return an array answer such that answer[i] is the number of days you have to wait after the ith day to get a warmer temperature.`
+    },
+    {
+        id: 'lru-cache',
+        title: 'LRU Cache Design',
+        difficulty: 'Medium',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'LRUCache',
+        isClass: true,
+        template: `
+/**
+ * @param {number} capacity
+ */
+var LRUCache = function(capacity) {
+    
+};
+LRUCache.prototype.get = function(key) {
+    
+};
+LRUCache.prototype.put = function(key, value) {
+    
+};`,
+        testCases: [],
+        content: `### Description
+Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.`
+    },
+    {
+        id: 'top-k-frequent-elements',
+        title: 'Top K Frequent Elements',
+        difficulty: 'Medium',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'topKFrequent',
+        template: `/**
+ * @param {number[]} nums
+ * @param {number} k
+ * @return {number[]}
+ */
+function topKFrequent(nums, k) {
+    
+}`,
+        testCases: [
+            { input: [[1, 1, 1, 2, 2, 3], 2], expected: [1, 2] }
+        ],
+        content: `### Description
+Given an integer array nums and an integer k, return the k most frequent elements.`
+    },
+    {
+        id: 'first-unique-character',
+        title: 'First Unique Character in String',
+        difficulty: 'Easy',
+        topic: 'Hashing, Stacks, & Queues',
+        functionName: 'firstUniqChar',
+        template: `/**
+ * @param {string} s
+ * @return {number}
+ */
+function firstUniqChar(s) {
+    
+}`,
+        testCases: [
+            { input: ["leetcode"], expected: 0 },
+            { input: ["loveleetcode"], expected: 2 }
+        ],
+        content: `### Description
+Given a string s, find the first non-repeating character in it and return its index. If it does not exist, return -1.`
+    },
+
+    // Linked Lists
+    {
+        id: 'reorder-list',
+        title: 'Reorder List',
+        difficulty: 'Medium',
+        topic: 'Linked Lists',
+        functionName: 'reorderList',
+        template: `/**
+ * Definition for singly-linked list.
+ * function ListNode(val, next) {
+ *     this.val = (val===undefined ? 0 : val)
+ *     this.next = (next===undefined ? null : next)
+ * }
+ */
+/**
+ * @param {ListNode} head
+ * @return {void} Do not return anything, modify head in-place instead.
+ */
+function reorderList(head) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 4]], expected: [1, 4, 2, 3] }
+        ],
+        content: `### Description
+You are given the head of a singly linked-list. The list can be represented as:
+L0 → L1 → … → Ln - 1 → Ln
+Reorder the list to be on the following form:
+L0 → Ln → L1 → Ln - 1 → L2 → Ln - 2 → …`
+    },
+    {
+        id: 'remove-nth-node-from-end',
+        title: 'Remove Nth Node From End',
+        difficulty: 'Medium',
+        topic: 'Linked Lists',
+        functionName: 'removeNthFromEnd',
+        template: `/**
+ * @param {ListNode} head
+ * @param {number} n
+ * @return {ListNode}
+ */
+function removeNthFromEnd(head, n) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 4, 5], 2], expected: [1, 2, 3, 5] }
+        ],
+        content: `### Description
+Given the head of a linked list, remove the nth node from the end of the list and return its head.`
+    },
+    {
+        id: 'copy-list-with-random-pointer',
+        title: 'Copy List With Random Pointer',
+        difficulty: 'Medium',
+        topic: 'Linked Lists',
+        functionName: 'copyRandomList',
+        template: `/**
+ * // Definition for a Node.
+ * function Node(val, next, random) {
+ *    this.val = val;
+ *    this.next = next;
+ *    this.random = random;
+ * };
+ */
+/**
+ * @param {Node} head
+ * @return {Node}
+ */
+function copyRandomList(head) {
+    
+}`,
+        testCases: [],
+        content: `### Description
+Construct a deep copy of the list. The deep copy should consist of exactly n brand new nodes.`
+    },
+    {
+        id: 'add-two-numbers',
+        title: 'Add Two Numbers',
+        difficulty: 'Medium',
+        topic: 'Linked Lists',
+        functionName: 'addTwoNumbers',
+        template: `/**
+ * @param {ListNode} l1
+ * @param {ListNode} l2
+ * @return {ListNode}
+ */
+function addTwoNumbers(l1, l2) {
+    
+}`,
+        testCases: [
+            { input: [[2, 4, 3], [5, 6, 4]], expected: [7, 0, 8] }
+        ],
+        content: `### Description
+You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order.`
+    },
+    {
+        id: 'reverse-nodes-in-k-group',
+        title: 'Reverse Nodes in k-Group',
+        difficulty: 'Hard',
+        topic: 'Linked Lists',
+        functionName: 'reverseKGroup',
+        template: `/**
+ * @param {ListNode} head
+ * @param {number} k
+ * @return {ListNode}
+ */
+function reverseKGroup(head, k) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 4, 5], 2], expected: [2, 1, 4, 3, 5] }
+        ],
+        content: `### Description
+Given the head of a linked list, reverse the nodes of the list k at a time, and return the modified list.`
+    },
+    {
+        id: 'intersection-of-two-linked-lists',
+        title: 'Intersection of Two Linked Lists',
+        difficulty: 'Easy',
+        topic: 'Linked Lists',
+        functionName: 'getIntersectionNode',
+        template: `/**
+ * @param {ListNode} headA
+ * @param {ListNode} headB
+ * @return {ListNode}
+ */
+function getIntersectionNode(headA, headB) {
+    
+}`,
+        testCases: [],
+        content: `### Description
+Given the heads of two singly linked-lists headA and headB, return the node at which the two lists intersect.`
+    },
+
+    // Trees & Graphs
+    {
+        id: 'validate-binary-search-tree',
+        title: 'Validate Binary Search Tree',
+        difficulty: 'Medium',
+        topic: 'Trees and Graphs',
+        functionName: 'isValidBST',
+        template: `/**
+ * @param {TreeNode} root
+ * @return {boolean}
+ */
+function isValidBST(root) {
+    
+}`,
+        testCases: [
+            { input: [[2, 1, 3]], expected: true },
+            { input: [[5, 1, 4, null, null, 3, 6]], expected: false }
+        ],
+        content: `### Description
+Given the root of a binary tree, determine if it is a valid binary search tree (BST).`
+    },
+    {
+        id: 'lowest-common-ancestor-bst',
+        title: 'Lowest Common Ancestor in BST',
+        difficulty: 'Medium',
+        topic: 'Trees and Graphs',
+        functionName: 'lowestCommonAncestor',
+        template: `/**
+ * @param {TreeNode} root
+ * @param {TreeNode} p
+ * @param {TreeNode} q
+ * @return {TreeNode}
+ */
+function lowestCommonAncestor(root, p, q) {
+    
+}`,
+        testCases: [],
+        content: `### Description
+Given a binary search tree (BST), find the lowest common ancestor (LCA) node of two given nodes in the BST.`
+    },
+    {
+        id: 'binary-tree-maximum-path-sum',
+        title: 'Binary Tree Maximum Path Sum',
+        difficulty: 'Hard',
+        topic: 'Trees and Graphs',
+        functionName: 'maxPathSum',
+        template: `/**
+ * @param {TreeNode} root
+ * @return {number}
+ */
+function maxPathSum(root) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3]], expected: 6 },
+            { input: [[-10, 9, 20, null, null, 15, 7]], expected: 42 }
+        ],
+        content: `### Description
+A path in a binary tree is a sequence of nodes where each pair of adjacent nodes in the sequence has an edge. Return the maximum path sum of any non-empty path.`
+    },
+    {
+        id: 'kth-smallest-element-in-bst',
+        title: 'Kth Smallest Element in a BST',
+        difficulty: 'Medium',
+        topic: 'Trees and Graphs',
+        functionName: 'kthSmallest',
+        template: `/**
+ * @param {TreeNode} root
+ * @param {number} k
+ * @return {number}
+ */
+function kthSmallest(root, k) {
+    
+}`,
+        testCases: [
+            { input: [[3, 1, 4, null, 2], 1], expected: 1 }
+        ],
+        content: `### Description
+Given the root of a binary search tree, and an integer k, return the kth smallest value (1-indexed) of all the values of the nodes in the tree.`
+    },
+    {
+        id: 'rotting-oranges',
+        title: 'Rotting Oranges',
+        difficulty: 'Medium',
+        topic: 'Trees and Graphs',
+        functionName: 'orangesRotting',
+        template: `/**
+ * @param {number[][]} grid
+ * @return {number}
+ */
+function orangesRotting(grid) {
+    
+}`,
+        testCases: [
+            { input: [[[2, 1, 1], [1, 1, 0], [0, 1, 1]]], expected: 4 }
+        ],
+        content: `### Description
+You are given an m x n grid where each cell can have one of three values: 0 (empty), 1 (fresh), 2 (rotten).
+Return the minimum number of minutes that must elapse until no cell has a fresh orange. If this is impossible, return -1.`
+    },
+    {
+        id: 'course-schedule',
+        title: 'Course Schedule',
+        difficulty: 'Medium',
+        topic: 'Trees and Graphs',
+        functionName: 'canFinish',
+        template: `/**
+ * @param {number} numCourses
+ * @param {number[][]} prerequisites
+ * @return {boolean}
+ */
+function canFinish(numCourses, prerequisites) {
+    
+}`,
+        testCases: [
+            { input: [2, [[1, 0]]], expected: true },
+            { input: [2, [[1, 0], [0, 1]]], expected: false }
+        ],
+        content: `### Description
+There are a total of numCourses courses you have to take, labeled from 0 to numCourses - 1.
+Return true if you can finish all courses. Otherwise, return false.`
+    },
+
+    // Dynamic Programming
+    {
+        id: 'house-robber',
+        title: 'House Robber',
+        difficulty: 'Medium',
+        topic: 'Dynamic Programming',
+        functionName: 'rob',
+        template: `/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+function rob(nums) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 1]], expected: 4 },
+            { input: [[2, 7, 9, 3, 1]], expected: 12 }
+        ],
+        content: `### Description
+You are a professional robber planning to rob houses along a street.
+Return the maximum amount of money you can rob tonight without alerting the police.`
+    },
+    {
+        id: 'longest-increasing-subsequence',
+        title: 'Longest Increasing Subsequence',
+        difficulty: 'Medium',
+        topic: 'Dynamic Programming',
+        functionName: 'lengthOfLIS',
+        template: `/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+function lengthOfLIS(nums) {
+    
+}`,
+        testCases: [
+            { input: [[10, 9, 2, 5, 3, 7, 101, 18]], expected: 4 }
+        ],
+        content: `### Description
+Given an integer array nums, return the length of the longest strictly increasing subsequence.`
+    },
+    {
+        id: 'unique-paths',
+        title: 'Unique Paths',
+        difficulty: 'Medium',
+        topic: 'Dynamic Programming',
+        functionName: 'uniquePaths',
+        template: `/**
+ * @param {number} m
+ * @param {number} n
+ * @return {number}
+ */
+function uniquePaths(m, n) {
+    
+}`,
+        testCases: [
+            { input: [3, 7], expected: 28 },
+            { input: [3, 2], expected: 3 }
+        ],
+        content: `### Description
+There is a robot on an m x n grid. The robot is initially located at the top-left corner (i.e., grid[0][0]). The robot tries to move to the bottom-right corner (i.e., grid[m - 1][n - 1]). The robot can only move either down or right at any point in time.`
+    },
+    {
+        id: 'word-break',
+        title: 'Word Break',
+        difficulty: 'Medium',
+        topic: 'Dynamic Programming',
+        functionName: 'wordBreak',
+        template: `/**
+ * @param {string} s
+ * @param {string[]} wordDict
+ * @return {boolean}
+ */
+function wordBreak(s, wordDict) {
+    
+}`,
+        testCases: [
+            { input: ["leetcode", ["leet", "code"]], expected: true }
+        ],
+        content: `### Description
+Given a string s and a dictionary of strings wordDict, return true if s can be segmented into a space-separated sequence of one or more dictionary words.`
+    },
+    {
+        id: 'edit-distance',
+        title: 'Edit Distance',
+        difficulty: 'Hard',
+        topic: 'Dynamic Programming',
+        functionName: 'minDistance',
+        template: `/**
+ * @param {string} word1
+ * @param {string} word2
+ * @return {number}
+ */
+function minDistance(word1, word2) {
+    
+}`,
+        testCases: [
+            { input: ["horse", "ros"], expected: 3 }
+        ],
+        content: `### Description
+Given two strings word1 and word2, return the minimum number of operations required to convert word1 to word2.`
+    },
+
+    // Searching, Sorting, & Math
+    {
+        id: 'search-in-rotated-sorted-array',
+        title: 'Search in Rotated Sorted Array',
+        difficulty: 'Medium',
+        topic: 'Searching, Sorting, & Math',
+        functionName: 'searchRotated',
+        template: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number}
+ */
+function searchRotated(nums, target) {
+    
+}`,
+        testCases: [
+            { input: [[4, 5, 6, 7, 0, 1, 2], 0], expected: 4 },
+            { input: [[4, 5, 6, 7, 0, 1, 2], 3], expected: -1 }
+        ],
+        content: `### Description
+There is an integer array nums sorted in ascending order (with distinct values).
+Given the array nums after the possible rotation and an integer target, return the index of target if it is in nums, or -1 if it is not in nums.`
+    },
+    {
+        id: 'find-peak-element',
+        title: 'Find Peak Element',
+        difficulty: 'Medium',
+        topic: 'Searching, Sorting, & Math',
+        functionName: 'findPeakElement',
+        template: `/**
+ * @param {number[]} nums
+ * @return {number}
+ */
+function findPeakElement(nums) {
+    
+}`,
+        testCases: [
+            { input: [[1, 2, 3, 1]], expected: 2 }
+        ],
+        content: `### Description
+A peak element is an element that is strictly greater than its neighbors.
+Given a 0-indexed integer array nums, find a peak element, and return its index.`
+    },
+    {
+        id: 'k-closest-points-to-origin',
+        title: 'K Closest Points to Origin',
+        difficulty: 'Medium',
+        topic: 'Searching, Sorting, & Math',
+        functionName: 'kClosest',
+        template: `/**
+ * @param {number[][]} points
+ * @param {number} k
+ * @return {number[][]}
+ */
+function kClosest(points, k) {
+    
+}`,
+        testCases: [],
+        content: `### Description
+Given an array of points where points[i] = [xi, yi] represents a point on the X-Y plane and an integer k, return the k closest points to the origin (0, 0).`
+    },
+    {
+        id: 'median-of-two-sorted-arrays',
+        title: 'Median of Two Sorted Arrays',
+        difficulty: 'Hard',
+        topic: 'Searching, Sorting, & Math',
+        functionName: 'findMedianSortedArrays',
+        template: `/**
+ * @param {number[]} nums1
+ * @param {number[]} nums2
+ * @return {number}
+ */
+function findMedianSortedArrays(nums1, nums2) {
+    
+}`,
+        testCases: [
+            { input: [[1, 3], [2]], expected: 2.000 },
+            { input: [[1, 2], [3, 4]], expected: 2.500 }
+        ],
+        content: `### Description
+Given two sorted arrays nums1 and nums2 of size m and n respectively, return the median of the two sorted arrays.`
     }
 ];

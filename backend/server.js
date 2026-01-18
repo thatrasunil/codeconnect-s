@@ -168,11 +168,14 @@ const localRooms = new Map();
 const activeRooms = new Map(); // roomId -> Map<userId, connectionCount>
 const socketIdToUserId = new Map(); // socket.id -> userId
 
+const teamsRouter = require('./routes/teams');
+
 // --- Mount Routes ---
-// Pass db instance to problems router
+// Pass db instance to routers
 app.use('/api/problems', problemsRouter(db));
 app.use('/api/auth', authRouter(db));
 app.use('/api/chat', chatRouter(db, localRooms));
+app.use('/api/teams', teamsRouter(db));
 
 // --- API Routes ---
 function generateRoomId() {
