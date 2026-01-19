@@ -2,7 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const admin = require('firebase-admin'); // Firebase Admin
-const { getFirestore } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -417,7 +417,7 @@ app.post('/api/rooms/:roomId/messages', async (req, res) => {
     const newMessage = { ...message, id: Date.now(), timestamp: new Date().toISOString() };
     if (isFirestoreConnected) {
       await db.collection('rooms').doc(roomId).update({
-        messages: admin.firestore.FieldValue.arrayUnion(newMessage)
+        messages: FieldValue.arrayUnion(newMessage)
       });
     } else {
       const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
@@ -659,7 +659,7 @@ io.on('connection', (socket) => {
         const userExists = room.users && room.users.some(u => u.userId === userId);
         if (!userExists) {
           await roomRef.update({
-            users: admin.firestore.FieldValue.arrayUnion({ userId, joinedAt: new Date().toISOString() })
+            users: FieldValue.arrayUnion({ userId, joinedAt: new Date().toISOString() })
           });
         }
       } else {
@@ -723,7 +723,7 @@ io.on('connection', (socket) => {
 
     if (isFirestoreConnected) {
       await db.collection('rooms').doc(roomId).update({
-        messages: admin.firestore.FieldValue.arrayUnion(newMessage)
+        messages: FieldValue.arrayUnion(newMessage)
       }).catch(e => console.error('Message update failed', e));
     } else {
       const room = localRooms.get(roomId);

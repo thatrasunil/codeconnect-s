@@ -2,13 +2,26 @@ const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
 
+const { FieldValue } = require('firebase-admin/firestore');
+
 module.exports = (db) => {
+
+    // Helper to check DB connection
+    const checkDb = (res) => {
+        if (!db) {
+            console.error('Firestore DB is not initialized');
+            res.status(503).json({ error: 'Database service unavailable' });
+            return false;
+        }
+        return true;
+    };
 
     /**
      * POST /api/teams/create
      * Create a new team
      */
     router.post('/create', async (req, res) => {
+        if (!checkDb(res)) return;
         try {
             const { name, ownerId, description, isPublic } = req.body;
             console.log('Create Team Request Body:', req.body); // DEBUG LOG
@@ -22,7 +35,7 @@ module.exports = (db) => {
                 ownerId,
                 description: description || '',
                 isPublic: isPublic !== false, // Default to true
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: FieldValue.serverTimestamp(),
                 // Map for details (roles, join date)
                 members: {
                     [ownerId]: {
@@ -49,9 +62,13 @@ module.exports = (db) => {
      * Join a team
      */
     router.post('/:teamId/join', async (req, res) => {
+        if (!checkDb(res)) return;
+
         try {
             const { teamId } = req.params;
             const { userId } = req.body;
+
+            console.log(`[Join Team] Request for team: ${teamId}, user: ${userId}`);
 
             if (!userId) {
                 return res.status(400).json({ error: 'userId is required' });
@@ -75,15 +92,15 @@ module.exports = (db) => {
                         role: 'member',
                         joinedAt: new Date().toISOString()
                     },
-                    memberIds: admin.firestore.FieldValue.arrayUnion(userId),
-                    memberCount: admin.firestore.FieldValue.increment(1)
+                    memberIds: FieldValue.arrayUnion(userId),
+                    memberCount: FieldValue.increment(1)
                 });
             });
 
             res.json({ success: true, message: 'Joined team successfully' });
         } catch (error) {
             console.error('Error joining team:', error);
-            res.status(500).json({ error: error.message });
+            res.status(500).json({ error: error.message || 'Internal Server Error' });
         }
     });
 
@@ -153,7 +170,7 @@ module.exports = (db) => {
                 startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
                 endTime: endTime ? new Date(endTime).toISOString() : null, // Null means endless
                 status: 'active',
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
+                createdAt: FieldValue.serverTimestamp()
             };
 
             const challengeRef = await db.collection('teamChallenges').add(challengeData);
