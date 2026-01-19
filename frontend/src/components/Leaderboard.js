@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaTrophy, FaMedal, FaStar } from 'react-icons/fa';
+import { FaTrophy, FaMedal } from 'react-icons/fa';
 import { subscribeToLeaderboard } from '../services/firestoreService';
+import './Leaderboard.css';
 
 const Leaderboard = () => {
     const [users, setUsers] = useState([]);
@@ -24,66 +25,76 @@ const Leaderboard = () => {
     }, []);
 
     const getRankIcon = (index) => {
-        if (index === 0) return <FaTrophy size={20} color="#fbbf24" />; // Gold
-        if (index === 1) return <FaMedal size={20} color="#94a3b8" />;  // Silver
-        if (index === 2) return <FaMedal size={20} color="#b45309" />;  // Bronze
-        return <span style={{ fontWeight: 'bold', color: '#64748b' }}>#{index + 1}</span>;
+        if (index === 0) return <FaTrophy size={24} color="#fbbf24" />; // Gold
+        if (index === 1) return <FaMedal size={24} color="#fcd34d" />;  // Silver (Lighter Gold/Silver mix)
+        if (index === 2) return <FaMedal size={24} color="#b45309" />;  // Bronze
+        return <span style={{ fontWeight: '700', color: 'var(--text-secondary)' }}>#{index + 1}</span>;
     };
 
     return (
-        <div className="landing-container">
-            <div style={{ paddingTop: '100px', maxWidth: '800px', margin: '0 auto', padding: '100px 20px 20px' }}>
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                >
-                    <h1 style={{ textAlign: 'center', marginBottom: '40px', fontSize: '2.5rem', background: 'linear-gradient(to right, #fbbf24, #d97706)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
-                        <FaTrophy color="#fbbf24" /> Community Leaderboard
+        <div className="leaderboard-container">
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+            >
+                {/* Hero Section */}
+                <div className="leaderboard-hero">
+                    <h1 className="leaderboard-title">
+                        <FaTrophy /> Hall of Fame
                     </h1>
+                    <p className="leaderboard-subtitle">
+                        Celebrating the top contributors and coding wizards of CodeConnect. Compete, collaborate, and climb the ranks!
+                    </p>
+                </div>
 
-                    <div style={{ background: 'rgba(30, 41, 59, 0.7)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', backdropFilter: 'blur(10px)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)' }}>
-                                    <th style={{ padding: '15px', textAlign: 'center', width: '80px' }}>Rank</th>
-                                    <th style={{ padding: '15px', textAlign: 'left' }}>Coder</th>
-                                    <th style={{ padding: '15px', textAlign: 'center' }}>Rooms</th>
-                                    <th style={{ padding: '15px', textAlign: 'center' }}>Messages</th>
-                                    <th style={{ padding: '15px', textAlign: 'right' }}>Points</th>
+                {/* Table Section */}
+                <div className="leaderboard-table-wrapper">
+                    <table className="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Coder</th>
+                                <th className="hide-mobile">Sessions</th>
+                                <th className="hide-mobile">Messages</th>
+                                <th>Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="5" className="loading-state">
+                                        Loading champions...
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading champions...</td>
-                                    </tr>
-                                ) : users.map((user, index) => (
-                                    <motion.tr
-                                        key={user.username}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-                                    >
-                                        <td style={{ padding: '15px', textAlign: 'center' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'center' }}>{getRankIcon(index)}</div>
-                                        </td>
-                                        <td style={{ padding: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <img src={user.avatar} alt={user.username} style={{ width: '35px', height: '35px', borderRadius: '50%', border: '2px solid #3b82f6' }} />
-                                            <span style={{ fontWeight: '500' }}>{user.username}</span>
-                                            {index < 3 && <FaStar size={12} color="#fbbf24" />}
-                                        </td>
-                                        <td style={{ padding: '15px', textAlign: 'center', color: '#94a3b8' }}>{user.rooms}</td>
-                                        <td style={{ padding: '15px', textAlign: 'center', color: '#94a3b8' }}>{user.messages}</td>
-                                        <td style={{ padding: '15px', textAlign: 'right', fontWeight: 'bold', color: '#3b82f6' }}>{user.points}</td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </motion.div>
-            </div>
+                            ) : users.map((user, index) => (
+                                <motion.tr
+                                    key={user.username}
+                                    className={`leaderboard-row ${index < 3 ? 'top-3' : ''}`}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                >
+                                    <td>
+                                        <div className="rank-icon-wrapper">
+                                            {getRankIcon(index)}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="user-cell">
+                                            <img src={user.avatar} alt={user.username} className="user-avatar-lg" />
+                                            <span className="user-name-lg">{user.username}</span>
+                                        </div>
+                                    </td>
+                                    <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{user.rooms}</td>
+                                    <td className="hide-mobile" style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>{user.messages}</td>
+                                    <td>{user.points.toLocaleString()}</td>
+                                </motion.tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </motion.div>
         </div>
     );
 };

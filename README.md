@@ -211,13 +211,22 @@ const config = {
 - **CORS** - Cross-origin resource sharing
 - **dotenv** - Environment variable management
 
-### Firebase Services
-- **Firebase Authentication** - Google OAuth login
-- **Cloud Firestore** - Real-time NoSQL database
-- **Firebase Analytics** - Usage tracking and insights
+### 🔥 Powered by Google Cloud & Firebase
+- **Firebase Authentication**: Secure, seamless sign-in with Google OAuth and email/password, managing user sessions and security context.
+- **Cloud Firestore**: A flexible, scalable NoSQL cloud database that keeps data in sync across client apps in real-time.
+- **Firebase Hosting**: Fast and secure hosting for the web app, backed by Google's global CDN.
+- **Google Cloud Platform**: Underlying infrastructure ensuring high availability and low latency for global collaboration.
+- **Firebase Analytics**: Provides insight into user behavior and engagement to drive product improvements.
+
+### 🤖 Advanced AI Integration
+- **Google Gemini AI**: The core intelligence engine powering:
+  - **Code Generation**: Translates natural language prompts into syntactically correct code snippets in real-time.
+  - **Smart Debugging**: Analyzes code context to identify errors and suggest optimized fixes.
+  - **AI Chat Assistant**: A context-aware coding companion that answers questions and explains logic.
+- **Antigravity Engine**: An advanced agentic AI framework developed by Google DeepMind that orchestrates complex coding tasks, plans implementation strategies, and executes verifying steps to ensure high-quality code delivery.
 
 ### AI Integration
-- **Google Gemini AI** - Advanced AI for code generation, debugging, testing, and intelligent chat assistance
+
 
 ## 🎮 Usage
 

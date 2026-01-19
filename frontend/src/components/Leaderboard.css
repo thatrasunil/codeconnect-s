@@ -1,0 +1,210 @@
+/* Leaderboard.css */
+.leaderboard-container {
+    padding: 2.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: calc(100vh - 80px);
+    background: radial-gradient(circle at 50% 0%, rgba(251, 191, 36, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(30, 41, 59, 1) 0%, transparent 50%);
+}
+
+.leaderboard-hero {
+    text-align: center;
+    margin-bottom: 4rem;
+    position: relative;
+    padding: 3rem;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6));
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.leaderboard-hero::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 200px;
+    background: rgba(251, 191, 36, 0.15);
+    filter: blur(80px);
+    border-radius: 50%;
+}
+
+.leaderboard-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    background: linear-gradient(to right, #fbbf24, #d97706);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    position: relative;
+    z-index: 1;
+}
+
+.leaderboard-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.leaderboard-table-wrapper {
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Slightly increased opacity */
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.leaderboard-table thead tr {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.leaderboard-table th {
+    padding: 1.5rem;
+    text-align: left;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    /* Match wrapper border */
+}
+
+.leaderboard-table th:first-child {
+    text-align: center;
+    padding-left: 2rem;
+}
+
+.leaderboard-table th:last-child {
+    text-align: right;
+    /* Changed to left for better alignment consistency */
+    padding-right: 2.5rem;
+}
+
+.leaderboard-row {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.leaderboard-row:last-child {
+    border-bottom: none;
+}
+
+.leaderboard-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+    /* Increased opacity slightly */
+    transform: scale(1.005);
+    /* Subtle scale effect */
+}
+
+.leaderboard-table td {
+    padding: 1.25rem 1.5rem;
+    vertical-align: middle;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.leaderboard-table td:first-child {
+    padding-left: 2rem;
+    text-align: center;
+}
+
+.leaderboard-table td:last-child {
+    padding-right: 2.5rem;
+    text-align: right;
+    font-weight: 700;
+    color: #fbbf24;
+    font-size: 1.1rem;
+}
+
+.rank-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.03);
+    margin: 0 auto;
+}
+
+.top-3 .rank-icon-wrapper {
+    background: rgba(251, 191, 36, 0.1);
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.2);
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-avatar-lg {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    object-fit: cover;
+}
+
+.user-name-lg {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.loading-state {
+    padding: 4rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .leaderboard-container {
+        padding: 1rem;
+    }
+
+    .leaderboard-title {
+        font-size: 2.5rem;
+    }
+
+    .leaderboard-hero {
+        padding: 2rem 1rem;
+    }
+
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 1rem 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .user-avatar-lg {
+        width: 36px;
+        height: 36px;
+    }
+
+    .hide-mobile {
+        display: none;
+    }
+}
