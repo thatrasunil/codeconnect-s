@@ -1,5 +1,6 @@
-/* Cosmic Dark Theme Variables */
-:root {
+/* Base Theme Variables (Cosmic - Default) */
+:root,
+[data-theme='cosmic'] {
   --bg-primary: #0f172a;
   /* Slate 900 */
   --bg-secondary: #1e293b;
@@ -20,6 +21,69 @@
   --border-color: #334155;
   --glass-bg: rgba(30, 41, 59, 0.7);
   --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Theme */
+[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-primary: #6366f1;
+  /* Indigo 500 */
+  --accent-secondary: #0ea5e9;
+  /* Sky 500 */
+  --accent-glow: rgba(99, 102, 241, 0.3);
+  --success: #16a34a;
+  --error: #dc2626;
+  --border-color: #cbd5e1;
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Theme */
+[data-theme='dark'] {
+  --bg-primary: #18181b;
+  /* Zinc 950 */
+  --bg-secondary: #27272a;
+  /* Zinc 800 */
+  --bg-tertiary: #3f3f46;
+  /* Zinc 700 */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --accent-primary: #a855f7;
+  /* Purple 500 */
+  --accent-secondary: #22d3ee;
+  /* Cyan 400 */
+  --accent-glow: rgba(168, 85, 247, 0.4);
+  --success: #22c55e;
+  --error: #ef4444;
+  --border-color: #3f3f46;
+  --glass-bg: rgba(39, 39, 42, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.05);
+}
+
+/* Midnight Theme */
+[data-theme='midnight'] {
+  --bg-primary: #020617;
+  /* Slate 950 */
+  --bg-secondary: #0f172a;
+  /* Slate 900 */
+  --bg-tertiary: #1e293b;
+  /* Slate 800 */
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent-primary: #3b82f6;
+  /* Blue 500 */
+  --accent-secondary: #6366f1;
+  /* Indigo 500 */
+  --accent-glow: rgba(59, 130, 246, 0.4);
+  --success: #10b981;
+  --error: #f43f5e;
+  --border-color: #1e293b;
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(59, 130, 246, 0.1);
 }
 
 body {

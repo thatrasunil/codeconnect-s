@@ -2,6 +2,7 @@ import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { FaRobot } from 'react-icons/fa';
 import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -38,76 +39,78 @@ function App() {
   const [isChatOpen, setIsChatOpen] = React.useState(false);
   return (
     <div className="App">
-      <AuthProvider>
-        <ErrorBoundary>
-          <ToastProvider>
-            <Router>
-              <Navbar />
-              <Suspense fallback={<PaperPlaneSpinner fullScreen={true} text="Loading..." />}>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
-                  <Route path="/teams" element={
-                    <ProtectedRoute>
-                      <Teams />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/teams/:teamId" element={
-                    <ProtectedRoute>
-                      <TeamDashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/teams/:teamId/challenge/:challengeId" element={
-                    <ProtectedRoute>
-                      <ChallengeView />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/leaderboard" element={<Leaderboard />} />
-                  <Route path="/test-spinner" element={
-                    <PaperPlaneSpinner fullScreen={true} text="Loading..." />
-                  } />
-                  <Route path="/dashboard" element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/problems" element={
-                    <ProtectedRoute>
-                      <Problems />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/debugging" element={
-                    <ProtectedRoute>
-                      <Debugging />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/testing" element={
-                    <ProtectedRoute>
-                      <Testing />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/codegen" element={
-                    <ProtectedRoute>
-                      <CodeGen />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/profile" element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/room/:roomId" element={<Editor />} />
-                  <Route path="/solve/:roomId" element={<ProblemSolver />} />
-                </Routes>
-              </Suspense>
+      <ThemeProvider>
+        <AuthProvider>
+          <ErrorBoundary>
+            <ToastProvider>
+              <Router>
+                <Navbar />
+                <Suspense fallback={<PaperPlaneSpinner fullScreen={true} text="Loading..." />}>
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
+                    <Route path="/teams" element={
+                      <ProtectedRoute>
+                        <Teams />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/teams/:teamId" element={
+                      <ProtectedRoute>
+                        <TeamDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/teams/:teamId/challenge/:challengeId" element={
+                      <ProtectedRoute>
+                        <ChallengeView />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/leaderboard" element={<Leaderboard />} />
+                    <Route path="/test-spinner" element={
+                      <PaperPlaneSpinner fullScreen={true} text="Loading..." />
+                    } />
+                    <Route path="/dashboard" element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/problems" element={
+                      <ProtectedRoute>
+                        <Problems />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/debugging" element={
+                      <ProtectedRoute>
+                        <Debugging />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/testing" element={
+                      <ProtectedRoute>
+                        <Testing />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/codegen" element={
+                      <ProtectedRoute>
+                        <CodeGen />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/room/:roomId" element={<Editor />} />
+                    <Route path="/solve/:roomId" element={<ProblemSolver />} />
+                  </Routes>
+                </Suspense>
 
-              {/* Global Chatbot Dispatcher */}
-              <ChatbotDispatcher setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
-            </Router>
-          </ToastProvider>
-        </ErrorBoundary>
-      </AuthProvider>
+                {/* Global Chatbot Dispatcher */}
+                <ChatbotDispatcher setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
+              </Router>
+            </ToastProvider>
+          </ErrorBoundary>
+        </AuthProvider>
+      </ThemeProvider>
     </div>
   );
 }

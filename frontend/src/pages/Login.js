@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { FaUser, FaLock, FaGoogle, FaArrowRight } from 'react-icons/fa';
+import { FaUser, FaLock, FaGoogle, FaArrowRight, FaCode } from 'react-icons/fa';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const Login = () => {
@@ -53,7 +53,8 @@ const Login = () => {
             opacity: 1,
             transition: {
                 when: "beforeChildren",
-                staggerChildren: 0.1
+                staggerChildren: 0.1,
+                duration: 0.5
             }
         }
     };
@@ -85,9 +86,16 @@ const Login = () => {
                 animate="visible"
             >
                 <motion.div className="glass-header" variants={itemVariants}>
-                    <div className="logo-glow">
-                        <div className="logo-icon">{'{ CC }'}</div>
-                    </div>
+                    <motion.div
+                        className="logo-glow"
+                        whileHover={{ scale: 1.05, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
+                        <div className="logo-icon">
+                            <FaCode style={{ fontSize: '1.5rem', marginRight: '4px' }} />
+                            <span>CC</span>
+                        </div>
+                    </motion.div>
                     <h1>Welcome Back</h1>
                     <p>Enter your credentials to access your workspace</p>
                 </motion.div>
@@ -175,8 +183,10 @@ const Login = () => {
                     justify-content: center;
                     position: relative;
                     overflow: hidden;
-                    background: #0f172a;
+                    background: var(--bg-primary);
+                    color: var(--text-primary);
                     font-family: 'Inter', sans-serif;
+                    transition: background-color 0.3s ease;
                 }
 
                 .background-mesh {
@@ -202,7 +212,7 @@ const Login = () => {
                     left: -10%;
                     width: 500px;
                     height: 500px;
-                    background: #8b5cf6;
+                    background: var(--accent-primary);
                     animation-delay: 0s;
                 }
 
@@ -211,7 +221,7 @@ const Login = () => {
                     right: -10%;
                     width: 500px;
                     height: 500px;
-                    background: #06b6d4;
+                    background: var(--accent-secondary);
                     animation-delay: -5s;
                 }
 
@@ -220,7 +230,7 @@ const Login = () => {
                     left: 40%;
                     width: 400px;
                     height: 400px;
-                    background: #ec4899;
+                    background: var(--accent-glow);
                     animation-delay: -10s;
                 }
 
@@ -236,11 +246,12 @@ const Login = () => {
                     width: 100%;
                     max-width: 440px;
                     padding: 3rem;
-                    background: rgba(30, 41, 59, 0.4);
+                    background: var(--glass-bg);
                     backdrop-filter: blur(24px);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border: 1px solid var(--glass-border);
                     border-radius: 24px;
                     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                    transition: all 0.3s ease;
                 }
 
                 .glass-header {
@@ -249,43 +260,45 @@ const Login = () => {
                 }
 
                 .logo-glow {
-                    width: 60px;
-                    height: 60px;
+                    width: 70px;
+                    height: 70px;
                     margin: 0 auto 1.5rem;
-                    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
-                    border-radius: 16px;
+                    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+                    border-radius: 20px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+                    box-shadow: 0 0 30px var(--accent-glow);
                 }
 
                 .logo-icon {
                     font-family: 'Fira Code', monospace;
-                    font-weight: 700;
+                    font-weight: 800;
                     color: white;
-                    font-size: 1.2rem;
+                    font-size: 1.4rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
 
                 .glass-header h1 {
                     font-size: 2rem;
                     font-weight: 800;
-                    color: white;
+                    color: var(--text-primary);
                     margin: 0 0 0.5rem;
                     letter-spacing: -0.025em;
                 }
 
                 .glass-header p {
-                    color: #94a3b8;
+                    color: var(--text-secondary);
                     font-size: 0.95rem;
                     margin: 0;
                 }
 
                 .error-message {
                     background: rgba(239, 68, 68, 0.1);
-                    border: 1px solid rgba(239, 68, 68, 0.2);
-                    color: #fca5a5;
+                    border: 1px solid var(--error);
+                    color: var(--error);
                     padding: 0.75rem;
                     border-radius: 12px;
                     margin-bottom: 1.5rem;
@@ -299,7 +312,7 @@ const Login = () => {
 
                 .input-group label {
                     display: block;
-                    color: #cbd5e1;
+                    color: var(--text-secondary);
                     font-size: 0.85rem;
                     font-weight: 500;
                     margin-bottom: 0.5rem;
@@ -314,7 +327,7 @@ const Login = () => {
                     left: 1rem;
                     top: 50%;
                     transform: translateY(-50%);
-                    color: #64748b;
+                    color: var(--text-secondary);
                     font-size: 1rem;
                     transition: color 0.2s;
                     z-index: 2;
@@ -323,30 +336,30 @@ const Login = () => {
                 .input-wrapper input {
                     width: 100%;
                     padding: 0.875rem 1rem 0.875rem 2.75rem;
-                    background: rgba(15, 23, 42, 0.6);
-                    border: 1px solid rgba(51, 65, 85, 0.6);
+                    background: rgba(0, 0, 0, 0.2);
+                    border: 1px solid var(--border-color);
                     border-radius: 12px;
-                    color: white;
+                    color: var(--text-primary);
                     font-size: 0.95rem;
                     outline: none;
                     transition: all 0.2s;
                 }
 
                 .input-wrapper input:focus {
-                    background: rgba(15, 23, 42, 0.8);
-                    border-color: #8b5cf6;
-                    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+                    background: rgba(0, 0, 0, 0.3);
+                    border-color: var(--accent-primary);
+                    box-shadow: 0 0 0 4px var(--accent-glow);
                 }
 
                 .input-wrapper input:focus + .input-icon {
-                    color: #8b5cf6;
+                    color: var(--accent-primary);
                 }
 
                 .submit-btn {
                     width: 100%;
                     padding: 1rem;
                     margin-top: 1rem;
-                    background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
                     border: none;
                     border-radius: 12px;
                     color: white;
@@ -358,18 +371,18 @@ const Login = () => {
                     justify-content: center;
                     gap: 0.75rem;
                     transition: all 0.2s;
-                    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+                    box-shadow: 0 4px 6px -1px var(--accent-glow);
                 }
 
                 .submit-btn:hover {
-                    box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.4);
+                    box-shadow: 0 10px 15px -3px var(--accent-glow);
                     filter: brightness(1.1);
                 }
 
                 .divider {
                     display: flex;
                     align-items: center;
-                    color: #64748b;
+                    color: var(--text-secondary);
                     font-size: 0.85rem;
                     margin: 2rem 0;
                 }
@@ -379,7 +392,7 @@ const Login = () => {
                     content: '';
                     flex: 1;
                     height: 1px;
-                    background: rgba(255, 255, 255, 0.1);
+                    background: var(--border-color);
                 }
 
                 .divider span {
@@ -412,11 +425,11 @@ const Login = () => {
                     margin-top: 2rem;
                     text-align: center;
                     font-size: 0.9rem;
-                    color: #94a3b8;
+                    color: var(--text-secondary);
                 }
 
                 .footer-link a {
-                    color: #06b6d4;
+                    color: var(--accent-secondary);
                     text-decoration: none;
                     font-weight: 600;
                     margin-left: 0.5rem;
@@ -424,7 +437,7 @@ const Login = () => {
                 }
 
                 .footer-link a:hover {
-                    color: #22d3ee;
+                    color: var(--accent-primary);
                     text-decoration: underline;
                 }
 
