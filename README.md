@@ -10,11 +10,11 @@ A **Real-Time Collaborative Coding Platform** with integrated AI assistance, pro
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Real-Time Collaborative Editing**: Multiple users can code simultaneously with Monaco Editor
-- **Multi-Language Support**: JavaScript, Python, Java, C++, C, and more with intelligent syntax highlighting
-- **Room Management**: Unique 6-digit room IDs for easy collaboration
-- **Session Persistence**: Auto-save with Firestore real-time sync
-- **Cloud Code Execution**: Run code in a secure backend environment
+- **Real-Time Collaborative Editing**: Experience low-latency, conflict-free pair programming with the powerful Monaco Editor (VS Code core).
+- **Multi-Language Support**: Complete support for JavaScript, Python, Java, C++, and C with intelligent syntax highlighting and reliable linting.
+- **Room Management**: Create frictionless, secure coding sessions instantly with unique 6-digit room IDs—no cleanup required.
+- **Session Persistence**: Never lose work with robust Firestore-backed auto-saving that keeps state consistent across all devices.
+- **Cloud Code Execution**: Execute code safely in high-performance, sandboxed backend environments with instant output.
 
 ### 🤖 AI-Powered Advanced Tools
 - **AI Code Generator**: Transform natural language prompts into production-ready code
