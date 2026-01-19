@@ -4,6 +4,7 @@ import { FaRobot } from 'react-icons/fa';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './contexts/ToastContext';
@@ -103,6 +104,9 @@ function App() {
                     <Route path="/solve/:roomId" element={<ProblemSolver />} />
                   </Routes>
                 </Suspense>
+
+                {/* Global Footer */}
+                <Footer />
 
                 {/* Global Chatbot Dispatcher */}
                 <ChatbotDispatcher setIsChatOpen={setIsChatOpen} isChatOpen={isChatOpen} />
