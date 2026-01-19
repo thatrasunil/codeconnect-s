@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { FaUser, FaLock, FaGoogle, FaArrowRight, FaCode } from 'react-icons/fa';
+import { FaUser, FaLock, FaGoogle, FaArrowRight } from 'react-icons/fa';
 import LoadingSpinner from '../components/LoadingSpinner';
+import Logo from '../logo.svg';
 
 const Login = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
@@ -91,10 +92,7 @@ const Login = () => {
                         whileHover={{ scale: 1.05, rotate: 5 }}
                         transition={{ type: "spring", stiffness: 400, damping: 10 }}
                     >
-                        <div className="logo-icon">
-                            <FaCode style={{ fontSize: '1.5rem', marginRight: '4px' }} />
-                            <span>CC</span>
-                        </div>
+                        <img src={Logo} alt="CodeConnect Logo" style={{ width: '40px', height: '40px' }} />
                     </motion.div>
                     <h1>Welcome Back</h1>
                     <p>Enter your credentials to access your workspace</p>

@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FaSignOutAlt, FaCode, FaBars, FaTimes } from 'react-icons/fa';
 import ThemeSelector from './ThemeSelector';
+import Logo from '../logo.svg';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -23,7 +24,7 @@ const Navbar = () => {
     return (
         <nav className="navbar">
             <Link to="/" className="navbar-brand" onClick={closeMenu}>
-                <FaCode size={28} />
+                <img src={Logo} alt="CodeConnect Logo" className="navbar-logo" style={{ width: '40px', height: '40px' }} />
                 <span>CodeConnect</span>
             </Link>
 

@@ -9,6 +9,7 @@ import FlowDiagram3D from './Three/FlowDiagram3D';
 
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons'; import { createRoom as createFirestoreRoom } from '../services/firestoreService';
 import SecureLoading from './SecureLoading';
+import Logo from '../logo.svg';
 
 function Landing() {
   const [showNameModal, setShowNameModal] = useState(false);
@@ -512,7 +513,7 @@ function Landing() {
         }} />
 
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-          <FaCode size={32} color="#3b82f6" />
+          <img src={Logo} alt="CodeConnect Logo" style={{ width: '40px', height: '40px' }} />
           <span style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #3b82f6, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CodeConnect</span>
         </div>
 

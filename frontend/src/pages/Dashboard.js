@@ -122,6 +122,25 @@ const Dashboard = () => {
         return 'Good Evening';
     };
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: { type: "spring", stiffness: 300, damping: 24 }
+        }
+    };
+
     return (
         <div className="dashboard-container">
 
@@ -154,14 +173,25 @@ const Dashboard = () => {
             </motion.div>
 
             {/* Stats Grid */}
-            <div className="stats-grid">
-                <StatsCard icon={<FaLaptopCode />} title="Total Sessions" value={stats.totalSessions} color="#8b5cf6" delay={0.1} />
-                <StatsCard icon={<FaProjectDiagram />} title="Active Projects" value={stats.roomsCreated} color="#06b6d4" delay={0.2} />
-                <StatsCard icon={<FaChartPie />} title="Languages" value={stats.languagesUsed?.length || 0} color="#ec4899" delay={0.3} />
+            <motion.div
+                className="stats-grid"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <div style={{ display: 'contents' }}>
+                    <StatsCard icon={<FaLaptopCode />} title="Total Sessions" value={stats.totalSessions} color="#8b5cf6" delay={0.1} />
+                </div>
+                <div style={{ display: 'contents' }}>
+                    <StatsCard icon={<FaProjectDiagram />} title="Active Projects" value={stats.roomsCreated} color="#06b6d4" delay={0.2} />
+                </div>
+                <div style={{ display: 'contents' }}>
+                    <StatsCard icon={<FaChartPie />} title="Languages" value={stats.languagesUsed?.length || 0} color="#ec4899" delay={0.3} />
+                </div>
                 <div onClick={() => setIsOnlineUsersModalOpen(true)} style={{ display: 'contents', cursor: 'pointer' }}>
                     <StatsCard icon={<FaBrain />} title="Online Users" value={onlineUsers.length} color="#10b981" delay={0.4} />
                 </div>
-            </div>
+            </motion.div>
 
             {/* Main Content Area */}
             <div className="dashboard-main-grid">
@@ -173,7 +203,12 @@ const Dashboard = () => {
                         <h2 className="section-title"><FaCode color="#f59e0b" /> Quick Start</h2>
                     </div>
 
-                    <div className="quick-actions-grid">
+                    <motion.div
+                        className="quick-actions-grid"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
                         <Link to="/problems" className="action-card" style={{ '--card-accent': '#f59e0b' }}>
                             <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}>
                                 <FaCode />
@@ -184,7 +219,7 @@ const Dashboard = () => {
                             </div>
                         </Link>
 
-                        <button onClick={() => handleCreateRoom()} className="action-card" style={{ '--card-accent': '#8b5cf6', cursor: 'pointer', textAlign: 'left', width: '100%', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <button onClick={() => handleCreateRoom()} className="action-card" style={{ '--card-accent': '#8b5cf6', cursor: 'pointer', textAlign: 'left', width: '100%', border: '1px solid var(--border-color)' }}>
                             <div className="icon-box" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' }}>
                                 <FaLaptopCode />
                             </div>
@@ -193,14 +228,19 @@ const Dashboard = () => {
                                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Start a collaborative coding room instantly</div>
                             </div>
                         </button>
-                    </div>
+                    </motion.div>
 
                     {/* Developer Tools */}
                     <div className="section-header" style={{ marginTop: '3rem' }}>
                         <h2 className="section-title"><FaMagic color="#ec4899" /> Developer Tools</h2>
                     </div>
 
-                    <div className="tools-grid">
+                    <motion.div
+                        className="tools-grid"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                    >
                         <Link to="/debugging" className="tool-card">
                             <div className="tool-icon-sm" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>
                                 <FaBug />
@@ -230,7 +270,7 @@ const Dashboard = () => {
                                 <div style={{ fontSize: '0.85rem', color: '#fcd34d' }}>Generate Snippets</div>
                             </div>
                         </Link>
-                    </div>
+                    </motion.div>
 
                     {/* Recent Rooms */}
                     <div className="section-header" style={{ marginTop: '3rem' }}>

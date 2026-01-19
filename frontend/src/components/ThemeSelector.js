@@ -1,107 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { FaPalette, FaCheck } from 'react-icons/fa';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { FaMoon, FaSun } from 'react-icons/fa';
 import { useTheme } from '../contexts/ThemeContext';
 
 const ThemeSelector = () => {
-    const { theme, setTheme, themes } = useTheme();
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
+    const { theme, setTheme } = useTheme();
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const currentTheme = themes.find(t => t.id === theme) || themes[0];
+    const toggleTheme = () => {
+        setTheme(theme === 'midnight' ? 'light' : 'midnight');
+    };
 
     return (
-        <div className="theme-selector" ref={dropdownRef} style={{ position: 'relative' }}>
-            <motion.button
-                className="theme-toggle-btn"
-                onClick={() => setIsOpen(!isOpen)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+        <motion.button
+            className="theme-toggle"
+            onClick={toggleTheme}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            style={{
+                background: theme === 'midnight' ? 'var(--bg-tertiary)' : '#f1f5f9',
+                border: '1px solid var(--border-color)',
+                borderRadius: '30px',
+                padding: '4px',
+                width: '64px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: theme === 'midnight' ? 'flex-end' : 'flex-start',
+                cursor: 'pointer',
+                position: 'relative',
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+            }}
+        >
+            <motion.div
+                layout
+                transition={{ type: "spring", stiffness: 700, damping: 30 }}
                 style={{
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: '12px',
-                    padding: '8px 12px',
-                    color: 'var(--text-primary)',
-                    cursor: 'pointer',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: theme === 'midnight' ? '#6366f1' : '#fbbf24',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.2s'
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                 }}
             >
-                <FaPalette style={{ color: 'var(--accent-secondary)' }} />
-                <span>{currentTheme.name}</span>
-            </motion.button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        style={{
-                            position: 'absolute',
-                            top: '120%',
-                            right: 0,
-                            width: '180px',
-                            background: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '16px',
-                            padding: '8px',
-                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
-                            zIndex: 1000,
-                            overflow: 'hidden'
-                        }}
-                    >
-                        {themes.map((t) => (
-                            <motion.button
-                                key={t.id}
-                                onClick={() => {
-                                    setTheme(t.id);
-                                    setIsOpen(false);
-                                }}
-                                whileHover={{ backgroundColor: 'var(--bg-tertiary)' }}
-                                style={{
-                                    width: '100%',
-                                    padding: '8px 12px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    color: t.id === theme ? 'var(--accent-primary)' : 'var(--text-secondary)',
-                                    cursor: 'pointer',
-                                    borderRadius: '8px',
-                                    fontSize: '0.9rem',
-                                    textAlign: 'left',
-                                    fontWeight: t.id === theme ? '600' : '400'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span>{t.icon}</span>
-                                    <span>{t.name}</span>
-                                </div>
-                                {t.id === theme && <FaCheck size={12} />}
-                            </motion.button>
-                        ))}
-                    </motion.div>
+                {theme === 'midnight' ? (
+                    <FaMoon size={12} color="white" />
+                ) : (
+                    <FaSun size={12} color="white" />
                 )}
-            </AnimatePresence>
-        </div>
+            </motion.div>
+        </motion.button>
     );
 };
 

@@ -7,9 +7,12 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Default to 'cosmic' if no theme is saved
+    // Default to 'midnight' if no theme is saved
     const [theme, setTheme] = useState(() => {
-        return localStorage.getItem('app-theme') || 'cosmic';
+        const saved = localStorage.getItem('app-theme');
+        // If saved theme is not one of the allowed ones, default to midnight
+        if (saved !== 'midnight' && saved !== 'light') return 'midnight';
+        return saved;
     });
 
     useEffect(() => {
@@ -22,10 +25,8 @@ export const ThemeProvider = ({ children }) => {
         theme,
         setTheme,
         themes: [
-            { id: 'cosmic', name: 'Cosmic', icon: '🌌' },
-            { id: 'light', name: 'Light', icon: '☀️' },
-            { id: 'dark', name: 'Dark', icon: '🌑' },
-            { id: 'midnight', name: 'Midnight', icon: '🌃' }
+            { id: 'midnight', name: 'Midnight', icon: '🌃' },
+            { id: 'light', name: 'Light', icon: '☀️' }
         ]
     };
 
