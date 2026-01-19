@@ -75,7 +75,7 @@ const Footer = () => {
             </div>
 
             <div className="footer-bottom">
-                <p>&copy; {new Date().getFullYear()} CodeConnect. Made with <FaHeart className="heart-icon" /> for devs.</p>
+                <p>&copy; {new Date().getFullYear()} CodeConnect. All rights reserved.</p>
             </div>
 
             <style>{`
@@ -220,21 +220,6 @@ const Footer = () => {
                     border-top: 1px solid var(--border-color);
                     color: var(--text-secondary);
                     font-size: 0.9rem;
-                }
-
-                .heart-icon {
-                    color: var(--error);
-                    animation: heartbeat 1.5s infinite;
-                    vertical-align: middle;
-                    margin: 0 4px;
-                }
-
-                @keyframes heartbeat {
-                    0% { transform: scale(1); }
-                    14% { transform: scale(1.1); }
-                    28% { transform: scale(1); }
-                    42% { transform: scale(1.1); }
-                    70% { transform: scale(1); }
                 }
 
                 @media (max-width: 768px) {
