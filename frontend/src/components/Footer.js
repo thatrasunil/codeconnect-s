@@ -6,8 +6,8 @@ import Logo from '../logo.svg';
 const Footer = () => {
     const location = useLocation();
 
-    // Hide Footer in Editor and other full-screen routes
-    if (location.pathname.startsWith('/room/') || location.pathname.startsWith('/solve/')) {
+    // Only show Footer on Landing Page
+    if (location.pathname !== '/') {
         return null;
     }
 
