@@ -12,7 +12,14 @@ export const SUPPORTED_LANGUAGES = [
     {
         id: 'c',
         name: 'C',
-        template: `// Write your C code here\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}`
+        template: `// Write your C code here
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    printf("Hello, CodeConnect!\\n");
+    return 0;
+}`
     },
 ];
 

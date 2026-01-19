@@ -2,7 +2,7 @@
 
 A **Real-Time Collaborative Coding Platform** with integrated AI assistance, problem-solving tools, and advanced debugging features. Built with React, Node.js, Firebase, and powered by Google Gemini AI.
 
-![CodeConnect](https://img.shields.io/badge/version-3.0.0-blue.svg)
+![CodeConnect](https://img.shields.io/badge/version-3.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-ISC-green.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
 ![Firebase](https://img.shields.io/badge/firebase-11.2.0-orange.svg)
@@ -11,7 +11,7 @@ A **Real-Time Collaborative Coding Platform** with integrated AI assistance, pro
 
 ### 🎯 Core Functionality
 - **Real-Time Collaborative Editing**: Multiple users can code simultaneously with Monaco Editor
-- **Multi-Language Support**: JavaScript, Python, Java, C++, and more with intelligent syntax highlighting
+- **Multi-Language Support**: JavaScript, Python, Java, C++, C, and more with intelligent syntax highlighting
 - **Room Management**: Unique 6-digit room IDs for easy collaboration
 - **Session Persistence**: Auto-save with Firestore real-time sync
 - **Cloud Code Execution**: Run code in a secure backend environment
@@ -37,6 +37,7 @@ A **Real-Time Collaborative Coding Platform** with integrated AI assistance, pro
   - **Intermediate**: Linked lists, trees, dynamic programming (LRU Cache, Word Break)
   - **Advanced**: Complex algorithms, system design (Median of Two Sorted Arrays, N-Queens)
 - **Problem Solver Mode**: Dedicated coding interface with integrated problem descriptions
+- **Team Challenges**: Create and join teams, compete in coding challenges, and track global rankings
 - **Real-Time Leaderboard**: Gamified learning with points, rankings, and progress tracking
 - **Progress Dashboard**: Monitor sessions, active projects, languages used, and achievements
 
@@ -253,12 +254,14 @@ const config = {
 2. Ask questions or request explanations
 3. Use "Explain" button for selected code analysis
 
-## 🆕 Recent Updates (v3.1.0)
+## 🆕 Recent Updates (v3.2.0)
 
 ### Major Features ✅
 - ✅ **Collaborative Whiteboard**: Real-time shared canvas with drawing tools (pen, shapes), color picker, and instant sync across all users.
 - ✅ **Advanced Voice Chat**: Integrated voice messaging with record, pause, resume, and cancel capabilities.
 - ✅ **Session Management**: "End Session" functionality to securely wipe room data and improved connection persistence.
+- ✅ **Team Challenges**: Collaborative team-based coding competitions with global leaderboards
+- ✅ **C Language Support**: Native compilation and execution support for C programming
 - ✅ **Google Gemini AI Integration**: Real AI-powered code generation, debugging, and testing
 - ✅ **Firebase Migration**: Complete transition from backend API to Firestore
 - ✅ **Problem Solver Mode**: Conditional problem panel display
