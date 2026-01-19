@@ -7,26 +7,22 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Default to 'midnight' if no theme is saved
-    const [theme, setTheme] = useState(() => {
-        const saved = localStorage.getItem('app-theme');
-        // If saved theme is not one of the allowed ones, default to midnight
-        if (saved !== 'midnight' && saved !== 'light') return 'midnight';
-        return saved;
-    });
+    // Force 'midnight' theme always
+    const theme = 'midnight';
+
+    // Dummy setter to prevent errors if used elsewhere
+    const setTheme = () => { };
 
     useEffect(() => {
-        // Apply the theme to the document element (html tag)
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('app-theme', theme);
-    }, [theme]);
+        document.documentElement.setAttribute('data-theme', 'midnight');
+        localStorage.setItem('app-theme', 'midnight');
+    }, []);
 
     const value = {
         theme,
         setTheme,
         themes: [
-            { id: 'midnight', name: 'Midnight', icon: '🌃' },
-            { id: 'light', name: 'Light', icon: '☀️' }
+            { id: 'midnight', name: 'Midnight', icon: '🌃' }
         ]
     };
 

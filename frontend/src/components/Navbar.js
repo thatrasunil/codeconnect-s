@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { FaSignOutAlt, FaCode, FaBars, FaTimes } from 'react-icons/fa';
-import ThemeSelector from './ThemeSelector';
 import Logo from '../logo.svg';
 import './Navbar.css';
 
@@ -51,7 +50,6 @@ const Navbar = () => {
                 )}
 
                 <div className="navbar-auth">
-                    <ThemeSelector />
                     {user ? (
                         <>
                             <Link to="/profile" className="user-profile-link" onClick={closeMenu}>
