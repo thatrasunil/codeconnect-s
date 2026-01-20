@@ -3,10 +3,12 @@ const router = express.Router();
 const verifyToken = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
-const User = require('../models/User');
 
 module.exports = (db) => {
+
+    // Helper to get users collection reference
+    // We handle check inside routes to avoid crashes if db is not connected yet
+    const getUsers = () => db.collection('users');
 
     /**
      * POST /api/auth/signup
@@ -20,25 +22,50 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email and password are required' });
             }
 
-            // Check if user already exists
-            const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-            if (existingUser) {
-                return res.status(400).json({ error: 'User with this email or username already exists' });
+            if (!db) {
+                return res.status(503).json({ error: 'Database service unavailable' });
             }
 
-            const newUser = new User({
+            // Check if user already exists (by email or username)
+            const usersRef = getUsers();
+
+            // Firestore OR queries are limited, so we might need two queries or a compound one if setup.
+            // Simplest correct way without complex indexes: Check Email, then Check Username.
+
+            const emailQuery = await usersRef.where('email', '==', email).get();
+            if (!emailQuery.empty) {
+                return res.status(400).json({ error: 'User with this email already exists' });
+            }
+
+            if (username) {
+                const usernameQuery = await usersRef.where('username', '==', username).get();
+                if (!usernameQuery.empty) {
+                    return res.status(400).json({ error: 'User with this username already exists' });
+                }
+            }
+
+            // Hash password (since we lost Mongoose middleware)
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            const newUser = {
                 username: username || email.split('@')[0],
                 email,
-                password, // Will be hashed by model pre-save hook
-                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || 'User'}`,
-                role: 'user'
-            });
+                password: hashedPassword,
+                displayName: displayName || username || "User",
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`,
+                role: 'user',
+                createdAt: new Date().toISOString(),
+                provider: 'local'
+            };
 
-            await newUser.save();
+            // Add to Firestore
+            const docRef = await usersRef.add(newUser);
+            const userId = docRef.id;
 
             // Generate Token
             const payload = {
-                uid: newUser._id.toString(), // Mongoose ID
+                uid: userId,
                 email: newUser.email,
                 name: newUser.username
             };
@@ -49,7 +76,7 @@ module.exports = (db) => {
                 success: true,
                 access: token,
                 user: {
-                    uid: newUser._id,
+                    uid: userId,
                     email: newUser.email,
                     username: newUser.username,
                     avatar: newUser.avatar
@@ -74,26 +101,50 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email/Username and password are required' });
             }
 
-            // Find user
-            const user = await User.findOne({ $or: [{ email }, { username }] }); if (!user) {
+            if (!db) {
+                return res.status(503).json({ error: 'Database service unavailable' });
+            }
+
+            const usersRef = getUsers();
+            let userDoc = null;
+            let userData = null;
+
+            // Find user by email OR username
+            if (email) {
+                const q = await usersRef.where('email', '==', email).limit(1).get();
+                if (!q.empty) {
+                    userDoc = q.docs[0];
+                    userData = userDoc.data();
+                }
+            }
+
+            if (!userData && username) {
+                const q = await usersRef.where('username', '==', username).limit(1).get();
+                if (!q.empty) {
+                    userDoc = q.docs[0];
+                    userData = userDoc.data();
+                }
+            }
+
+            if (!userData) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             // Verify Password
-            if (!user.password) {
-                return res.status(400).json({ error: 'Please login with Google.' });
+            if (!userData.password) {
+                return res.status(400).json({ error: 'Please login with Google or the method you signed up with.' });
             }
 
-            const isMatch = await bcrypt.compare(password, user.password);
+            const isMatch = await bcrypt.compare(password, userData.password);
             if (!isMatch) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             // Generate Token
             const payload = {
-                uid: user._id.toString(),
-                email: user.email,
-                name: user.username
+                uid: userDoc.id,
+                email: userData.email,
+                name: userData.username
             };
 
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'default_secret_key_change_me', { expiresIn: '7d' });
@@ -102,10 +153,10 @@ module.exports = (db) => {
                 success: true,
                 access: token,
                 user: {
-                    uid: user._id,
-                    email: user.email,
-                    username: user.username,
-                    avatar: user.avatar
+                    uid: userDoc.id,
+                    email: userData.email,
+                    username: userData.username,
+                    avatar: userData.avatar
                 }
             });
 
@@ -123,14 +174,21 @@ module.exports = (db) => {
         try {
             const userId = req.user.uid || req.user.user_id;
 
-            let user = null;
-            if (mongoose.Types.ObjectId.isValid(userId)) {
-                user = await User.findById(userId).select('-password');
-            } else if (req.user.email) {
-                user = await User.findOne({ email: req.user.email }).select('-password');
+            if (!db) {
+                // Fallback if DB not ready but we have token info
+                return res.json({
+                    uid: userId,
+                    email: req.user.email,
+                    username: req.user.name || "User",
+                    avatar: req.user.picture || null,
+                    isTemporary: true
+                });
             }
 
-            if (!user) {
+            const userRef = db.collection('users').doc(userId);
+            const docSnap = await userRef.get();
+
+            if (!docSnap.exists) {
                 return res.json({
                     uid: userId,
                     email: req.user.email,
@@ -140,9 +198,13 @@ module.exports = (db) => {
                 });
             }
 
+            const userData = docSnap.data();
+            // Remove sensitive data
+            delete userData.password;
+
             res.json({
-                uid: user._id,
-                ...user.toObject()
+                uid: docSnap.id,
+                ...userData
             });
 
         } catch (error) {
@@ -160,46 +222,38 @@ module.exports = (db) => {
             const userId = req.user.uid || req.user.user_id;
             const { username, email, avatar } = req.body;
 
-            let user = null;
-            if (mongoose.Types.ObjectId.isValid(userId)) {
-                user = await User.findById(userId);
-            } else if (req.user.email) {
-                user = await User.findOne({ email: req.user.email });
+            if (!db) {
+                return res.status(503).json({ error: 'Database service unavailable' });
             }
 
-            if (!user) {
-                // If user not found in DB but token is valid (middleware passed), create them now.
-                // This happens for Firebase users who haven't been synced to Mongo yet.
-                console.log(`User ${userId} not found in MongoDB. Creating on the fly...`);
+            const userRef = db.collection('users').doc(userId);
+            const docSnap = await userRef.get();
 
-                user = new User({
-                    _id: mongoose.Types.ObjectId.isValid(userId) ? userId : undefined, // Let Mongo generate if not valid, but usually we want to map? 
-                    // Actually, if we are here, req.user has data.
-                    // If req.user.uid is a valid MongoID, use it. If it's a Firebase UID string, we might have issues if Schema expects ObjectId default.
-                    // But our User schema likely relies on default _id. 
-                    // Let's rely on finding by email or username if not found by ID.
-
-                    email: req.user.email,
-                    username: username || req.user.name || req.user.email?.split('@')[0] || "User",
-                    avatar: avatar || req.user.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.user.email}`,
-                    role: 'user',
-                    password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8), // Dummy password to satisfy required field
-                    provider: 'firebase' // Assume firebase/external if not in DB
-                });
-
-                // If we have an email, ensure we don't duplicate if findOne failed above (race condition check not strictly needed for MVP)
+            let userData = {};
+            if (docSnap.exists) {
+                userData = docSnap.data();
             } else {
-                // Only update fields if provided
-                if (username) user.username = username;
-                if (email) user.email = email;
-                if (avatar) user.avatar = avatar;
+                // If user doesn't exist (e.g. firebase auth user not yet in our db), create them
+                userData = {
+                    email: req.user.email,
+                    username: username || req.user.name || "User",
+                    createdAt: new Date().toISOString(),
+                    role: 'user',
+                    provider: 'firebase'
+                };
             }
 
-            await user.save();
+            // Update fields
+            if (username) userData.username = username;
+            if (email) userData.email = email;
+            if (avatar) userData.avatar = avatar;
+
+            // Save (Set with merge true acts like upset/patch)
+            await userRef.set(userData, { merge: true });
 
             res.json({
-                uid: user._id,
-                ...user.toObject(),
+                uid: userId,
+                ...userData,
                 password: undefined
             });
 

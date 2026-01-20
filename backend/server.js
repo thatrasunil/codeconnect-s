@@ -117,24 +117,23 @@ const mongoose = require('mongoose');
 let db;
 let isFirestoreConnected = false;
 
-// 1. Connect to MongoDB (Primary Auth DB)
+// 1. Connect to MongoDB (Optional - Legacy/Data)
 if (process.env.MONGODB_URI) {
   mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,  // Reduce timeout to 5 seconds
-    socketTimeoutMS: 45000,           // Socket timeout
-    connectTimeoutMS: 10000,          // Connection timeout
-    maxPoolSize: 10,                  // Connection pool
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    connectTimeoutMS: 10000,
+    maxPoolSize: 10,
     retryWrites: true,
     w: 'majority'
   })
     .then(() => console.log('✅ MongoDB connected successfully'))
     .catch(err => {
       console.error('❌ MongoDB connection error:', err);
-      console.warn('⚠️ Running in limited mode without authentication');
+      console.warn('⚠️ Running without MongoDB. Auth will use Firestore.');
     });
 } else {
-  console.warn('⚠️ MONGODB_URI not found in environment variables. Authentication will fail.');
-  console.warn('📝 Please add MONGODB_URI to your Vercel environment variables');
+  console.log('ℹ️ MONGODB_URI not found. Running in Firestore-only mode.');
 }
 
 // 2. Connect to Firestore (Chat & Rooms DB)
