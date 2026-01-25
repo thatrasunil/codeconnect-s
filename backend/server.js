@@ -22,31 +22,30 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3007",
-  "https://codeconnect-s.vercel.app",
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL || "https://codeconnect.vercel.app",
+  "https://codeconnect-zeta-pied.vercel.app",
+  "https://codeconnect-frontend.vercel.app",
+  "https://codeshare-production-b2f2.up.railway.app",
+  "https://code-connect-beige-rho.vercel.app",
+  /\.vercel\.app$/
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true
+  }
+});
 
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app') || origin.includes('localhost')) {
-      callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin); // Debug log
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+app.use(cors({
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ["Access-Control-Allow-Origin"],
   optionsSuccessStatus: 200
 }));
-
-// Enable pre-flight request for all routes
-app.options('*', cors());
 
 app.use(express.json());
 
