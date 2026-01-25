@@ -846,6 +846,14 @@ app.use((req, res) => {
 });
 
 if (process.env.VERCEL) {
+  // Export the HTTP server instance which has Socket.IO attached
+  // Vercel serverless functions usually expect a handler (req, res), 
+  // but for full server setups, exporting the app is common.
+  // However, since we attached Socket.IO to 'server', we should probably export 'app' 
+  // but ensure 'server' is used if Vercel supports it, OR accept that 
+  // Socket.IO on standard Vercel serverless has limitations.
+  // BUT: The crash is likely "Function Invocation Failed" from a timeout or error.
+  // Let's ensure we don't start listening if Vercel handles it.
   module.exports = app;
 } else {
   server.listen(PORT, '0.0.0.0', () => {
