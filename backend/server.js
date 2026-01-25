@@ -173,16 +173,29 @@ if (process.env.MONGODB_URI) {
 }
 
 // 2. Connect to Firestore (Chat & Rooms DB)
+// 2. Connect to Firestore (Chat & Rooms DB)
 try {
   // Check for service account - normally provided via GOOGLE_APPLICATION_CREDENTIALS
   // or passed directly. For now, we'll try default app or warn.
   if (!admin.apps.length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-      console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
+      try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+        console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
+      } catch (parseError) {
+        console.error("FAILED to parse FIREBASE_SERVICE_ACCOUNT:", parseError.message);
+        console.warn("Falling back to default credentials or in-memory mode.");
+        // Try default init as fallback if parsing failed
+        try {
+          admin.initializeApp();
+          console.log("Firebase Admin initialized with default credentials (fallback)");
+        } catch (e) {
+          console.warn("Default initialization also failed or not suitable.");
+        }
+      }
     } else {
       // Attempt default initialization (works on GCP/Render if env vars set)
       admin.initializeApp();
@@ -196,6 +209,10 @@ try {
   console.warn('Firebase connection warning:', err.message);
   console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
   console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
+}
+console.warn('Firebase connection warning:', err.message);
+console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
+console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
 }
 
 // --- In-memory Stores (Fallback) ---
