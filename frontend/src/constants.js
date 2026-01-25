@@ -53,6 +53,7 @@ func main() {
     fmt.Println("Hello, World!")
 }`
     },
+];
 
 export const SUPPORTED_THEMES = [
     { id: 'vs-dark', name: 'Dark (Visual Studio)' },
