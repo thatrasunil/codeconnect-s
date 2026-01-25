@@ -350,6 +350,9 @@ export const createRoom = async (roomData) => {
 /**
  * Update the code content of a room
  */
+/**
+ * Update the code content of a room
+ */
 export const updateRoomCode = async (roomId, code, language) => {
     try {
         const roomRef = doc(db, "rooms", roomId);
@@ -359,7 +362,9 @@ export const updateRoomCode = async (roomId, code, language) => {
         };
         if (language) updates.language = language;
 
-        await updateDoc(roomRef, updates);
+        // Use setDoc with merge to act as an upsert (create if not exists)
+        // This handles cases where user is on a room URL that hasn't been synced to DB yet
+        await setDoc(roomRef, updates, { merge: true });
     } catch (error) {
         console.error("❌ Error updating room code:", error);
     }
