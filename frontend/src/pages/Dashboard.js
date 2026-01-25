@@ -285,8 +285,8 @@ const Dashboard = () => {
                             </div>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {myRooms.map(room => (
-                                    <div key={room.id} className="room-card">
+                                {myRooms.map((room, index) => (
+                                    <div key={room.id || index} className="room-card">
                                         <div className="room-info">
                                             <div className="lang-badge">
                                                 {room.language === 'python' ? '🐍' : '📜'}
@@ -303,7 +303,7 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Link to={`/room/${room.room_id}`} className="rejoin-btn">
+                                        <Link to={`/room/${room.room_id || room.id}`} className="rejoin-btn">
                                             Rejoin Session
                                         </Link>
                                     </div>
@@ -325,7 +325,7 @@ const Dashboard = () => {
                         ) : (
                             <div className="leaderboard-list">
                                 {leaderboard.slice(0, 5).map((user, index) => (
-                                    <div key={user.username} className="leaderboard-item">
+                                    <div key={user.username || index} className="leaderboard-item">
                                         <div className={`user-rank rank-${index + 1 > 3 ? 'other' : index + 1}`}>
                                             {index + 1}
                                         </div>
