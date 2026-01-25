@@ -210,10 +210,6 @@ try {
   console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
   console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
 }
-console.warn('Firebase connection warning:', err.message);
-console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
-console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
-}
 
 // --- In-memory Stores (Fallback) ---
 const localRooms = new Map();
