@@ -152,64 +152,83 @@ const mongoose = require('mongoose');
 // --- Database Connection (MongoDB & Firestore) ---
 let db;
 let isFirestoreConnected = false;
+let isDbInitialized = false;
 
-// 1. Connect to MongoDB (Optional - Legacy/Data)
-if (process.env.MONGODB_URI) {
-  mongoose.connect(process.env.MONGODB_URI, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    connectTimeoutMS: 10000,
-    maxPoolSize: 10,
-    retryWrites: true,
-    w: 'majority'
-  })
-    .then(() => console.log('✅ MongoDB connected successfully'))
-    .catch(err => {
+// Lazy Initialization Function
+async function connectDB() {
+  if (isDbInitialized) return;
+
+  // 1. Connect to MongoDB (Optional - Legacy/Data)
+  if (process.env.MONGODB_URI && mongoose.connection.readyState === 0) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000,
+        maxPoolSize: 10,
+        retryWrites: true,
+        w: 'majority'
+      });
+      console.log('✅ MongoDB connected successfully');
+    } catch (err) {
       console.error('❌ MongoDB connection error:', err);
       console.warn('⚠️ Running without MongoDB. Auth will use Firestore.');
-    });
-} else {
-  console.log('ℹ️ MONGODB_URI not found. Running in Firestore-only mode.');
-}
-
-// 2. Connect to Firestore (Chat & Rooms DB)
-// 2. Connect to Firestore (Chat & Rooms DB)
-try {
-  // Check for service account - normally provided via GOOGLE_APPLICATION_CREDENTIALS
-  // or passed directly. For now, we'll try default app or warn.
-  if (!admin.apps.length) {
-    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-      try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount)
-        });
-        console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
-      } catch (parseError) {
-        console.error("FAILED to parse FIREBASE_SERVICE_ACCOUNT:", parseError.message);
-        console.warn("Falling back to default credentials or in-memory mode.");
-        // Try default init as fallback if parsing failed
-        try {
-          admin.initializeApp();
-          console.log("Firebase Admin initialized with default credentials (fallback)");
-        } catch (e) {
-          console.warn("Default initialization also failed or not suitable.");
-        }
-      }
-    } else {
-      // Attempt default initialization (works on GCP/Render if env vars set)
-      admin.initializeApp();
-      console.log("Firebase Admin initialized with default credentials");
     }
   }
-  db = getFirestore();
-  isFirestoreConnected = true;
-  console.log('✅ Firestore connected successfully');
-} catch (err) {
-  console.warn('Firebase connection warning:', err.message);
-  console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
-  console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
+
+  // 2. Connect to Firestore (Chat & Rooms DB)
+  if (!db) {
+    try {
+      if (!admin.apps.length) {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+          try {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount)
+            });
+            console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
+          } catch (parseError) {
+            console.error("FAILED to parse FIREBASE_SERVICE_ACCOUNT:", parseError.message);
+            // Fallback to default
+            try { admin.initializeApp(); } catch (e) { }
+          }
+        } else {
+          admin.initializeApp();
+          console.log("Firebase Admin initialized with default credentials");
+        }
+      }
+      db = getFirestore();
+      isFirestoreConnected = true;
+      console.log('✅ Firestore connected successfully');
+    } catch (err) {
+      console.warn('Firebase connection warning:', err.message);
+      console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
+    }
+  }
+
+  isDbInitialized = true;
 }
+
+// Health Check - BEFORE DB middleware
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Middleware to ensure DB is connected for API routes
+app.use(async (req, res, next) => {
+  // Skip DB connection for static files or non-api routes if needed, 
+  // but for safety we usually want it. 
+  // We can skip for specific paths to speed up things like heartbeats if they don't use DB.
+  if (req.path === '/api/health') return next();
+
+  try {
+    await connectDB();
+  } catch (e) {
+    console.error("DB Auto-connect error:", e);
+    // Continue anyway, maybe memory store works
+  }
+  next();
+});
 
 // --- In-memory Stores (Fallback) ---
 const localRooms = new Map();
@@ -218,12 +237,22 @@ const socketIdToUserId = new Map(); // socket.id -> userId
 
 const teamsRouter = require('./routes/teams');
 
+// Database Proxy to handle lazy initialization
+const dbProxy = new Proxy({}, {
+  get: function (target, prop) {
+    if (!db) return undefined;
+    // If accessing a property of db (like .collection), return it bound to db
+    const val = db[prop];
+    return typeof val === 'function' ? val.bind(db) : val;
+  }
+});
+
 // --- Mount Routes ---
-// Pass db instance to routers
-app.use('/api/problems', problemsRouter(db));
-app.use('/api/auth', authRouter(db));
-app.use('/api/chat', chatRouter(db, localRooms));
-app.use('/api/teams', teamsRouter(db));
+// Pass db instance (proxy) to routers
+app.use('/api/problems', problemsRouter(dbProxy));
+app.use('/api/auth', authRouter(dbProxy));
+app.use('/api/chat', chatRouter(dbProxy, localRooms));
+app.use('/api/teams', teamsRouter(dbProxy));
 
 // --- API Routes ---
 function generateRoomId() {
