@@ -35,5 +35,11 @@ export const DEFAULT_EDITOR_SETTINGS = {
     tabSize: 4,
     minimap: true,
     fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, monospace",
-    bracketPairColorization: true
+    bracketPairColorization: true,
+    // Autocomplete/IntelliSense Settings
+    quickSuggestions: { other: true, comments: true, strings: true },
+    suggestOnTriggerCharacters: true,
+    acceptSuggestionOnEnter: "on",
+    tabCompletion: "on",
+    snippetSuggestions: "inline"
 };
