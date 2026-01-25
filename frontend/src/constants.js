@@ -20,39 +20,6 @@ int main() {
     return 0;
 }`
     },
-    {
-        id: 'cpp',
-        name: 'C++',
-        template: `// Write your C++ code here
-#include <iostream>
-
-int main() {
-    std::cout << "Hello, World!" << std::endl;
-    return 0;
-}`
-    },
-    {
-        id: 'java',
-        name: 'Java',
-        template: `// Write your Java code here
-public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello, World!");
-    }
-}`
-    },
-    {
-        id: 'go',
-        name: 'Go',
-        template: `// Write your Go code here
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("Hello, World!")
-}`
-    },
 ];
 
 export const SUPPORTED_THEMES = [
