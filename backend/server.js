@@ -27,6 +27,7 @@ const allowedOrigins = [
   "https://codeconnect-frontend.vercel.app",
   "https://codeshare-production-b2f2.up.railway.app",
   "https://code-connect-beige-rho.vercel.app",
+  "https://codeconnect-s.vercel.app",
   /\.vercel\.app$/
 ];
 
