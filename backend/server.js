@@ -18,35 +18,70 @@ const verifyToken = require('./middleware/auth');
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3007",
-  process.env.FRONTEND_URL || "https://codeconnect.vercel.app",
-  "https://codeconnect-zeta-pied.vercel.app",
-  "https://codeconnect-frontend.vercel.app",
-  "https://codeshare-production-b2f2.up.railway.app",
-  "https://code-connect-beige-rho.vercel.app",
-  "https://codeconnect-s.vercel.app",
-  /\.vercel\.app$/
-];
-
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3007",
+      process.env.FRONTEND_URL || "https://codeconnect.vercel.app",
+      /\.vercel\.app$/
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   }
 });
 
+// ===== CRITICAL: CORS Configuration for Vercel =====
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3007',
+  'https://codeconnect-s.vercel.app',
+  'https://code-connect.vercel.app',
+  process.env.FRONTEND_URL || 'https://codeconnect-s.vercel.app'
+];
+
+// CORS with credentials support
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl requests, etc.)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is allowed
+    if (allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      console.log('CORS rejected origin:', origin);
+      callback(new Error('CORS policy violation'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ["Access-Control-Allow-Origin"],
+  exposedHeaders: ['Access-Control-Allow-Origin'],
+  maxAge: 3600,
   optionsSuccessStatus: 200
 }));
+
+// ===== CRITICAL: Explicit CORS headers for Vercel =====
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin) || origin?.endsWith('.vercel.app') || origin?.includes('localhost')) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+
+  // Handle OPTIONS preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -580,7 +615,13 @@ app.post('/api/ai/explain', async (req, res) => {
 });
 
 // --- Code Execution (Piston API Proxy) ---
+// ===== CRITICAL: Both OPTIONS and POST methods =====
+app.options('/api/execute', cors());
+
 app.post('/api/execute', async (req, res) => {
+  // Double-check CORS headers
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   const { code, language } = req.body;
 
   // Map frontend languages to Piston languages
