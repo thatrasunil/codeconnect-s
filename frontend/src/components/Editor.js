@@ -588,6 +588,14 @@ const CodeEditor = () => {
 
                             <div className="toolbar-separator"></div>
 
+                            {/* Participants Badge */}
+                            <div className="editor-room-badge" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid #3b82f6' }}>
+                                <span style={{ marginRight: '6px' }}>👥</span>
+                                {participants.length || 1} Online
+                            </div>
+
+                            <div className="toolbar-separator"></div>
+
                             {/* Language Selector */}
                             <select
                                 value={language}

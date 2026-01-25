@@ -634,11 +634,27 @@ app.post('/api/execute', async (req, res) => {
 });
 
 // --- Socket.IO Events ---
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+const { logEvent } = require('./utils/logger');
 
-  socket.on('join-room', async (roomId, userId) => {
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  // console.log('User connected:', socket.id);
+  logEvent('USER_CONNECT', { socketId: socket.id });
+
+  socket.on('join-room', async ({ roomId, user }) => {
     socket.join(roomId);
+    // console.log(`User ${user?.username || 'Guest'} joined room: ${roomId}`);
+
+    logEvent('USER_JOIN', {
+      roomId,
+      user: user?.username || 'Guest',
+      userId: user?.uid || user?.id || 'guest'
+    });
+
+    // Broadcast to others in the room
+    socket.to(roomId).emit('user-joined', user);
+
+    const userId = user?.uid || user?.id; // Extract userId from the user object
     socketIdToUserId.set(socket.id, userId);
 
     if (!activeRooms.has(roomId)) activeRooms.set(roomId, new Map());
