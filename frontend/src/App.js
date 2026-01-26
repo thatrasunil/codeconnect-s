@@ -14,7 +14,9 @@ import './App.css';
 
 
 // Lazy loading components for performance optimization
-const Landing = lazy(() => import('./components/Landing'));
+import Landing from './components/Landing';
+// Lazy loading components for performance optimization
+// const Landing = lazy(() => import('./components/Landing'));
 const Editor = lazy(() => import('./components/Editor'));
 const ProblemSolver = lazy(() => import('./components/ProblemSolver'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
