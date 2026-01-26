@@ -6,8 +6,9 @@
     padding: 1rem 4rem;
     background: #0f172a;
     color: white;
-    position: relative;
-    z-index: 1000;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 /* Brand / Logo */

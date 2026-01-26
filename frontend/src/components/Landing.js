@@ -15,6 +15,11 @@ function Landing() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [guestName, setGuestName] = useState('');
 
+  useEffect(() => {
+    // Reset scroll position to top on component mount
+    window.scrollTo(0, 0);
+  }, []);
+
   const initiateCreateRoom = () => {
     const storedName = localStorage.getItem('codeconnect_guest_name');
     if (storedName) {
@@ -148,7 +153,7 @@ function Landing() {
             className="hero-text"
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
           >
             <div className="hero-badge" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',

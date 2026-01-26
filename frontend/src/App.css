@@ -6,6 +6,8 @@
     background: radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%);
     position: relative;
     overflow-x: hidden;
+    contain: layout style paint;
+    will-change: scroll-position;
 }
 
 .landing-main {
@@ -17,8 +19,11 @@
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
-    z-index: 1;
+    z-index: 10;
     position: relative;
+    scroll-behavior: smooth;
+    visibility: visible;
+    opacity: 1;
 }
 
 .hero-section {
