@@ -409,17 +409,17 @@ const CodeEditor = () => {
 
     const handleGoogleMeet = () => window.open('https://meet.google.com/new', '_blank');
 
-    const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
+    const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null, extraData = {}) => {
         const finalType = aiMode ? 'AI_PROMPT' : type;
         const msgData = {
-            userId: user?.username || 'Guest',
+            userId: extraData.userId || user?.uid || user?.username || 'Guest',
             content: text,
             type: finalType,
             fileUrl,
             parentId,
             // User avatar etc can be added here
-            avatar: user?.photoURL || null,
-            senderName: user?.username || user?.displayName || 'Guest'
+            avatar: extraData.avatar || user?.photoURL || null,
+            senderName: extraData.senderName || user?.username || user?.displayName || 'Guest'
         };
 
         try {

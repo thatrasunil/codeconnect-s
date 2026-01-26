@@ -729,16 +729,24 @@ io.on('connection', (socket) => {
     socket.join(roomId);
     // console.log(`User ${user?.username || 'Guest'} joined room: ${roomId}`);
 
+    // ✅ CRITICAL FIX: Generate consistent guest ID if not authenticated
+    const userId = user?.uid || user?.id || `guest-${socket.id}`;  // Add socket.id fallback
+    const username = user?.username || user?.displayName || `Guest-${socket.id.substring(0, 6).toUpperCase()}`;
+
     logEvent('USER_JOIN', {
       roomId,
-      user: user?.username || 'Guest',
-      userId: user?.uid || user?.id || 'guest'
+      user: username,
+      userId: userId
     });
 
-    // Broadcast to others in the room
-    socket.to(roomId).emit('user-joined', user);
+    // ✅ Broadcast complete user object
+    socket.to(roomId).emit('user-joined', {
+      userId,
+      username,
+      uid: userId,
+      displayName: username
+    });
 
-    const userId = user?.uid || user?.id; // Extract userId from the user object
     socketIdToUserId.set(socket.id, userId);
 
     if (!activeRooms.has(roomId)) activeRooms.set(roomId, new Map());
@@ -817,8 +825,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send-message', async (data) => {
-    const { roomId, id, content, userId, type = 'text' } = data;
-    const newMessage = { id, userId, content, type, timestamp: new Date().toISOString() };
+    const { roomId, id, content, userId, type = 'text', senderName } = data;
+
+    // ✅ CRITICAL FIX: Ensure message has complete sender info
+    const newMessage = {
+      id,
+      userId: userId || socketIdToUserId.get(socket.id) || `guest-${socket.id}`,
+      senderName: senderName || `Guest-${socket.id.substring(0, 6).toUpperCase()}`,
+      content,
+      type,
+      timestamp: new Date().toISOString()
+    };
 
     if (isFirestoreConnected) {
       await db.collection('rooms').doc(roomId).update({
@@ -831,6 +848,8 @@ io.on('connection', (socket) => {
         room.messages.push(newMessage);
       }
     }
+
+    // ✅ Broadcast to all clients including sender
     io.to(roomId).emit('new-message', newMessage);
   });
 

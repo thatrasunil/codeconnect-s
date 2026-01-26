@@ -15,7 +15,7 @@ import styles from '../styles/ChatPanelRedesign.module.css';
 // Extracted MessageItem Component
 const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const isMe = msg.userId === (user?.username || user?.uid);
+    const isMe = msg.senderName === (user?.username || user?.displayName);
     const isAI = msg.userId === 'Gemini AI';
     // Helper to safely get Date object from Firestore Timestamp or other formats
     const getMessageDate = (msg) => {
@@ -286,7 +286,26 @@ const ChatPanel = ({
     const handleSendMessage = () => {
         if (!messageText.trim()) return;
         const parentId = replyingTo ? replyingTo.id : null;
-        onSendMessage(messageText, 'TEXT', null, parentId);
+
+        // ✅ CRITICAL FIX: Pass complete user info with message
+        const messageData = {
+            content: messageText,
+            type: 'TEXT',
+            fileUrl: null,
+            parentId: parentId,
+            // Add these for guest support:
+            userId: user?.uid || user?.id || `guest-${Date.now()}`,
+            senderName: user?.username || user?.displayName || 'Guest'
+        };
+
+        onSendMessage(
+            messageText,
+            'TEXT',
+            null,
+            parentId,
+            messageData  // Pass full data object
+        );
+
         setMessageText('');
         setReplyingTo(null);
         resetTranscript();
