@@ -109,8 +109,8 @@ codeconnect/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/thatrasunil/codeconnect.git
-   cd codeconnect
+   git clone https://github.com/thatrasunil/code-connect.git
+   cd code-connect
    ```
 
 2. **Backend Setup (Node.js)**

@@ -2,6 +2,10 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thatrasunil/code-connect.git"
+  },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.7",
