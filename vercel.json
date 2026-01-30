@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "frontend/build",
+  "framework": "create-react-app",
+  "git": {
+    "deploymentEnabled": true
+  }
+}
