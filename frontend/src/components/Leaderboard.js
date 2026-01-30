@@ -82,7 +82,15 @@ const Leaderboard = () => {
                                     </td>
                                     <td>
                                         <div className="user-cell">
-                                            <img src={user.avatar} alt={user.username} className="user-avatar-lg" />
+                                            <img
+                                                src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random`}
+                                                alt={user.username}
+                                                className="user-avatar-lg"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.username)}&background=random`;
+                                                }}
+                                            />
                                             <span className="user-name-lg">{user.username}</span>
                                         </div>
                                     </td>
