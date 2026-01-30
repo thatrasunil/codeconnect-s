@@ -147,7 +147,7 @@ function Landing() {
       <main className="landing-main">
 
         {/* Hero Section */}
-        <div className="hero-section">
+        <div className="hero-section" suppressHydrationWarning={true}>
 
           <motion.div
             className="hero-text"
@@ -457,15 +457,17 @@ function Landing() {
                   overflow: 'hidden'
                 }}>
                   <div style={{ position: 'absolute', inset: -20 }}>
-                    <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-                      <ambientLight intensity={0.6} />
-                      <directionalLight position={[5, 5, 5]} intensity={1.5} />
-                      <pointLight position={[-5, -5, -5]} intensity={0.5} color={feature.color} />
-                      <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-                        {feature.model}
-                      </Float>
-                      <Environment preset="city" />
-                    </Canvas>
+                    <Suspense fallback={null}>
+                      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
+                        <ambientLight intensity={0.6} />
+                        <directionalLight position={[5, 5, 5]} intensity={1.5} />
+                        <pointLight position={[-5, -5, -5]} intensity={0.5} color={feature.color} />
+                        <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
+                          {feature.model}
+                        </Float>
+                        <Environment preset="city" />
+                      </Canvas>
+                    </Suspense>
                   </div>
                 </div>
                 <div>
@@ -509,8 +511,13 @@ function Landing() {
 
       <style>{`
         /* Hero Section Responsive */
+        .hero-section, .hero-text, .hero-image-container {
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
         .hero-section {
-          display: grid;
+          display: grid !important;
           grid-template-columns: 1fr 1fr;
           gap: 4rem;
           align-items: center;
