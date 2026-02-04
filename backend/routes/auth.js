@@ -112,6 +112,28 @@ router.post('/firebase', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+    
+/**
+ * DELETE /api/auth/cleanup
+ * DANGER: Delete all user data from MongoDB
+ * This endpoint is for development/testing only
+ */
+router.delete('/cleanup', async (req, res) => {
+    try {
+        // Delete all users from the database
+        const result = await User.deleteMany({});
+        
+        res.json({
+            success: true,
+            message: `Deleted ${result.deletedCount} users from database`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 return router;
 };
