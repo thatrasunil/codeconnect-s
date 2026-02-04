@@ -1,113 +1,171 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { jwtDecode } from 'jwt-decode'; // Optional if we just trust the profile endpoint
-import { loginUser, registerUser, getUserProfile } from '../services/apiService';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut, 
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
+import { auth } from '../firebase';
+import { getUserProfile, createUserInDB } from '../services/apiService';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // Initial Auth Check
-    useEffect(() => {
-        const checkAuth = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    // Optional: Check expiry locally first
-                    const decoded = jwtDecode(token);
-                    if (decoded.exp * 1000 < Date.now()) {
-                        throw new Error('Token expired');
-                    }
+  // Set persistence to LOCAL so user stays logged in
+  useEffect(() => {
+    setPersistence(auth, browserLocalPersistence).catch(err => {
+      console.error('Error setting persistence:', err);
+    });
+  }, []);
 
-                    const userData = await getUserProfile();
-                    if (userData) {
-                        setUser(userData);
-                    } else {
-                        // Token valid but backend rejected (e.g. user deleted)
-                        logout();
-                    }
-                } catch (err) {
-                    console.error("Auth check failed:", err);
-                    logout();
-                }
-            }
-            setLoading(false);
-        };
-
-        checkAuth();
-    }, []);
-
-    // Login
-    const login = async (email, password) => {
-        try {
-            const data = await loginUser(email, password);
-            if (data.access) {
-                localStorage.setItem('token', data.access);
-                const userData = await getUserProfile();
-                setUser(userData);
-                return { success: true };
-            } else {
-                return { success: false, error: "No token received" };
-            }
-        } catch (err) {
-            console.error("Login error:", err);
-            return { success: false, error: err.error || err.message || "Login failed" };
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
+      try {
+        if (firebaseUserData) {
+          // User is logged in with Firebase
+          setFirebaseUser(firebaseUserData);
+          
+          // Get or create user in MongoDB
+          const userData = await createUserInDB({
+            uid: firebaseUserData.uid,
+            email: firebaseUserData.email,
+            displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
+          });
+          
+          if (userData) {
+            setUser(userData);
+          }
+        } else {
+          // User is logged out
+          setFirebaseUser(null);
+          setUser(null);
         }
-    };
+      } catch (err) {
+        console.error('Error during auth state change:', err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    });
 
-    // Register
-    const register = async (username, email, password) => {
-        try {
-            const data = await registerUser({ username, email, password });
-            if (data.access) {
-                localStorage.setItem('token', data.access);
-                // The signup response might already contain user data, 
-                // but fetching profile ensures consistency
-                const userData = await getUserProfile();
-                setUser(userData);
-                return { success: true };
-            }
-            const errorMsg = data.error || "Registration failed";
-            return { success: false, error: errorMsg };
-        } catch (err) {
-            console.error("Registration error:", err);
-            return { success: false, error: err.error || err.message || "Registration failed" };
-        }
-    };
+    return unsubscribe;
+  }, []);
 
-    // Logout
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-    };
+  // Register with Firebase
+  const register = async (username, email, password) => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      // Create user in Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUserData = userCredential.user;
+      
+      // Create user in MongoDB
+      const userData = await createUserInDB({
+        uid: firebaseUserData.uid,
+        email: email,
+        displayName: username
+      });
+      
+      setFirebaseUser(firebaseUserData);
+      setUser(userData);
+      
+      return { success: true, user: userData };
+    } catch (err) {
+      const errorMsg = err.message || 'Registration failed';
+      setError(errorMsg);
+      console.error('Registration error:', err);
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Placeholder for Google Login (Future Implementation)
-    const loginWithGoogle = async () => {
-        console.warn("Google login not yet implemented on backend without Firebase.");
-        return { success: false, error: "Google login temporarily unavailable." };
-    };
+  // Login with Firebase
+  const login = async (email, password) => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      // Sign in with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUserData = userCredential.user;
+      
+      // Get user from MongoDB
+      const userData = await getUserProfile();
+      
+      setFirebaseUser(firebaseUserData);
+      setUser(userData);
+      
+      return { success: true, user: userData };
+    } catch (err) {
+      const errorMsg = err.message || 'Login failed';
+      setError(errorMsg);
+      console.error('Login error:', err);
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Helper compatibility getters
-    const authMethod = 'backend';
-    const firebaseUser = null; // Deprecated
+  // Logout
+  const logout = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      
+      await signOut(auth);
+      setFirebaseUser(null);
+      setUser(null);
+      
+      return { success: true };
+    } catch (err) {
+      const errorMsg = err.message || 'Logout failed';
+      setError(errorMsg);
+      console.error('Logout error:', err);
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const value = {
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        loginWithGoogle, // Keep interface for now
-        authMethod,
-        firebaseUser
-    };
+  // Get Firebase ID Token
+  const getIdToken = async () => {
+    if (firebaseUser) {
+      return await firebaseUser.getIdToken();
+    }
+    return null;
+  };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {!loading && children}
-        </AuthContext.Provider>
-    );
+  const value = {
+    user,
+    firebaseUser,
+    loading,
+    error,
+    login,
+    register,
+    logout,
+    getIdToken,
+    isAuthenticated: !!firebaseUser,
+    authMethod: 'firebase'
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 };
+
+export default AuthContext;
