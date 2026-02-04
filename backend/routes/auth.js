@@ -118,7 +118,7 @@ router.post('/firebase', async (req, res) => {
  * DANGER: Delete all user data from MongoDB
  * This endpoint is for development/testing only
  */
-router.delete('/cleanup', async (req, res) => {
+router.get('/cleanup', async (req, res) => {
     try {
         // Delete all users from the database
         const result = await User.deleteMany({});
