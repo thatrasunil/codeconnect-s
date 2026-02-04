@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import {
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-} from "firebase/firestore";
-import { db } from "../firebase"; // your firebase init
+import socketService from "../services/socketService";
+import { getRoom } from "../services/apiService";
 
 function useRoomMessages(roomId) {
     const [messages, setMessages] = useState([]);
@@ -13,18 +8,36 @@ function useRoomMessages(roomId) {
     useEffect(() => {
         if (!roomId) return;
 
-        const messagesRef = collection(db, "rooms", roomId, "messages");
-        const q = query(messagesRef, orderBy("createdAt", "asc"));
+        // Fetch initial messages
+        const fetchMessages = async () => {
+            // Ideally getRoom includes messages or we have a specific endpoint. 
+            // Using getRoom for now as it's likely to return recent chat.
+            // If not, we might need a separate endpoint /api/rooms/:id/messages
+            try {
+                const roomData = await getRoom(roomId);
+                if (roomData && roomData.messages) {
+                    setMessages(roomData.messages);
+                }
+            } catch (err) {
+                console.error("Failed to load messages", err);
+            }
+        };
 
-        const unsub = onSnapshot(q, (snapshot) => {
-            const docs = [];
-            snapshot.forEach((doc) => {
-                docs.push({ id: doc.id, ...doc.data() });
-            });
-            setMessages(docs);
-        });
+        fetchMessages();
 
-        return () => unsub();
+        // Listen for new messages
+        const handleNewMessage = (msg) => {
+            setMessages((prev) => [...prev, msg]);
+        };
+
+        socketService.onMessageReceived(handleNewMessage);
+
+        return () => {
+            // socketService.off('receive-message', handleNewMessage); // If we added off method
+            // For now, React unmount cleaning might require socketService to support removing listener specific to this component
+            // But simple implementation might just be global. 
+            // Better to implement off method in socketService.
+        };
     }, [roomId]);
 
     return messages;

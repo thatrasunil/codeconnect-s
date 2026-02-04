@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaPlay, FaSearch, FaCode, FaCheckCircle, FaStar, FaLayerGroup, FaUsers, FaFilter } from 'react-icons/fa';
-import { createRoom } from '../services/firestoreService';
+import { createRoom } from '../services/apiService';
 import { useAuth } from '../contexts/AuthContext';
 
 
@@ -61,13 +61,15 @@ const Problems = () => {
             };
 
             const newRoom = await createRoom(roomData);
-            if (newRoom.id) {
+            if (newRoom.roomId) {
+                // We don't implicitly assign via ProblemService anymore as room creation handles it or we do it explicitly
+                // But ProblemService.assignProblemToRoom calls API, which is fine if we want to ensure linkage
                 try {
-                    await ProblemService.assignProblemToRoom(question.id, newRoom.id);
+                    await ProblemService.assignProblemToRoom(question.id, newRoom.roomId);
                 } catch (assignErr) {
                     console.warn("Failed to implicitly assign problem:", assignErr);
                 }
-                navigate(`/room/${newRoom.id}?questionId=${question.id}`);
+                navigate(`/room/${newRoom.roomId}?questionId=${question.id}`);
             }
         } catch (err) {
             console.error('Failed to create session:', err);

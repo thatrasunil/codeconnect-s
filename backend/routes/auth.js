@@ -3,12 +3,11 @@ const router = express.Router();
 const verifyToken = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
+// Routes don't need 'db' injection anymore since we import Mongoose models directly
+// But we keep the function signature to avoid breaking server.js dynamic usage if passed
 module.exports = (db) => {
-
-    // Helper to get users collection reference
-    // We handle check inside routes to avoid crashes if db is not connected yet
-    const getUsers = () => db.collection('users');
 
     /**
      * POST /api/auth/signup
@@ -22,50 +21,35 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email and password are required' });
             }
 
-            if (!db) {
-                return res.status(503).json({ error: 'Database service unavailable' });
+            // Check if user already exists
+            const existingUser = await User.findOne({
+                $or: [{ email }, { username: username || email.split('@')[0] }]
+            });
+
+            if (existingUser) {
+                return res.status(400).json({ error: 'User with this email or username already exists' });
             }
 
-            // Check if user already exists (by email or username)
-            const usersRef = getUsers();
-
-            // Firestore OR queries are limited, so we might need two queries or a compound one if setup.
-            // Simplest correct way without complex indexes: Check Email, then Check Username.
-
-            const emailQuery = await usersRef.where('email', '==', email).get();
-            if (!emailQuery.empty) {
-                return res.status(400).json({ error: 'User with this email already exists' });
-            }
-
-            if (username) {
-                const usernameQuery = await usersRef.where('username', '==', username).get();
-                if (!usernameQuery.empty) {
-                    return res.status(400).json({ error: 'User with this username already exists' });
-                }
-            }
-
-            // Hash password (since we lost Mongoose middleware)
+            // Hash password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
 
-            const newUser = {
+            const newUser = new User({
                 username: username || email.split('@')[0],
                 email,
                 password: hashedPassword,
                 displayName: displayName || username || "User",
                 avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username || email}`,
                 role: 'user',
-                createdAt: new Date().toISOString(),
                 provider: 'local'
-            };
+            });
 
-            // Add to Firestore
-            const docRef = await usersRef.add(newUser);
-            const userId = docRef.id;
+            await newUser.save();
 
             // Generate Token
             const payload = {
-                uid: userId,
+                uid: newUser._id.toString(), // Standardize to uid for frontend compat
+                _id: newUser._id.toString(),
                 email: newUser.email,
                 name: newUser.username
             };
@@ -76,10 +60,11 @@ module.exports = (db) => {
                 success: true,
                 access: token,
                 user: {
-                    uid: userId,
+                    uid: newUser._id,
                     email: newUser.email,
                     username: newUser.username,
-                    avatar: newUser.avatar
+                    avatar: newUser.avatar,
+                    displayName: newUser.displayName
                 }
             });
 
@@ -101,50 +86,31 @@ module.exports = (db) => {
                 return res.status(400).json({ error: 'Email/Username and password are required' });
             }
 
-            if (!db) {
-                return res.status(503).json({ error: 'Database service unavailable' });
-            }
+            // Find user
+            const user = await User.findOne({
+                $or: [{ email }, { username }]
+            });
 
-            const usersRef = getUsers();
-            let userDoc = null;
-            let userData = null;
-
-            // Find user by email OR username
-            if (email) {
-                const q = await usersRef.where('email', '==', email).limit(1).get();
-                if (!q.empty) {
-                    userDoc = q.docs[0];
-                    userData = userDoc.data();
-                }
-            }
-
-            if (!userData && username) {
-                const q = await usersRef.where('username', '==', username).limit(1).get();
-                if (!q.empty) {
-                    userDoc = q.docs[0];
-                    userData = userDoc.data();
-                }
-            }
-
-            if (!userData) {
+            if (!user) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             // Verify Password
-            if (!userData.password) {
-                return res.status(400).json({ error: 'Please login with Google or the method you signed up with.' });
+            if (!user.password) {
+                return res.status(400).json({ error: 'Please login with the method you signed up with (e.g., Google).' });
             }
 
-            const isMatch = await bcrypt.compare(password, userData.password);
+            const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
                 return res.status(401).json({ error: 'Invalid credentials' });
             }
 
             // Generate Token
             const payload = {
-                uid: userDoc.id,
-                email: userData.email,
-                name: userData.username
+                uid: user._id.toString(),
+                _id: user._id.toString(),
+                email: user.email,
+                name: user.username
             };
 
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'default_secret_key_change_me', { expiresIn: '7d' });
@@ -153,10 +119,11 @@ module.exports = (db) => {
                 success: true,
                 access: token,
                 user: {
-                    uid: userDoc.id,
-                    email: userData.email,
-                    username: userData.username,
-                    avatar: userData.avatar
+                    uid: user._id,
+                    email: user.email,
+                    username: user.username,
+                    avatar: user.avatar,
+                    displayName: user.displayName
                 }
             });
 
@@ -172,39 +139,17 @@ module.exports = (db) => {
      */
     router.get('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid || req.user.user_id;
+            const userId = req.user.uid || req.user._id;
 
-            if (!db) {
-                // Fallback if DB not ready but we have token info
-                return res.json({
-                    uid: userId,
-                    email: req.user.email,
-                    username: req.user.name || "User",
-                    avatar: req.user.picture || null,
-                    isTemporary: true
-                });
+            const user = await User.findById(userId).select('-password');
+
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
             }
-
-            const userRef = db.collection('users').doc(userId);
-            const docSnap = await userRef.get();
-
-            if (!docSnap.exists) {
-                return res.json({
-                    uid: userId,
-                    email: req.user.email,
-                    username: req.user.name || req.user.email?.split('@')[0] || "User",
-                    avatar: req.user.picture || null,
-                    isTemporary: true
-                });
-            }
-
-            const userData = docSnap.data();
-            // Remove sensitive data
-            delete userData.password;
 
             res.json({
-                uid: docSnap.id,
-                ...userData
+                uid: user._id,
+                ...user.toObject()
             });
 
         } catch (error) {
@@ -219,42 +164,23 @@ module.exports = (db) => {
      */
     router.patch('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid || req.user.user_id;
+            const userId = req.user.uid || req.user._id;
             const { username, email, avatar } = req.body;
 
-            if (!db) {
-                return res.status(503).json({ error: 'Database service unavailable' });
-            }
+            const updateData = {};
+            if (username) updateData.username = username;
+            if (email) updateData.email = email;
+            if (avatar) updateData.avatar = avatar;
 
-            const userRef = db.collection('users').doc(userId);
-            const docSnap = await userRef.get();
-
-            let userData = {};
-            if (docSnap.exists) {
-                userData = docSnap.data();
-            } else {
-                // If user doesn't exist (e.g. firebase auth user not yet in our db), create them
-                userData = {
-                    email: req.user.email,
-                    username: username || req.user.name || "User",
-                    createdAt: new Date().toISOString(),
-                    role: 'user',
-                    provider: 'firebase'
-                };
-            }
-
-            // Update fields
-            if (username) userData.username = username;
-            if (email) userData.email = email;
-            if (avatar) userData.avatar = avatar;
-
-            // Save (Set with merge true acts like upset/patch)
-            await userRef.set(userData, { merge: true });
+            const user = await User.findByIdAndUpdate(
+                userId,
+                updateData,
+                { new: true }
+            ).select('-password');
 
             res.json({
-                uid: userId,
-                ...userData,
-                password: undefined
+                uid: user._id,
+                ...user.toObject()
             });
 
         } catch (error) {

@@ -10,16 +10,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import config from '../config';
 import './Dashboard.css';
 
-import { auth } from '../firebase';
 import {
-    incrementUserStats,
-    logTransaction,
-    subscribeToOnlineUsers,
     createRoom,
-    fetchUserData,
     fetchUserRooms,
-    subscribeToLeaderboard
-} from '../services/firestoreService';
+    getLeaderboard,
+    getDashboardStats
+} from '../services/apiService';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -42,19 +38,19 @@ const Dashboard = () => {
         const loadDashboardData = async () => {
             if (!user) return;
             try {
-                // 1. Fetch User Stats from Firestore
-                const userData = await fetchUserData(user.uid || user.id);
-                if (userData) {
-                    setStats({
-                        totalSessions: userData.rooms || 0, // Using rooms as proxy for sessions
-                        roomsCreated: userData.rooms || 0,
-                        languagesUsed: ['JavaScript', 'Python'] // Placeholder or needs aggregation
-                    });
+                // 1. Fetch User Stats
+                const userStats = await getDashboardStats();
+                if (userStats) {
+                    setStats(userStats);
                 }
 
                 // 2. Fetch User Rooms
                 const rooms = await fetchUserRooms(user.uid || user.id);
                 setMyRooms(rooms);
+
+                // 3. Fetch Leaderboard (Once)
+                const lb = await getLeaderboard();
+                setLeaderboard(lb);
 
             } catch (err) {
                 console.error("Dashboard data load error", err);
@@ -66,20 +62,8 @@ const Dashboard = () => {
         loadDashboardData();
     }, [user]);
 
-    // Subscribe to Leaderboard
-    useEffect(() => {
-        const unsub = subscribeToLeaderboard(setLeaderboard);
-        return () => unsub();
-    }, []);
-
-    // Subscribe to online users
-    useEffect(() => {
-        const unsubscribe = subscribeToOnlineUsers((users) => {
-            setOnlineUsers(users);
-        });
-        return () => unsubscribe();
-    }, []);
-
+    // Online users subscription removed for now - using empty or mock if needed
+    // or we could implement a polling mechanism or socket event later.
 
 
     const handleCreateRoom = async (options = {}) => {
@@ -93,17 +77,13 @@ const Dashboard = () => {
 
             const newRoom = await createRoom(roomData);
 
-            if (newRoom.id) {
-                // Increment Firestore stats
-                if (user?.id) {
-                    incrementUserStats(user.id, 'room');
-                    logTransaction(user.id, 'ROOM_CREATED', { roomId: newRoom.id });
-                }
-                navigate(`/room/${newRoom.id}`);
+            if (newRoom.roomId) {
+                // No need to manually increment stats, backend should handle it if vital
+                navigate(`/room/${newRoom.roomId}`);
             }
         } catch (err) {
             console.error('Failed to create room:', err);
-            alert('Failed to create room: ' + err.message);
+            alert('Failed to create room: ' + (err.error || err.message));
             setIsCreating(false);
         }
     };

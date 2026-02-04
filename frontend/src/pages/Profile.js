@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { auth } from '../firebase';
 import { motion } from 'framer-motion';
-import { FaUser, FaEnvelope, FaSave, FaDice, FaCamera } from 'react-icons/fa';
-import config from '../config';
+import { FaUser, FaEnvelope, FaSave, FaDice } from 'react-icons/fa';
 import { useToast } from '../contexts/ToastContext';
+import { updateUserProfile } from '../services/apiService';
 
 const Profile = () => {
     const { user } = useAuth();
@@ -48,40 +47,20 @@ const Profile = () => {
         setLoading(true);
 
         try {
-            let token = localStorage.getItem('token');
-            if (user?.provider === 'firebase' && auth.currentUser) {
-                token = await auth.currentUser.getIdToken();
-            }
-
-            if (!token) {
-                addToast('Authentication error', 'error');
-                setLoading(false);
-                return;
-            }
-            const res = await fetch(`${config.BACKEND_URL}/api/auth/me`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    username: formData.username,
-                    email: formData.email,
-                    avatar: avatarUrl
-                })
+            // Use apiService directly
+            await updateUserProfile({
+                username: formData.username,
+                email: formData.email,
+                avatar: avatarUrl
             });
 
-            if (res.ok) {
-                const updatedUser = await res.json();
-                addToast('Profile updated successfully!', 'success');
-                // Removed window.location.reload(); 
-                // We trust smooth updates or next navigation
-            } else {
-                addToast('Failed to update profile', 'error');
-            }
+            addToast('Profile updated successfully!', 'success');
+            // Context should update automatically if apiService fetches fresh data or we trigger a refresh
+            // But let's assume valid response means updated.
+
         } catch (err) {
             console.error(err);
-            addToast('An error occurred', 'error');
+            addToast('Failed to update profile: ' + (err.error || err.message), 'error');
         } finally {
             setLoading(false);
         }

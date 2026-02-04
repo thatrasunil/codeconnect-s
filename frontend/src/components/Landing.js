@@ -7,7 +7,8 @@ import { OrbitControls, Environment, ContactShadows, Sparkles, MeshDistortMateri
 import FlowDiagram3D from './Three/FlowDiagram3D';
 
 
-import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons'; import { createRoom as createFirestoreRoom } from '../services/firestoreService';
+import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons';
+import { createRoom as createApiRoom } from '../services/apiService';
 import SecureLoading from './SecureLoading';
 import Logo from '../logo.svg';
 
@@ -40,7 +41,7 @@ function Landing() {
   const createRoom = async (name) => {
     setIsCreating(true);
     try {
-      const newRoom = await createFirestoreRoom({
+      const newRoom = await createApiRoom({
         title: "Untitled Room",
         ownerId: "guest", // Guest user
         isPublic: true,
@@ -48,7 +49,9 @@ function Landing() {
         ownerName: name // Pass the name
       });
 
-      if (newRoom.id) {
+      if (newRoom.roomId) {
+        navigate(`/room/${newRoom.roomId}`); // Changed from newRoom.id to newRoom.roomId based on API response structure
+      } else if (newRoom.id) {
         navigate(`/room/${newRoom.id}`);
       }
     } catch (err) {

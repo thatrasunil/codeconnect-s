@@ -1,11 +1,10 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const admin = require('firebase-admin'); // Firebase Admin
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 dotenv.config();
 
@@ -14,6 +13,10 @@ const problemsRouter = require('./routes/problems');
 const authRouter = require('./routes/auth');
 const chatRouter = require('./routes/chat');
 const verifyToken = require('./middleware/auth');
+const teamsRouter = require('./routes/teams');
+
+// Import Models
+const Room = require('./models/Room');
 
 const app = express();
 const server = http.createServer(app);
@@ -32,7 +35,7 @@ const io = new Server(server, {
   }
 });
 
-// ===== CRITICAL: CORS Configuration for Vercel =====
+// ===== CRITICAL: CORS Configuration for Vercel & Render =====
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -51,7 +54,8 @@ app.use(cors({
     // Check if origin is allowed
     if (allowedOrigins.includes(origin) ||
       origin.endsWith('.vercel.app') ||
-      origin.includes('localhost')) {
+      origin.includes('localhost') ||
+      origin.includes('onrender.com')) {
       callback(null, true);
     } else {
       console.log('CORS rejected origin:', origin);
@@ -66,23 +70,6 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// ===== CRITICAL: Explicit CORS headers for Vercel =====
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || origin?.endsWith('.vercel.app') || origin?.includes('localhost')) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
-
-  // Handle OPTIONS preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
 app.use(express.json());
 
 // Request Logger
@@ -96,6 +83,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'CodeConnect Backend API is running' });
 });
 
+// Health check endpoint for Render
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
 const PORT = process.env.PORT || 3001;
 
 // --- File Upload Configuration ---
@@ -104,8 +96,7 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure uploads directory exists
-// Ensure uploads directory exists
-const uploadDir = process.env.VERCEL ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
+const uploadDir = process.env.RENDER || process.env.VERCEL ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -135,7 +126,6 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 
   // Return the URL to access the file
-  // Assumes server is reachable at config.BACKEND_URL
   const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
 
   res.json({
@@ -147,19 +137,11 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 });
 
 
-const mongoose = require('mongoose');
-
-// --- Database Connection (MongoDB & Firestore) ---
-let db;
-let isFirestoreConnected = false;
-let isDbInitialized = false;
-
-// Lazy Initialization Function
+// --- Database Connection (MongoDB ONLY) ---
 async function connectDB() {
-  if (isDbInitialized) return;
+  if (mongoose.connection.readyState === 1) return;
 
-  // 1. Connect to MongoDB (Optional - Legacy/Data)
-  if (process.env.MONGODB_URI && mongoose.connection.readyState === 0) {
+  if (process.env.MONGODB_URI) {
     try {
       await mongoose.connect(process.env.MONGODB_URI, {
         serverSelectionTimeoutMS: 5000,
@@ -172,88 +154,33 @@ async function connectDB() {
       console.log('✅ MongoDB connected successfully');
     } catch (err) {
       console.error('❌ MongoDB connection error:', err);
-      console.warn('⚠️ Running without MongoDB. Auth will use Firestore.');
+      process.exit(1); // Fatal error if DB fails
     }
+  } else {
+    console.error('❌ MONGODB_URI is not defined in environment variables');
+    process.exit(1);
   }
-
-  // 2. Connect to Firestore (Chat & Rooms DB)
-  if (!db) {
-    try {
-      if (!admin.apps.length) {
-        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-          try {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            admin.initializeApp({
-              credential: admin.credential.cert(serviceAccount)
-            });
-            console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
-          } catch (parseError) {
-            console.error("FAILED to parse FIREBASE_SERVICE_ACCOUNT:", parseError.message);
-            // Fallback to default
-            try { admin.initializeApp(); } catch (e) { }
-          }
-        } else {
-          admin.initializeApp();
-          console.log("Firebase Admin initialized with default credentials");
-        }
-      }
-      db = getFirestore();
-      isFirestoreConnected = true;
-      console.log('✅ Firestore connected successfully');
-    } catch (err) {
-      console.warn('Firebase connection warning:', err.message);
-      console.log('Server will start with IN-MEMORY storage only for Rooms/Chat.');
-    }
-  }
-
-  isDbInitialized = true;
 }
 
-// Health Check - BEFORE DB middleware
+// Connect immediately
+connectDB();
+
+// Health Check
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Middleware to ensure DB is connected for API routes
-app.use(async (req, res, next) => {
-  // Skip DB connection for static files or non-api routes if needed, 
-  // but for safety we usually want it. 
-  // We can skip for specific paths to speed up things like heartbeats if they don't use DB.
-  if (req.path === '/api/health') return next();
-
-  try {
-    await connectDB();
-  } catch (e) {
-    console.error("DB Auto-connect error:", e);
-    // Continue anyway, maybe memory store works
-  }
-  next();
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString(), dbState: mongoose.connection.readyState });
 });
 
 // --- In-memory Stores (Fallback) ---
+// Reserved for temp data if needed, but primary is now MongoDB
 const localRooms = new Map();
-const activeRooms = new Map(); // roomId -> Map<userId, connectionCount>
-const socketIdToUserId = new Map(); // socket.id -> userId
-
-const teamsRouter = require('./routes/teams');
-
-// Database Proxy to handle lazy initialization
-const dbProxy = new Proxy({}, {
-  get: function (target, prop) {
-    if (!db) return undefined;
-    // If accessing a property of db (like .collection), return it bound to db
-    const val = db[prop];
-    return typeof val === 'function' ? val.bind(db) : val;
-  }
-});
 
 // --- Mount Routes ---
-// Pass db instance (proxy) to routers
-app.use('/api/problems', problemsRouter(dbProxy));
-app.use('/api/auth', authRouter(dbProxy));
-app.use('/api/chat', chatRouter(dbProxy, localRooms));
-app.use('/api/teams', teamsRouter(dbProxy));
+app.use('/api/problems', problemsRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/teams', teamsRouter);
 
+// --- API Routes ---
 // --- API Routes ---
 function generateRoomId() {
   const randomNum = crypto.randomBytes(4).readUInt32BE(0) % 90000000 + 10000000;
@@ -263,22 +190,16 @@ function generateRoomId() {
 app.post('/api/create-room', async (req, res) => {
   const roomId = generateRoomId();
 
-  const roomData = {
-    roomId,
-    code: '',
-    language: 'javascript',
-    messages: [],
-    users: [],
-    createdAt: new Date().toISOString() // Firestore prefers standard formats or Timestamps
-  };
-
   try {
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).set(roomData);
-    } else {
-      console.log('Creating room in memory:', roomId);
-      localRooms.set(roomId, roomData);
-    }
+    const newRoom = new Room({
+      roomId,
+      code: '',
+      language: 'javascript',
+      messages: [],
+      users: []
+    });
+
+    await newRoom.save();
     res.json({ roomId });
   } catch (err) {
     console.error('Error creating room:', err);
@@ -289,28 +210,18 @@ app.post('/api/create-room', async (req, res) => {
 // GET Dashboard Stats
 app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
   try {
-    const userId = req.user.uid;
-    let stats = { totalSessions: 0, roomsCreated: 0, languagesUsed: [] };
+    const userId = req.user.uid || req.user._id; // Handle both JWT formats
 
-    if (isFirestoreConnected) {
-      // Get rooms created by user
-      const roomsSnapshot = await db.collection('rooms').where('ownerId', '==', userId).get();
-      stats.roomsCreated = roomsSnapshot.size;
-      stats.totalSessions = stats.roomsCreated; // Using rooms count as sessions for now
+    // Get rooms created by user
+    // Note: Room model has ownerId as String for now, might need ObjectId conversion if schema changes
+    const rooms = await Room.find({ ownerId: userId });
 
-      const languages = new Set();
-      roomsSnapshot.forEach(doc => {
-        const lang = doc.data().language;
-        if (lang) languages.add(lang);
-      });
-      stats.languagesUsed = Array.from(languages);
-    } else {
-      // Local fallback
-      const rooms = Array.from(localRooms.values()).filter(r => r.ownerId === userId);
-      stats.roomsCreated = rooms.length;
-      stats.totalSessions = rooms.length;
-      stats.languagesUsed = [...new Set(rooms.map(r => r.language).filter(Boolean))];
-    }
+    const stats = {
+      totalSessions: rooms.length,
+      roomsCreated: rooms.length,
+      languagesUsed: [...new Set(rooms.map(r => r.language).filter(Boolean))]
+    };
+
     res.json(stats);
   } catch (err) {
     console.error('Error fetching stats:', err);
@@ -321,21 +232,22 @@ app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
 // GET Leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    let leaderboard = [];
-    if (isFirestoreConnected) {
-      const snapshot = await db.collection('users')
-        .orderBy('points', 'desc')
-        .limit(10)
-        .get();
+    // Assuming User model is imported or we can fetch directly via mongoose
+    // Note: We haven't imported User model in server.js properly yet, so let's require it locally or globally
+    const User = require('./models/User');
 
-      snapshot.forEach(doc => {
-        leaderboard.push(doc.data());
-      });
-    } else {
-      // Mock for local
-      leaderboard = [];
-    }
-    res.json(leaderboard);
+    const leaderboard = await User.find({})
+      .sort({ 'stats.points': -1 })
+      .limit(10)
+      .select('username displayName avatar stats'); // Select specific fields
+
+    // Transform for frontend if needed
+    const formattedLeaderboard = leaderboard.map(u => ({
+      ...u.toObject(),
+      points: u.stats?.points || 0
+    }));
+
+    res.json(formattedLeaderboard);
   } catch (err) {
     console.error('Error fetching leaderboard:', err);
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
@@ -345,18 +257,8 @@ app.get('/api/leaderboard', async (req, res) => {
 // GET My Rooms
 app.get('/api/rooms/my-rooms', verifyToken, async (req, res) => {
   try {
-    const userId = req.user.uid;
-    let rooms = [];
-    if (isFirestoreConnected) {
-      // Query rooms where ownerId matches userId
-      const snapshot = await db.collection('rooms').where('ownerId', '==', userId).get();
-      snapshot.forEach(doc => {
-        rooms.push({ id: doc.id, ...doc.data() });
-      });
-    } else {
-      // Fallback for in-memory
-      rooms = Array.from(localRooms.values()).filter(r => r.ownerId === userId);
-    }
+    const userId = req.user.uid || req.user._id;
+    const rooms = await Room.find({ ownerId: userId });
     res.json(rooms);
   } catch (err) {
     console.error('Error fetching my rooms:', err);
@@ -367,20 +269,13 @@ app.get('/api/rooms/my-rooms', verifyToken, async (req, res) => {
 app.get('/api/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
-    let room;
-    if (isFirestoreConnected) {
-      const doc = await db.collection('rooms').doc(roomId).get();
-      if (doc.exists) {
-        room = doc.data();
-      }
-    } else {
-      room = localRooms.get(roomId);
-    }
+    const room = await Room.findOne({ roomId });
 
     if (room) {
       res.json(room);
     } else {
-      // Return defaults if not found
+      // Return defaults if not found (or create on fly?)
+      // Frontend expects code: '' if new
       res.json({ code: '', language: 'javascript', messages: [] });
     }
   } catch (err) {
@@ -395,15 +290,8 @@ app.get('/api/rooms/:roomId', async (req, res) => {
 app.get('/api/rooms/:roomId/code', async (req, res) => {
   const { roomId } = req.params;
   try {
-    let code = '';
-    if (isFirestoreConnected) {
-      const doc = await db.collection('rooms').doc(roomId).get();
-      if (doc.exists) code = doc.data().code || '';
-    } else {
-      const room = localRooms.get(roomId);
-      code = room ? room.code : '';
-    }
-    res.json({ content: code });
+    const room = await Room.findOne({ roomId });
+    res.json({ content: room ? room.code : '' });
   } catch (err) {
     console.error('Error fetching code:', err);
     res.status(500).json({ error: 'Failed to fetch code' });
@@ -415,13 +303,11 @@ app.put('/api/rooms/:roomId/code', async (req, res) => {
   const { roomId } = req.params;
   const { content } = req.body;
   try {
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).set({ code: content }, { merge: true });
-    } else {
-      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
-      room.code = content;
-      localRooms.set(roomId, room);
-    }
+    await Room.findOneAndUpdate(
+      { roomId },
+      { code: content },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
     res.json({ success: true });
   } catch (err) {
     console.error('Error saving code:', err);
@@ -433,15 +319,8 @@ app.put('/api/rooms/:roomId/code', async (req, res) => {
 app.get('/api/rooms/:roomId/metadata', async (req, res) => {
   const { roomId } = req.params;
   try {
-    let language = 'javascript';
-    if (isFirestoreConnected) {
-      const doc = await db.collection('rooms').doc(roomId).get();
-      if (doc.exists) language = doc.data().language || 'javascript';
-    } else {
-      const room = localRooms.get(roomId);
-      language = room ? room.language : 'javascript';
-    }
-    res.json({ language });
+    const room = await Room.findOne({ roomId });
+    res.json({ language: room ? room.language : 'javascript' });
   } catch (err) {
     console.error('Error fetching metadata:', err);
     res.status(500).json({ error: 'Failed to fetch metadata' });
@@ -453,13 +332,11 @@ app.put('/api/rooms/:roomId/language', async (req, res) => {
   const { roomId } = req.params;
   const { language } = req.body;
   try {
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).set({ language }, { merge: true });
-    } else {
-      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
-      room.language = language;
-      localRooms.set(roomId, room);
-    }
+    await Room.findOneAndUpdate(
+      { roomId },
+      { language },
+      { upsert: true }
+    );
     res.json({ success: true });
   } catch (err) {
     console.error('Error saving language:', err);
@@ -471,15 +348,8 @@ app.put('/api/rooms/:roomId/language', async (req, res) => {
 app.get('/api/rooms/:roomId/messages', async (req, res) => {
   const { roomId } = req.params;
   try {
-    let messages = [];
-    if (isFirestoreConnected) {
-      const doc = await db.collection('rooms').doc(roomId).get();
-      if (doc.exists) messages = doc.data().messages || [];
-    } else {
-      const room = localRooms.get(roomId);
-      messages = room ? room.messages : [];
-    }
-    res.json(messages);
+    const room = await Room.findOne({ roomId });
+    res.json(room ? room.messages : []);
   } catch (err) {
     console.error('Error fetching messages:', err);
     res.status(500).json({ error: 'Failed to fetch messages' });
@@ -491,17 +361,13 @@ app.post('/api/rooms/:roomId/messages', async (req, res) => {
   const { roomId } = req.params;
   const message = req.body; // { userId, content, type, ... }
   try {
-    const newMessage = { ...message, id: Date.now(), timestamp: new Date().toISOString() };
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).update({
-        messages: FieldValue.arrayUnion(newMessage)
-      });
-    } else {
-      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
-      if (!room.messages) room.messages = [];
-      room.messages.push(newMessage);
-      localRooms.set(roomId, room);
-    }
+    const newMessage = { ...message, timestamp: new Date() };
+
+    await Room.findOneAndUpdate(
+      { roomId },
+      { $push: { messages: newMessage } }
+    );
+
     res.json(newMessage);
   } catch (err) {
     console.error('Error sending message:', err);
@@ -513,18 +379,8 @@ app.post('/api/rooms/:roomId/messages', async (req, res) => {
 app.get('/api/rooms/:roomId/participants', async (req, res) => {
   const { roomId } = req.params;
   try {
-    let users = [];
-    if (isFirestoreConnected) {
-      // In a real app, query 'roomMembers' collection or subcollection.
-      // Here we used 'users' array in room doc in some places, or 'roomMembers' collection in others.
-      // Let's try room doc 'users' for simplicity matching socket logic
-      const doc = await db.collection('rooms').doc(roomId).get();
-      if (doc.exists) users = doc.data().users || [];
-    } else {
-      const room = localRooms.get(roomId);
-      users = room ? room.users : [];
-    }
-    res.json(users);
+    const room = await Room.findOne({ roomId });
+    res.json(room ? room.users : []);
   } catch (err) {
     console.error('Error fetching participants:', err);
     res.status(500).json({ error: 'Failed to fetch participants' });
@@ -533,23 +389,13 @@ app.get('/api/rooms/:roomId/participants', async (req, res) => {
 
 // POST Heartbeat (Update Presence)
 app.post('/api/rooms/:roomId/heartbeat', async (req, res) => {
-  const { roomId } = req.params;
-  const { userId, username } = req.body;
-  try {
-    // For simplicity, just return success.
-    // Real logic would update 'lastActive' in DB.
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Heartbeat error:', err);
-    res.status(500).json({ error: 'Heartbeat failed' });
-  }
+  // Can implement DB-based presence if needed, but Socket usually handles this
+  res.json({ success: true });
 });
 
 // POST Typing Status
 app.post('/api/rooms/:roomId/typing', async (req, res) => {
-  const { roomId } = req.params;
-  const { userId, isTyping } = req.body;
-  // Broadcasting handled by Socket.IO, endpoint just ack
+  // Broadcasting handled by Socket.IO
   res.json({ success: true });
 });
 
@@ -559,10 +405,6 @@ app.get('/api/rooms/:roomId/typing/active', async (req, res) => {
 });
 
 app.get('/api/rooms/:roomId/permissions', async (req, res) => {
-  const { roomId } = req.params;
-  const { userId } = req.query;
-  // For now, allow everyone to edit. 
-  // Future: Check if room is private/locked and if userId is owner or authorized.
   res.json({ canEdit: true, canView: true });
 });
 
@@ -756,66 +598,69 @@ io.on('connection', (socket) => {
     else roomUsers.set(userId, roomUsers.get(userId) + 1);
 
     // Update DB/Local user list
-    let room;
-    if (isFirestoreConnected) {
-      const roomRef = db.collection('rooms').doc(roomId);
-      const doc = await roomRef.get();
-      if (doc.exists) {
-        room = doc.data();
-        // Add user if not present (simple check)
-        const userExists = room.users && room.users.some(u => u.userId === userId);
+    try {
+      // Find room and update user list if needed
+      const room = await Room.findOne({ roomId });
+
+      if (room) {
+        const userExists = room.users.some(u => u.userId === userId);
         if (!userExists) {
-          await roomRef.update({
-            users: FieldValue.arrayUnion({ userId, joinedAt: new Date().toISOString() })
-          });
+          await Room.updateOne(
+            { roomId },
+            { $push: { users: { userId, username, joinedAt: new Date() } } }
+          );
         }
       } else {
-        // Upsert handled slightly differently in Firestore, usually create first but fallback here
-        const newRoom = {
+        // Create room if it doesn't exist (e.g., direct link join)
+        const newRoom = new Room({
           roomId,
           code: '',
           language: 'javascript',
           messages: [],
-          users: [{ userId, joinedAt: new Date().toISOString() }]
-        };
-        await roomRef.set(newRoom);
-        room = newRoom;
+          users: [{ userId, username, joinedAt: new Date() }]
+        });
+        await newRoom.save();
       }
-    } else {
-      if (!localRooms.has(roomId)) localRooms.set(roomId, { roomId, code: '', language: 'javascript', messages: [], users: [] });
-      room = localRooms.get(roomId);
-      if (room && (!room.users || !room.users.find(u => u.userId === userId))) {
-        if (!room.users) room.users = [];
-        room.users.push({ userId });
-      }
+
+    } catch (err) {
+      console.error('Error updating room users in DB:', err);
     }
 
-    const activeCount = roomUsers.size;
-    const activeParticipants = Array.from(roomUsers.keys());
+    // Fetch fresh room data for initial state
+    const currentRoom = await Room.findOne({ roomId });
 
-    if (room) {
+    // Send room state to the user who joined
+    if (currentRoom) {
       socket.emit('room-joined', {
         roomId,
-        code: room.code || '',
-        language: room.language || 'javascript',
-        messages: room.messages || [],
-        participants: activeParticipants,
-        users: activeCount
+        code: currentRoom.code || '',
+        language: currentRoom.language || 'javascript',
+        messages: currentRoom.messages || []
       });
     }
 
+    // Broadcast valid participant list
+    // We can use activeRooms (memory) for real-time online status
+    // Or fetch from DB. For "online now" memory is better.
+    const activeParticipants = Array.from(roomUsers.keys());
+
+    // Map activeParticipants to user objects (needs better state management, but for now...)
+    const onlineUsers = [];
+    // This part is tricky without fetching user details.
+    // Ideally we broadcast the NEW user, and client appends.
+    // Sending full list might require mapped details.
+
     if (roomUsers.get(userId) === 1) socket.to(roomId).emit('user-joined', userId);
-    io.to(roomId).emit('user-count', activeCount);
+    io.to(roomId).emit('user-count', roomUsers.size);
   });
 
   socket.on('code-change', async (data) => {
     const { roomId, code, language } = data;
-    if (isFirestoreConnected) {
+    try {
       // Debounce or just fire and forget usually, but here we await
-      await db.collection('rooms').doc(roomId).update({ code, language }).catch(e => console.error('Code update failed', e));
-    } else {
-      const room = localRooms.get(roomId);
-      if (room) { room.code = code; room.language = language; }
+      await Room.updateOne({ roomId }, { code, language });
+    } catch (e) {
+      console.error('Code update failed', e);
     }
     socket.to(roomId).emit('code-update', { code, language });
   });
@@ -829,27 +674,26 @@ io.on('connection', (socket) => {
 
     // ✅ CRITICAL FIX: Ensure message has complete sender info
     const newMessage = {
-      id,
+      // id: id, // Mongoose subdocs have _id by default, but we can keep id if frontend needs it
       userId: userId || socketIdToUserId.get(socket.id) || `guest-${socket.id}`,
       senderName: senderName || `Guest-${socket.id.substring(0, 6).toUpperCase()}`,
       content,
       type,
-      timestamp: new Date().toISOString()
+      timestamp: new Date()
     };
 
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).update({
-        messages: FieldValue.arrayUnion(newMessage)
-      }).catch(e => console.error('Message update failed', e));
-    } else {
-      const room = localRooms.get(roomId);
-      if (room) {
-        if (!room.messages) room.messages = [];
-        room.messages.push(newMessage);
-      }
+    try {
+      await Room.updateOne(
+        { roomId },
+        { $push: { messages: newMessage } }
+      );
+    } catch (e) {
+      console.error('Message update failed', e);
     }
 
     // ✅ Broadcast to all clients including sender
+    // Note: If using Mongoose subdoc _id, we might want to return that. 
+    // For now, let's assume frontend generates ID or doesn't strictly need DB ID immediately.
     io.to(roomId).emit('new-message', newMessage);
   });
 
@@ -862,16 +706,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('end-room', async (roomId, userId) => {
-    if (isFirestoreConnected) {
-      await db.collection('rooms').doc(roomId).update({
-        code: '',
-        language: 'javascript',
-        messages: [],
-        endedAt: new Date().toISOString()
-      }).catch(e => console.error('End room failed', e));
-    } else {
-      const room = localRooms.get(roomId);
-      if (room) { room.code = ''; room.messages = []; room.endedAt = new Date(); }
+    try {
+      await Room.updateOne(
+        { roomId },
+        {
+          code: '',
+          language: 'javascript',
+          messages: [],
+          // endedAt: new Date() // Add to schema if needed
+        }
+      );
+    } catch (e) {
+      console.error('End room failed', e);
     }
     io.to(roomId).emit('room-ended', { roomId, message: 'Room ended' });
     activeRooms.delete(roomId);
@@ -906,18 +752,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-if (process.env.VERCEL) {
-  // Export the HTTP server instance which has Socket.IO attached
-  // Vercel serverless functions usually expect a handler (req, res), 
-  // but for full server setups, exporting the app is common.
-  // However, since we attached Socket.IO to 'server', we should probably export 'app' 
-  // but ensure 'server' is used if Vercel supports it, OR accept that 
-  // Socket.IO on standard Vercel serverless has limitations.
-  // BUT: The crash is likely "Function Invocation Failed" from a timeout or error.
-  // Let's ensure we don't start listening if Vercel handles it.
-  module.exports = app;
-} else {
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}
+// Always listen on PORT for Render / Local
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});

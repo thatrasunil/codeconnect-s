@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaTrophy, FaMedal } from 'react-icons/fa';
-import { subscribeToLeaderboard } from '../services/firestoreService';
+import { getLeaderboard } from '../services/apiService';
 import './Leaderboard.css';
 
 const Leaderboard = () => {
@@ -9,19 +9,25 @@ const Leaderboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = subscribeToLeaderboard((firestoreUsers) => {
-            const mappedUsers = firestoreUsers.map(u => ({
-                username: u.displayName || u.email?.split('@')[0] || 'Anonymous',
-                avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}`,
-                rooms: u.rooms || 0,
-                messages: u.messages || 0,
-                points: u.points || 0
-            }));
-            setUsers(mappedUsers);
-            setLoading(false);
-        });
+        const fetchLeaderboard = async () => {
+            try {
+                const lbData = await getLeaderboard();
+                const mappedUsers = lbData.map(u => ({
+                    username: u.username || u.displayName || 'Anonymous',
+                    avatar: u.avatar || `https://ui-avatars.com/api/?name=${u.displayName || u.username || 'User'}`,
+                    rooms: u.stats?.sessions || u.rooms || 0,
+                    messages: u.stats?.messages || u.messages || 0,
+                    points: u.stats?.points || u.points || 0
+                }));
+                setUsers(mappedUsers);
+            } catch (err) {
+                console.error("Failed to load leaderboard", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        return () => unsubscribe();
+        fetchLeaderboard();
     }, []);
 
     const getRankIcon = (index) => {

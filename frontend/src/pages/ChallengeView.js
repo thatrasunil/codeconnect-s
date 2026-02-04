@@ -4,7 +4,7 @@ import { teamService } from '../services/teamService';
 import { QUESTIONS_DATA as problemsData } from '../data/problemsData';
 import './Dashboard.css';
 
-import { createRoom } from '../services/firestoreService';
+import { createRoom } from '../services/apiService';
 import { useAuth } from '../contexts/AuthContext';
 import ProblemService from '../services/problemService';
 
@@ -56,9 +56,9 @@ const ChallengeView = () => {
             };
 
             const newRoom = await createRoom(roomData);
-            if (newRoom.id) {
+            if (newRoom.roomId) {
                 // Link problem to room implicitly if needed, but mainly nav
-                navigate(`/room/${newRoom.id}?questionId=${problemId}&teamChallengeId=${challengeId}`);
+                navigate(`/room/${newRoom.roomId}?questionId=${problemId}&teamChallengeId=${challengeId}`);
             }
         } catch (err) {
             console.error("Failed to start challenge session:", err);
