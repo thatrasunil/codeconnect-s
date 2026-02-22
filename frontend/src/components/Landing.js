@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaArrowRight, FaCode, FaGlobe, FaComments, FaShare, FaLock, FaMicrophone } from 'react-icons/fa';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment, ContactShadows, Sparkles, MeshDistortMaterial, Float } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Sparkles, MeshDistortMaterial, Float } from '@react-three/drei';
 import FlowDiagram3D from './Three/FlowDiagram3D';
 
 
@@ -468,7 +468,7 @@ function Landing() {
                         <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
                           {feature.model}
                         </Float>
-                        <Environment preset="city" />
+
                       </Canvas>
                     </Suspense>
                   </div>
