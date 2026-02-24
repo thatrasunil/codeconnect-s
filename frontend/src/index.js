@@ -7,8 +7,8 @@ import reportWebVitals from './reportWebVitals';
 // Global Error Handler to suppress benign or unhelpful errors
 const ignoredErrors = [
   /ResizeObserver loop limit exceeded/,
-  /\[object Object\]/,
-  /object Object/i,
+  // /\[object Object\]/,
+  // /object Object/i,
 ];
 
 const handleGlobalError = (event) => {

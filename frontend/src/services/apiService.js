@@ -178,14 +178,22 @@ export const joinTeam = async (teamId, userId) => {
 // --- Firebase User Sync ---
 
 export const createUserInDB = async ({ uid, email, displayName }) => {
-    const response = await fetch(`${API_URL}/auth/firebase`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid, email, displayName })
-    });
-    if (!response.ok) throw await response.json();
-    const data = await response.json();
-    return data.user;
+    try {
+        const response = await fetch(`${API_URL}/auth/firebase`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uid, email, displayName })
+        });
+        if (!response.ok) {
+            console.warn('Backend sync failed:', response.status);
+            return null;
+        }
+        const data = await response.json();
+        return data.user;
+    } catch (error) {
+        console.error('Error in createUserInDB:', error);
+        return null; // Return null instead of throwing to avoid blocking app init
+    }
 };
 
 // --- Deprecated / Mapped for Compatibility ---

@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   setPersistence,
   browserLocalPersistence
@@ -29,21 +29,38 @@ export const AuthProvider = ({ children }) => {
 
   // Listen to Firebase auth state changes
   useEffect(() => {
+    console.log('🔄 AuthContext: Initializing onAuthStateChanged listener...');
+
+    // Safety timeout: if auth takes more than 10 seconds, force loading to false
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ AuthContext: Auth check timed out after 10s. Forcing loading to false.');
+        setLoading(false);
+      }
+    }, 10000);
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
+      clearTimeout(loadingTimeout);
+      console.log('👤 AuthContext: Auth state changed. User:', firebaseUserData ? firebaseUserData.email : 'None');
+
       try {
         if (firebaseUserData) {
           // User is logged in with Firebase
           setFirebaseUser(firebaseUserData);
-          
+
           // Get or create user in MongoDB
+          console.log('📡 AuthContext: Syncing user with backend DB...');
           const userData = await createUserInDB({
             uid: firebaseUserData.uid,
             email: firebaseUserData.email,
             displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
           });
-          
+
           if (userData) {
+            console.log('✅ AuthContext: Backend sync successful.');
             setUser(userData);
+          } else {
+            console.warn('⚠️ AuthContext: Backend sync returned no data.');
           }
         } else {
           // User is logged out
@@ -51,14 +68,17 @@ export const AuthProvider = ({ children }) => {
           setUser(null);
         }
       } catch (err) {
-        console.error('Error during auth state change:', err);
+        console.error('❌ AuthContext: Error during auth state change:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   // Register with Firebase
@@ -66,21 +86,21 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       // Create user in Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUserData = userCredential.user;
-      
+
       // Create user in MongoDB
       const userData = await createUserInDB({
         uid: firebaseUserData.uid,
         email: email,
         displayName: username
       });
-      
+
       setFirebaseUser(firebaseUserData);
       setUser(userData);
-      
+
       return { success: true, user: userData };
     } catch (err) {
       const errorMsg = err.message || 'Registration failed';
@@ -97,17 +117,17 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUserData = userCredential.user;
-      
+
       // Get user from MongoDB
       const userData = await getUserProfile();
-      
+
       setFirebaseUser(firebaseUserData);
       setUser(userData);
-      
+
       return { success: true, user: userData };
     } catch (err) {
       const errorMsg = err.message || 'Login failed';
@@ -124,11 +144,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       await signOut(auth);
       setFirebaseUser(null);
       setUser(null);
-      
+
       return { success: true };
     } catch (err) {
       const errorMsg = err.message || 'Logout failed';
