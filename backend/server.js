@@ -5,8 +5,26 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const admin = require('firebase-admin');
 
 dotenv.config();
+
+// Initialize Firebase Admin
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log('🔥 Firebase Admin initialized successfully');
+    }
+  } catch (err) {
+    console.error('❌ Failed to initialize Firebase Admin:', err.message);
+  }
+} else {
+  console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT not found. Firebase token verification will be disabled.');
+}
 
 // Import routes
 const problemsRouter = require('./routes/problems');
@@ -43,7 +61,7 @@ const allowedOrigins = [
   'https://codeconnect-s.vercel.app',
   'https://code-connect.vercel.app',
   process.env.FRONTEND_URL || 'https://codeconnect-s.vercel.app'
-];
+].filter(Boolean);
 
 // CORS with credentials support
 app.use(cors({
@@ -179,10 +197,11 @@ app.get('/api/health', (req, res) => {
 const localRooms = new Map();
 
 // --- Mount Routes ---
-app.use('/api/problems', problemsRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/chat', chatRouter);
-app.use('/api/teams', teamsRouter);
+// CRITICAL: Invoke the router factories (passing null or db as they expect a db/connection)
+app.use('/api/problems', problemsRouter(mongoose.connection));
+app.use('/api/auth', authRouter(mongoose.connection));
+app.use('/api/chat', chatRouter(mongoose.connection));
+app.use('/api/teams', teamsRouter(mongoose.connection));
 
 // --- API Routes ---
 // --- API Routes ---
