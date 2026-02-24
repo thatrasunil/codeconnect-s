@@ -63,6 +63,25 @@ A **Real-Time Collaborative Coding Platform** with integrated AI assistance, pro
 
 ## 🏗️ Architecture
 
+```mermaid
+graph TD
+    User((User))
+    Frontend[Frontend - React]
+    Backend[Backend - Node.js/Express]
+    AdSense[Google AdSense]
+    GeminiAI[Google Gemini AI]
+    Firestore[(Cloud Firestore)]
+    FirebaseAuth[Firebase Auth]
+
+    User --> Frontend
+    Frontend --> FirebaseAuth
+    Frontend --> Firestore
+    Frontend --> Backend
+    Frontend --> AdSense
+    Backend --> GeminiAI
+    Backend --> Firestore
+```
+
 ```
 codeconnect/
 ├── frontend/                 # React application
