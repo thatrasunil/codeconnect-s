@@ -17,10 +17,12 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [firebaseUser, setFirebaseUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [authState, setAuthState] = useState({
+    user: null,
+    firebaseUser: null,
+    loading: true,
+    error: null
+  });
 
   // Set persistence to LOCAL so user stays logged in
   useEffect(() => {
@@ -43,43 +45,51 @@ export const AuthProvider = ({ children }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
       clearTimeout(loadingTimeout);
-      console.log('👤 AuthContext: Auth state changed. User:', firebaseUserData ? firebaseUserData.email : 'None');
+      console.log('👤 AuthContext: [onAuthStateChanged] User:', firebaseUserData ? firebaseUserData.email : 'None');
 
-      try {
-        if (firebaseUserData) {
-          // User is logged in with Firebase
-          setFirebaseUser(firebaseUserData);
-
-          // RESOLVE LOADING IMMEDIATELY - Don't wait for backend sync to render the app
-          setLoading(false);
-
-          // Get or create user in MongoDB (Background Sync)
-          console.log('📡 AuthContext: Syncing user with backend DB in background...');
-          createUserInDB({
-            uid: firebaseUserData.uid,
-            email: firebaseUserData.email,
-            displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
-          }).then(userData => {
-            if (userData) {
-              console.log('✅ AuthContext: Backend sync successful.');
-              setUser(userData);
-            } else {
-              console.warn('⚠️ AuthContext: Backend sync returned no data.');
-            }
-          }).catch(err => {
-            console.error('❌ AuthContext: Background sync failed:', err);
-          });
-
-        } else {
-          // User is logged out
-          setFirebaseUser(null);
-          setUser(null);
-          setLoading(false);
+      if (firebaseUserData) {
+        // Sync token to localStorage immediately so apiService can use it
+        try {
+          const token = await firebaseUserData.getIdToken();
+          localStorage.setItem('token', token);
+          console.log('🔑 AuthContext: Firebase token synced to localStorage.');
+        } catch (tokenErr) {
+          console.error('❌ AuthContext: Failed to sync token:', tokenErr);
         }
-      } catch (err) {
-        console.error('❌ AuthContext: Error during auth state change:', err);
-        setError(err.message);
-        setLoading(false);
+
+        // Update state with Firebase user, but keep loading: true until sync starts or resolves if preferred, 
+        // but here we set loading: false to unblock UI immediately
+        setAuthState(prev => ({
+          ...prev,
+          firebaseUser: firebaseUserData,
+          loading: false,
+          error: null
+        }));
+
+        // Background Sync with MongoDB
+        console.log('📡 AuthContext: Syncing with backend DB...');
+        createUserInDB({
+          uid: firebaseUserData.uid,
+          email: firebaseUserData.email,
+          displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
+        }).then(userData => {
+          if (userData) {
+            console.log('✅ AuthContext: Backend sync successful.');
+            setAuthState(prev => ({ ...prev, user: userData }));
+          }
+        }).catch(err => {
+          console.error('❌ AuthContext: Background sync failed:', err);
+        });
+
+      } else {
+        // User logged out
+        localStorage.removeItem('token');
+        setAuthState({
+          user: null,
+          firebaseUser: null,
+          loading: false,
+          error: null
+        });
       }
     });
 
@@ -213,22 +223,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    user,
-    firebaseUser,
-    loading,
-    error,
+    ...authState,
+    idToken: authState.firebaseUser ? localStorage.getItem('token') : null,
     login,
     loginWithGoogle,
     register,
     logout,
     getIdToken,
-    isAuthenticated: !!firebaseUser,
+    isAuthenticated: !!authState.firebaseUser,
     authMethod: 'firebase'
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {!authState.loading && children}
     </AuthContext.Provider>
   );
 };
