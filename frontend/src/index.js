@@ -79,13 +79,51 @@ console.warn = (...args) => {
   originalConsoleWarn(...args);
 };
 
-window.addEventListener('error', handleGlobalError, true); // Use capture phase
-window.addEventListener('unhandledrejection', handleGlobalRejection, true);
+console.log('🚀 [INDEX] Script loading started...');
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <App />
-);
+// Check for critical missing globals (common in webpack 5+)
+console.log('🔍 Checking Environment:', {
+  hasProcess: typeof process !== 'undefined',
+  hasBuffer: typeof Buffer !== 'undefined',
+  userAgent: navigator.userAgent
+});
+
+window.addEventListener('load', () => {
+  console.log('✅ [INDEX] Window Load Event Fired');
+});
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  console.error('❌ [INDEX] FATAL: Could not find #root element!');
+} else {
+  console.log('✅ [INDEX] #root element found');
+}
+
+try {
+  console.log('🏗️ [INDEX] Initializing React Root...');
+  const root = ReactDOM.createRoot(rootElement);
+
+  console.log('⚛️ [INDEX] Starting Application Render...');
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+  console.log('🎉 [INDEX] Render call complete');
+} catch (err) {
+  console.error('💥 [INDEX] CRITICAL RENDER ERROR:', err);
+  if (rootElement) {
+    rootElement.innerHTML = `
+      <div style="color: #ef4444; padding: 40px; text-align: center; font-family: sans-serif;">
+        <h2>Critical Startup Error</h2>
+        <pre style="text-align: left; background: #1e293b; padding: 15px; border-radius: 8px; overflow: auto; max-width: 90vw; margin: 20px auto;">
+          ${err.message || String(err)}
+          \n\nStack:\n${err.stack || 'No stack available'}
+        </pre>
+      </div>
+    `;
+  }
+}
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
