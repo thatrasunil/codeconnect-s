@@ -10,16 +10,24 @@ import FlowDiagram3D from './Three/FlowDiagram3D';
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons';
 import { createRoom as createApiRoom } from '../services/apiService';
 import SecureLoading from './SecureLoading';
+import { useAuth } from '../contexts/AuthContext';
 import Logo from '../logo.svg';
 
 function Landing() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [guestName, setGuestName] = useState('');
+  const { user, firebaseUser } = useAuth();
 
   useEffect(() => {
     // Reset scroll position to top on component mount
     window.scrollTo(0, 0);
-  }, []);
+
+    // Redirect to dashboard if already logged in
+    if (firebaseUser || user) {
+      console.log('🚀 Landing: User is authenticated, redirecting to Dashboard...');
+      navigate('/dashboard');
+    }
+  }, [firebaseUser, user, navigate]);
 
   const initiateCreateRoom = () => {
     const storedName = localStorage.getItem('codeconnect_guest_name');

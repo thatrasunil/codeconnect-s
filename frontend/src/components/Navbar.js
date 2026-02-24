@@ -6,7 +6,8 @@ import Logo from '../logo.svg';
 import './Navbar.css';
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
+    const { user, firebaseUser, logout } = useAuth();
+    const currentUser = user || firebaseUser;
     const location = useLocation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -35,7 +36,7 @@ const Navbar = () => {
             <div className={`navbar-links ${isMenuOpen ? 'mobile-menu' : ''}`}>
                 {/* Mobile-only header duplicates could go here if needed, or just standard links */}
 
-                {user && (
+                {(user || firebaseUser) && (
                     <>
                         <Link to="/dashboard" className={`nav-link ${isActive('/dashboard')}`} onClick={closeMenu}>Dashboard</Link>
                         <Link to="/problems" className={`nav-link ${isActive('/problems')}`} onClick={closeMenu}>Problems</Link>
@@ -50,15 +51,15 @@ const Navbar = () => {
                 )}
 
                 <div className="navbar-auth">
-                    {user ? (
+                    {(user || firebaseUser) ? (
                         <>
                             <Link to="/profile" className="user-profile-link" onClick={closeMenu}>
                                 <img
-                                    src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                    src={(user && user.avatar) || (firebaseUser && firebaseUser.photoURL) || `https://ui-avatars.com/api/?name=${(user && user.username) || (firebaseUser && firebaseUser.displayName) || (firebaseUser && firebaseUser.email.split('@')[0])}`}
                                     alt="Avatar"
                                     className="user-avatar"
                                 />
-                                <span>{user.username}</span>
+                                <span>{(user && user.username) || (firebaseUser && firebaseUser.displayName) || (firebaseUser && firebaseUser.email.split('@')[0])}</span>
                             </Link>
                             <button onClick={() => { logout(); closeMenu(); }} className="btn-logout">
                                 <FaSignOutAlt /> Logout
