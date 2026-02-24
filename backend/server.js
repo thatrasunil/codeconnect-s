@@ -158,11 +158,11 @@ async function connectDB() {
       console.log('✅ MongoDB connected successfully');
     } catch (err) {
       console.error('❌ MongoDB connection error:', err);
-      process.exit(1); // Fatal error if DB fails
+      // Don't exit process in Vercel/Production
     }
   } else {
     console.error('❌ MONGODB_URI is not defined in environment variables');
-    process.exit(1);
+    // Don't exit process, let logs catch it
   }
 }
 
