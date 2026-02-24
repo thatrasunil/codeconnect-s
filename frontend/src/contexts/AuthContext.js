@@ -37,10 +37,13 @@ export const AuthProvider = ({ children }) => {
 
     // Safety timeout: if auth takes more than 10 seconds, force loading to false
     const loadingTimeout = setTimeout(() => {
-      if (loading) {
-        console.warn('⚠️ AuthContext: Auth check timed out after 10s. Forcing loading to false.');
-        setLoading(false);
-      }
+      setAuthState(prev => {
+        if (prev.loading) {
+          console.warn('⚠️ AuthContext: Auth check timed out after 10s. Forcing loading to false.');
+          return { ...prev, loading: false };
+        }
+        return prev;
+      });
     }, 10000);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
@@ -102,12 +105,15 @@ export const AuthProvider = ({ children }) => {
   // Register with Firebase
   const register = async (username, email, password) => {
     try {
-      setError(null);
-      setLoading(true);
+      setAuthState(prev => ({ ...prev, error: null, loading: true }));
 
       // Create user in Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUserData = userCredential.user;
+
+      // Sync token to localStorage immediately
+      const token = await firebaseUserData.getIdToken();
+      localStorage.setItem('token', token);
 
       // Create user in MongoDB
       const userData = await createUserInDB({
@@ -116,78 +122,97 @@ export const AuthProvider = ({ children }) => {
         displayName: username
       });
 
-      setFirebaseUser(firebaseUserData);
-      setUser(userData);
+      setAuthState(prev => ({
+        ...prev,
+        firebaseUser: firebaseUserData,
+        user: userData,
+        loading: false
+      }));
 
       return { success: true, user: userData };
     } catch (err) {
       const errorMsg = err.message || 'Registration failed';
-      setError(errorMsg);
+      setAuthState(prev => ({ ...prev, error: errorMsg, loading: false }));
       console.error('Registration error:', err);
       return { success: false, error: errorMsg };
-    } finally {
-      setLoading(false);
     }
   };
 
   // Login with Firebase
   const login = async (email, password) => {
     try {
-      setError(null);
-      setLoading(true);
+      setAuthState(prev => ({ ...prev, error: null, loading: true }));
 
       // Sign in with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUserData = userCredential.user;
 
+      // Sync token to localStorage immediately
+      const token = await firebaseUserData.getIdToken();
+      localStorage.setItem('token', token);
+
       // Get user from MongoDB
       const userData = await getUserProfile();
 
-      setFirebaseUser(firebaseUserData);
-      setUser(userData);
+      setAuthState(prev => ({
+        ...prev,
+        firebaseUser: firebaseUserData,
+        user: userData,
+        loading: false
+      }));
 
       return { success: true, user: userData };
     } catch (err) {
       const errorMsg = err.message || 'Login failed';
-      setError(errorMsg);
+      setAuthState(prev => ({ ...prev, error: errorMsg, loading: false }));
       console.error('Login error:', err);
       return { success: false, error: errorMsg };
-    } finally {
-      setLoading(false);
     }
   };
 
   // Logout
   const logout = async () => {
     try {
-      setError(null);
-      setLoading(true);
+      setAuthState(prev => ({ ...prev, error: null, loading: true }));
 
       await signOut(auth);
-      setFirebaseUser(null);
-      setUser(null);
+      localStorage.removeItem('token');
+
+      setAuthState({
+        user: null,
+        firebaseUser: null,
+        loading: false,
+        error: null
+      });
 
       return { success: true };
     } catch (err) {
       const errorMsg = err.message || 'Logout failed';
-      setError(errorMsg);
+      setAuthState(prev => ({ ...prev, error: errorMsg, loading: false }));
       console.error('Logout error:', err);
       return { success: false, error: errorMsg };
-    } finally {
-      setLoading(false);
     }
   };
 
   // Login with Google
   const loginWithGoogle = async () => {
     try {
-      setError(null);
-      setLoading(true);
+      setAuthState(prev => ({ ...prev, error: null, loading: true }));
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const firebaseUserData = result.user;
 
+      // Sync token to localStorage immediately
+      const token = await firebaseUserData.getIdToken();
+      localStorage.setItem('token', token);
+
       console.log('👤 AuthContext: Google Sign-in successful. Syncing with backend...');
+
+      setAuthState(prev => ({
+        ...prev,
+        firebaseUser: firebaseUserData,
+        loading: false
+      }));
 
       // Sync with MongoDB in background (non-blocking)
       createUserInDB({
@@ -197,7 +222,7 @@ export const AuthProvider = ({ children }) => {
       }).then(userData => {
         if (userData) {
           console.log('✅ AuthContext: Google backend sync successful.');
-          setUser(userData);
+          setAuthState(prev => ({ ...prev, user: userData }));
         }
       }).catch(err => {
         console.error('❌ AuthContext: Google background sync failed:', err);
@@ -206,18 +231,16 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (err) {
       const errorMsg = err.message || 'Google login failed';
-      setError(errorMsg);
+      setAuthState(prev => ({ ...prev, error: errorMsg, loading: false }));
       console.error('Google login error:', err);
       return { success: false, error: errorMsg };
-    } finally {
-      setLoading(false);
     }
   };
 
   // Get Firebase ID Token
   const getIdToken = async () => {
-    if (firebaseUser) {
-      return await firebaseUser.getIdToken();
+    if (authState.firebaseUser) {
+      return await authState.firebaseUser.getIdToken();
     }
     return null;
   };
