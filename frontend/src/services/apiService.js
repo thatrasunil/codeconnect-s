@@ -1,5 +1,7 @@
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
-const API_URL = process.env.REACT_APP_API_URL || `${BACKEND_URL}/api`;
+import config from '../config';
+
+const BACKEND_URL = config.BACKEND_URL;
+const API_URL = `${BACKEND_URL}/api`;
 
 const getHeaders = () => {
     const token = localStorage.getItem('token');

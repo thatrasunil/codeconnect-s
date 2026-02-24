@@ -4,7 +4,7 @@ import config from '../config';
 class SocketService {
     constructor() {
         this.socket = null;
-        this.url = config.BACKEND_URL || 'http://localhost:5000';
+        this.url = config.SOCKET_URL;
     }
 
     connect(token) {
