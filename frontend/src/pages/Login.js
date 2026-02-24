@@ -10,8 +10,16 @@ const Login = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login, loginWithGoogle } = useAuth();
+    const { login, loginWithGoogle, user, firebaseUser } = useAuth();
     const navigate = useNavigate();
+
+    React.useEffect(() => {
+        if (firebaseUser || user) {
+            navigate('/dashboard');
+        }
+    }, [firebaseUser, user, navigate]);
+
+
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);

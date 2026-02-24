@@ -3,13 +3,13 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-    const { user, loading } = useAuth();
+    const { user, firebaseUser, loading } = useAuth();
 
     if (loading) {
         return <div style={{ color: 'white', textAlign: 'center', paddingTop: '50px' }}>Loading...</div>;
     }
 
-    if (!user) {
+    if (!user && !firebaseUser) {
         return <Navigate to="/login" />;
     }
 

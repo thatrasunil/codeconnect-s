@@ -72,6 +72,12 @@ function Landing() {
     }
   };
 
+  const joinRoom = () => {
+    if (roomId) {
+      navigate(`/room/${roomId}`);
+    }
+  };
+
   const steps = [
     { num: '1', title: 'Create Room', desc: 'Start a session instantly with one click.' },
     { num: '2', title: 'Share Link', desc: 'Invite friends or colleagues via URL.' },
