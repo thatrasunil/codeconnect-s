@@ -48,29 +48,35 @@ export const AuthProvider = ({ children }) => {
           // User is logged in with Firebase
           setFirebaseUser(firebaseUserData);
 
-          // Get or create user in MongoDB
-          console.log('📡 AuthContext: Syncing user with backend DB...');
-          const userData = await createUserInDB({
+          // RESOLVE LOADING IMMEDIATELY - Don't wait for backend sync to render the app
+          setLoading(false);
+
+          // Get or create user in MongoDB (Background Sync)
+          console.log('📡 AuthContext: Syncing user with backend DB in background...');
+          createUserInDB({
             uid: firebaseUserData.uid,
             email: firebaseUserData.email,
             displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
+          }).then(userData => {
+            if (userData) {
+              console.log('✅ AuthContext: Backend sync successful.');
+              setUser(userData);
+            } else {
+              console.warn('⚠️ AuthContext: Backend sync returned no data.');
+            }
+          }).catch(err => {
+            console.error('❌ AuthContext: Background sync failed:', err);
           });
 
-          if (userData) {
-            console.log('✅ AuthContext: Backend sync successful.');
-            setUser(userData);
-          } else {
-            console.warn('⚠️ AuthContext: Backend sync returned no data.');
-          }
         } else {
           // User is logged out
           setFirebaseUser(null);
           setUser(null);
+          setLoading(false);
         }
       } catch (err) {
         console.error('❌ AuthContext: Error during auth state change:', err);
         setError(err.message);
-      } finally {
         setLoading(false);
       }
     });
