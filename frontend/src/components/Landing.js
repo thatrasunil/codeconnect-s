@@ -14,9 +14,12 @@ import { useAuth } from '../contexts/AuthContext';
 import Logo from '../logo.svg';
 
 function Landing() {
+  const navigate = useNavigate();
+  const { user, firebaseUser } = useAuth();
   const [showNameModal, setShowNameModal] = useState(false);
   const [guestName, setGuestName] = useState('');
-  const { user, firebaseUser } = useAuth();
+  const [roomId, setRoomId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     // Reset scroll position to top on component mount
@@ -66,16 +69,6 @@ function Landing() {
       console.error('Failed to create room:', err);
       alert('Failed to create room: ' + err.message);
       setIsCreating(false);
-    }
-  };
-
-  const [roomId, setRoomId] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
-  const navigate = useNavigate();
-
-  const joinRoom = () => {
-    if (roomId) {
-      navigate(`/room/${roomId}`);
     }
   };
 
@@ -156,6 +149,10 @@ function Landing() {
       <motion.div animate={{ rotate: -360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '20%', right: '-5%', width: '400px', height: '400px', background: 'var(--accent-secondary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
 
       <main className="landing-main">
+        {/* Ad Unit - Top Horizontal */}
+        <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto 2rem auto', textAlign: 'center' }}>
+          <AdUnit />
+        </div>
 
         {/* Hero Section */}
         <div className="hero-section" suppressHydrationWarning={true}>
@@ -644,6 +641,30 @@ function Landing() {
     </div>
   );
 }
+
+
+// AdUnit Component for AdSense
+const AdUnit = () => {
+  useEffect(() => {
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
+  return (
+    <div style={{ overflow: 'hidden', minHeight: '100px', margin: '20px 0' }}>
+      {/* hori */}
+      <ins className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client="ca-pub-7175260853905543"
+        data-ad-slot="8804074041"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+    </div>
+  );
+};
 
 
 function FAQItem({ question, answer }) {
