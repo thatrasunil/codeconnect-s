@@ -5,7 +5,9 @@ import {
   signOut,
   onAuthStateChanged,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import { getUserProfile, createUserInDB } from '../services/apiService';
@@ -166,6 +168,42 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Login with Google
+  const loginWithGoogle = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUserData = result.user;
+
+      console.log('👤 AuthContext: Google Sign-in successful. Syncing with backend...');
+
+      // Sync with MongoDB in background (non-blocking)
+      createUserInDB({
+        uid: firebaseUserData.uid,
+        email: firebaseUserData.email,
+        displayName: firebaseUserData.displayName || firebaseUserData.email.split('@')[0]
+      }).then(userData => {
+        if (userData) {
+          console.log('✅ AuthContext: Google backend sync successful.');
+          setUser(userData);
+        }
+      }).catch(err => {
+        console.error('❌ AuthContext: Google background sync failed:', err);
+      });
+
+      return { success: true };
+    } catch (err) {
+      const errorMsg = err.message || 'Google login failed';
+      setError(errorMsg);
+      console.error('Google login error:', err);
+      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Get Firebase ID Token
   const getIdToken = async () => {
     if (firebaseUser) {
@@ -180,6 +218,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     login,
+    loginWithGoogle,
     register,
     logout,
     getIdToken,

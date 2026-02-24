@@ -88,6 +88,10 @@ app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
 
+app.get('/api/ping', (req, res) => {
+  res.status(200).send('pong');
+});
+
 const PORT = process.env.PORT || 3001;
 
 // --- File Upload Configuration ---

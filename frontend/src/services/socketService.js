@@ -51,8 +51,9 @@ class SocketService {
     }
 
     onCodeChange(callback) {
-        if (!this.socket) return;
-        this.socket.on('code-change', callback);
+        if (this.socket) {
+            this.socket.on('code-update', callback);
+        }
     }
 
     // Chat Events
@@ -62,8 +63,9 @@ class SocketService {
     }
 
     onMessageReceived(callback) {
-        if (!this.socket) return;
-        this.socket.on('receive-message', callback);
+        if (this.socket) {
+            this.socket.on('new-message', callback);
+        }
     }
 
     // Typing Events
