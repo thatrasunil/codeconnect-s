@@ -522,13 +522,9 @@ app.post('/api/ai/explain', async (req, res) => {
 });
 
 // --- Code Execution (Piston API Proxy) ---
-// ===== CRITICAL: Both OPTIONS and POST methods =====
-app.options('/api/execute', cors());
+// Note: Handled by global CORS
 
 app.post('/api/execute', async (req, res) => {
-  // Double-check CORS headers
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
   const { code, language } = req.body;
 
   // Map frontend languages to Piston languages

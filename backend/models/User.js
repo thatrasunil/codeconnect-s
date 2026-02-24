@@ -6,8 +6,9 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: false }, // Optional for OAuth users
     displayName: String,
     avatar: String,
+    firebaseUid: { type: String, unique: true, sparse: true },
     role: { type: String, default: 'user', enum: ['user', 'admin'] },
-    provider: { type: String, default: 'local' }, // 'local', 'google', etc.
+    provider: { type: String, default: 'local' }, // 'local', 'firebase', etc.
     stats: {
         problemsSolved: { type: Number, default: 0 },
         points: { type: Number, default: 0 },
