@@ -19,7 +19,6 @@ import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '
 // Services
 import socketService from '../services/socketService';
 import { getRoom } from '../services/apiService';
-import { incrementUserStats } from '../services/apiService'; // Assuming we added this to apiService or need to
 
 // Memoize sub-components to prevent re-renders on every keystroke
 const MemoizedProblemPanel = React.memo(ProblemPanel);
@@ -960,9 +959,9 @@ const CodeEditor = () => {
                                         if (isEmpty || isDefaultTemplate) {
                                             const newCode = newLangObj?.template || '';
                                             setCode(newCode);
-                                            updateRoomCode(roomId, newCode, newLang);
+                                            socketService.sendCodeChange(roomId, { code: newCode, language: newLang });
                                         } else {
-                                            updateRoomCode(roomId, code, newLang);
+                                            socketService.sendCodeChange(roomId, { code, language: newLang });
                                         }
                                     }}
                                     style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
