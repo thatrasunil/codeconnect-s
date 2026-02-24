@@ -18,7 +18,7 @@ import {
 } from '../services/apiService';
 
 const Dashboard = () => {
-    const { user } = useAuth();
+    const { user, firebaseUser, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ totalSessions: 0, roomsCreated: 0, languagesUsed: [] });
     const [myRooms, setMyRooms] = useState([]);
@@ -36,31 +36,39 @@ const Dashboard = () => {
 
     useEffect(() => {
         const loadDashboardData = async () => {
-            if (!user) return;
+            // Proceed if we have ANY auth state
+            const currentUser = user || firebaseUser;
+            if (!currentUser) {
+                console.log('⚠️ Dashboard: No user found, waiting or redirecting...');
+                return;
+            }
+
             try {
+                console.log('📊 Dashboard: Fetching data for user:', currentUser.uid || currentUser.id);
+
                 // 1. Fetch User Stats
                 const userStats = await getDashboardStats();
-                if (userStats) {
-                    setStats(userStats);
-                }
+                if (userStats) setStats(userStats);
 
                 // 2. Fetch User Rooms
-                const rooms = await fetchUserRooms(user.uid || user.id);
+                const rooms = await fetchUserRooms(currentUser.uid || currentUser.id);
                 setMyRooms(rooms);
 
-                // 3. Fetch Leaderboard (Once)
+                // 3. Fetch Leaderboard
                 const lb = await getLeaderboard();
                 setLeaderboard(lb);
 
             } catch (err) {
-                console.error("Dashboard data load error", err);
+                console.warn("⚠️ Dashboard: Non-critical data load failure:", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        loadDashboardData();
-    }, [user]);
+        if (!authLoading) {
+            loadDashboardData();
+        }
+    }, [user, firebaseUser, authLoading]);
 
     // Online users subscription removed for now - using empty or mock if needed
     // or we could implement a polling mechanism or socket event later.

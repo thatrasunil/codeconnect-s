@@ -7,8 +7,14 @@ import './Navbar.css';
 
 const Navbar = () => {
     const { user, firebaseUser, logout } = useAuth();
-    const currentUser = user || firebaseUser;
     const location = useLocation();
+
+    console.log('🔗 Navbar: Rendering...', {
+        path: location.pathname,
+        hasUser: !!user,
+        hasFirebaseUser: !!firebaseUser
+    });
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hide Navbar in Editor to allow full screen layout
