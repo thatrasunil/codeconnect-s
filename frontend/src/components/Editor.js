@@ -87,7 +87,7 @@ const CodeEditor = () => {
 
     // Real-time Data
     const [participants, setParticipants] = useState([]);
-    const messages = useRoomMessages(roomId);
+    const { messages, addOptimisticMessage } = useRoomMessages(roomId);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
     const [whiteboardDrawings, setWhiteboardDrawings] = useState([]);
     const [userRole, setUserRole] = useState('CANDIDATE');
@@ -435,6 +435,8 @@ const CodeEditor = () => {
             }
 
             if (text.trim() || msgData.type !== 'TEXT') {
+                // Optimistic update — show immediately, Firestore echo will deduplicate
+                addOptimisticMessage(msgData);
                 realtimeService.sendMessage(roomId, msgData);
             }
 
