@@ -115,12 +115,59 @@ export const usePeerConnections = (localStream) => {
         }
     }, [createPeerConnection, sendSignalingMessage]);
 
-    // Handle received offer
+    // Handle ICE candidate
+    const handleIceCandidate = useCallback(async (peerId, candidate) => {
+        try {
+            const peerConnection = peerConnections.current.get(peerId);
+
+            if (peerConnection && candidate) {
+                // If remote description is already set, add immediately
+                if (peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                } else {
+                    // Buffer candidate if remote description is not yet set
+                    if (!peerConnection._candidateQueue) {
+                        peerConnection._candidateQueue = [];
+                    }
+                    peerConnection._candidateQueue.push(candidate);
+                    console.log(`Buffered ICE candidate for ${peerId}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error adding ICE candidate:', error);
+        }
+    }, []);
+
+    // Helper to flush buffered candidates
+    const flushCandidates = useCallback(async (peerId) => {
+        const peerConnection = peerConnections.current.get(peerId);
+        if (peerConnection && peerConnection._candidateQueue) {
+            console.log(`Flushing ${peerConnection._candidateQueue.length} candidates for ${peerId}`);
+            while (peerConnection._candidateQueue.length > 0) {
+                const candidate = peerConnection._candidateQueue.shift();
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (e) {
+                    console.error('Error flushing candidate:', e);
+                }
+            }
+        }
+    }, []);
+
+    // Handle received offer (updated to flush candidates)
     const handleOffer = useCallback(async (peerId, offer) => {
         try {
             const peerConnection = createPeerConnection(peerId);
 
+            if (peerConnection.signalingState !== 'stable') {
+                console.warn(`Ignoring offer for ${peerId} in state ${peerConnection.signalingState}`);
+                return;
+            }
+
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+            // Flush buffered candidates
+            await flushCandidates(peerId);
 
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
@@ -129,33 +176,27 @@ export const usePeerConnections = (localStream) => {
         } catch (error) {
             console.error('Error handling offer:', error);
         }
-    }, [createPeerConnection, sendSignalingMessage]);
+    }, [createPeerConnection, sendSignalingMessage, flushCandidates]);
 
-    // Handle received answer
+    // Handle received answer (updated to flush candidates)
     const handleAnswer = useCallback(async (peerId, answer) => {
         try {
             const peerConnection = peerConnections.current.get(peerId);
 
             if (peerConnection) {
+                if (peerConnection.signalingState !== 'have-local-offer') {
+                    console.warn(`Ignoring answer for ${peerId} in state ${peerConnection.signalingState}`);
+                    return;
+                }
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+
+                // Flush buffered candidates
+                await flushCandidates(peerId);
             }
         } catch (error) {
             console.error('Error handling answer:', error);
         }
-    }, []);
-
-    // Handle ICE candidate
-    const handleIceCandidate = useCallback(async (peerId, candidate) => {
-        try {
-            const peerConnection = peerConnections.current.get(peerId);
-
-            if (peerConnection && candidate) {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-            }
-        } catch (error) {
-            console.error('Error adding ICE candidate:', error);
-        }
-    }, []);
+    }, [flushCandidates]);
 
     // Close all connections
     const closeAllConnections = useCallback(() => {

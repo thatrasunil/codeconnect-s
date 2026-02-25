@@ -108,7 +108,7 @@ module.exports = (db) => {
 
             if (!problem) {
                 // Check if client provided problem metadata (hybrid mode)
-                if (req.body.testCases) {
+                if (req.body.testCases && Array.isArray(req.body.testCases) && req.body.testCases.length > 0) {
                     problem = {
                         id: problemId,
                         title: req.body.title || 'Unknown Problem',
@@ -117,10 +117,15 @@ module.exports = (db) => {
                         description: 'Provided by client'
                     };
                 } else {
-                    return res.status(404).json({ error: 'Problem not found in DB and no test data provided' });
+                    return res.status(404).json({ error: 'Problem not found in DB and no valid test cases provided' });
                 }
             } else {
                 problem = problem.toObject();
+            }
+
+            // Validate test cases structure
+            if (!problem.testCases || !Array.isArray(problem.testCases) || problem.testCases.length === 0) {
+                return res.status(400).json({ error: 'Problem has no test cases' });
             }
 
             // Run tests
@@ -131,6 +136,10 @@ module.exports = (db) => {
                 problem.testCases || [],
                 req.body.functionName // Pass function name for driver generation
             );
+
+            if (testResults.error) {
+                return res.status(400).json({ error: testResults.error });
+            }
 
             // If tests pass, verify with AI
             let aiVerification = null;

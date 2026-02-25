@@ -14,9 +14,15 @@ module.exports = (db) => {
      */
     router.get('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid || req.user._id;
+            const firebaseUid = req.user.uid;
+            const mongoId = req.user._id;
 
-            const user = await User.findById(userId).select('-password');
+            let user;
+            if (firebaseUid) {
+                user = await User.findOne({ firebaseUid }).select('-password');
+            } else if (mongoId) {
+                user = await User.findById(mongoId).select('-password');
+            }
 
             if (!user) {
                 return res.status(404).json({ error: 'User not found' });
@@ -38,20 +44,33 @@ module.exports = (db) => {
      */
     router.patch('/me', verifyToken, async (req, res) => {
         try {
-            const userId = req.user.uid || req.user._id;
+            const firebaseUid = req.user.uid;
+            const mongoId = req.user._id;
             const { username, email, avatar } = req.body;
 
             const updateData = {};
-
             if (username) updateData.username = username;
             if (email) updateData.email = email;
             if (avatar) updateData.avatar = avatar;
 
-            const user = await User.findByIdAndUpdate(
-                userId,
-                updateData,
-                { new: true }
-            ).select('-password');
+            let user;
+            if (firebaseUid) {
+                user = await User.findOneAndUpdate(
+                    { firebaseUid },
+                    updateData,
+                    { new: true }
+                ).select('-password');
+            } else if (mongoId) {
+                user = await User.findByIdAndUpdate(
+                    mongoId,
+                    updateData,
+                    { new: true }
+                ).select('-password');
+            }
+
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
 
             res.json({
                 uid: user._id,

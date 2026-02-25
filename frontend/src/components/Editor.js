@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars, FaPencilAlt, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { doc, onSnapshot } from 'firebase/firestore';
 import './Editor.css';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +19,7 @@ import config from '../config';
 import useRoomMessages from '../hooks/useRoomMessages'; // Hooks updated to use API/Socket
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
 
+import { db } from '../firebase';
 // Services
 import realtimeService from '../services/realtimeService';
 import { getRoom } from '../services/apiService';
@@ -97,9 +99,18 @@ const CodeEditor = () => {
     const editorRef = useRef(null);
     const monaco = useMonaco();
 
+    const [isRoomCallActive, setIsRoomCallActive] = useState(false);
+
     // 1. Join Room & Subscribe to Changes via Firestore
     useEffect(() => {
         if (!roomId) return;
+
+        // Listen for Room-wide Video Call State
+        const unsubscribeRoom = onSnapshot(doc(db, 'rooms', roomId), (doc) => {
+            if (doc.exists()) {
+                setIsRoomCallActive(!!doc.data().isVideoCallActive);
+            }
+        });
 
         // Join room logic
         let myUser = user;
@@ -107,7 +118,8 @@ const CodeEditor = () => {
             const guestName = localStorage.getItem('codeconnect_guest_name') || 'Guest';
             myUser = { uid: 'guest_' + Math.floor(Math.random() * 10000), username: guestName };
         }
-        realtimeService.joinRoom(roomId, myUser);
+        realtimeService.joinRoom(roomId, myUser).catch(err => console.warn('joinRoom error:', err));
+
 
         // Initial Data Fetch via API (for robust loading state)
         const fetchInitialData = async () => {
@@ -161,12 +173,13 @@ const CodeEditor = () => {
         });
 
         return () => {
+            if (unsubscribeRoom) unsubscribeRoom();
             if (unsubscribeCode) unsubscribeCode();
             if (unsubscribeTyping) unsubscribeTyping();
             if (unsubscribeDraw) unsubscribeDraw();
             realtimeService.disconnect();
         };
-    }, [roomId, user]);
+    }, [roomId, user, language]);
 
 
     // Auto-Save (Via Socket)
@@ -678,7 +691,27 @@ const CodeEditor = () => {
                     {/* Desktop Actions */}
                     <div className="hide-mobile-only" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleDownloadCode} title="Save to Device"><FaGoogleDrive /> Save</button>
-                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleVideoCallToggle} title="Start Collaboration Meet"><FaVideo /> Meet</button>
+                        <button
+                            className={`btn ${isRoomCallActive && !showVideoCall ? 'pulse-blue' : ''}`}
+                            style={{
+                                display: 'flex',
+                                gap: '6px',
+                                background: isRoomCallActive && !showVideoCall ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                                color: isRoomCallActive && !showVideoCall ? '#60a5fa' : 'white',
+                                border: `1px solid ${isRoomCallActive && !showVideoCall ? '#3b82f6' : '#475569'}`,
+                                position: 'relative'
+                            }}
+                            onClick={handleVideoCallToggle}
+                            title={isRoomCallActive ? "Join Active Collaboration Meet" : "Start Collaboration Meet"}
+                        >
+                            <FaVideo /> {isRoomCallActive ? 'Join Meeting' : 'Meet'}
+                            {isRoomCallActive && !showVideoCall && (
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                                </span>
+                            )}
+                        </button>
                         <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
                     </div>
 
@@ -901,6 +934,7 @@ const CodeEditor = () => {
                         <VideoCall
                             roomId={roomId}
                             currentUser={user || { uid: 'guest', displayName: 'Guest' }}
+                            onLeave={() => setShowVideoCall(false)}
                         />
                     </motion.div>
                 )}

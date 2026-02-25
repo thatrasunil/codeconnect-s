@@ -120,8 +120,10 @@ class ExecuteCodeView(APIView):
                         os.remove(temp_path)
 
             elif language == 'javascript':
+                # Inject a print() polyfill so users can use print() like Python
+                js_polyfill = "const print = (...args) => console.log(...args);\n"
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as f:
-                    f.write(code)
+                    f.write(js_polyfill + code)
                     temp_path = f.name
                 
                 try:

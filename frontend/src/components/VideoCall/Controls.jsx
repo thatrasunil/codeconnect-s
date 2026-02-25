@@ -7,8 +7,11 @@ import {
     MdVideocamOff,
     MdCallEnd,
     MdScreenShare,
-    MdStopScreenShare
+    MdStopScreenShare,
+    MdSettings,
+    MdPresentToAll
 } from 'react-icons/md';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Controls = ({
     localVideoEnabled,
@@ -21,69 +24,83 @@ const Controls = ({
     loading = false
 }) => {
     return (
-        <div className="flex items-center justify-center gap-4 bg-slate-900/90 backdrop-blur-lg p-4 rounded-2xl border border-slate-800 shadow-2xl">
-            {/* Toggle Audio */}
-            <button
+        <motion.div
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+        >
+            {/* Audio Toggle */}
+            <ControlButton
                 onClick={onToggleAudio}
+                active={localAudioEnabled}
+                icon={localAudioEnabled ? <MdMic size={20} /> : <MdMicOff size={20} />}
+                className={!localAudioEnabled ? 'danger' : ''}
+                label={localAudioEnabled ? 'Mute' : 'Unmute'}
                 disabled={loading}
-                className={`p-3.5 rounded-full transition-all duration-300 transform active:scale-95 shadow-lg ${localAudioEnabled
-                        ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white'
-                    }`}
-                title={localAudioEnabled ? 'Mute' : 'Unmute'}
-            >
-                {localAudioEnabled ? (
-                    <MdMic size={24} />
-                ) : (
-                    <MdMicOff size={24} />
-                )}
-            </button>
+            />
 
-            {/* Toggle Video */}
-            <button
+            {/* Video Toggle */}
+            <ControlButton
                 onClick={onToggleVideo}
+                active={localVideoEnabled}
+                icon={localVideoEnabled ? <MdVideocam size={20} /> : <MdVideocamOff size={20} />}
+                className={!localVideoEnabled ? 'danger' : ''}
+                label={localVideoEnabled ? 'Stop Video' : 'Start Video'}
                 disabled={loading}
-                className={`p-3.5 rounded-full transition-all duration-300 transform active:scale-95 shadow-lg ${localVideoEnabled
-                        ? 'bg-slate-700 hover:bg-slate-600 text-white'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white'
-                    }`}
-                title={localVideoEnabled ? 'Stop Video' : 'Start Video'}
-            >
-                {localVideoEnabled ? (
-                    <MdVideocam size={24} />
-                ) : (
-                    <MdVideocamOff size={24} />
-                )}
-            </button>
+            />
+
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.1)', margin: '0 4px' }}></div>
 
             {/* Screen Share */}
-            <button
+            <ControlButton
                 onClick={onScreenShare}
+                active={screenShareActive}
+                icon={screenShareActive ? <MdPresentToAll size={20} /> : <MdScreenShare size={20} />}
+                label="Present"
                 disabled={loading}
-                className={`p-3.5 rounded-full transition-all duration-300 transform active:scale-95 shadow-lg ${screenShareActive
-                        ? 'bg-sky-500 hover:bg-sky-600 text-white'
-                        : 'bg-slate-700 hover:bg-slate-600 text-white'
-                    }`}
-                title="Share Screen"
-            >
-                {screenShareActive ? (
-                    <MdStopScreenShare size={24} />
-                ) : (
-                    <MdScreenShare size={24} />
-                )}
-            </button>
+            />
 
-            {/* End Call Button */}
-            <button
+            {/* Settings Mock */}
+            <ControlButton
+                onClick={() => { }}
+                active={false}
+                icon={<MdSettings size={20} />}
+                label="Settings"
+                disabled={loading}
+            />
+
+            <div style={{ width: '8px' }}></div>
+
+            {/* End Call Button - Distinctive */}
+            <motion.button
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={onEndCall}
                 disabled={loading}
-                className="p-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-300 transform active:scale-95 hover:rotate-12 shadow-red-500/20 shadow-xl"
+                className="vc-btn danger"
                 title="End Call"
             >
                 <MdCallEnd size={24} />
-            </button>
-        </div>
+            </motion.button>
+        </motion.div>
     );
 };
+
+const ControlButton = ({ onClick, active, icon, label, disabled, className = '' }) => (
+    <motion.button
+        whileHover={{ scale: 1.05, y: -2 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onClick}
+        disabled={disabled}
+        className={`vc-btn ${active ? 'active' : ''} ${className}`}
+        title={label}
+        style={{ position: 'relative' }}
+    >
+        {icon}
+        <span className="vc-tooltip">
+            {label}
+        </span>
+    </motion.button>
+);
 
 export default Controls;

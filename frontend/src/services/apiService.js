@@ -19,7 +19,7 @@ export const loginUser = async (email, password) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Login failed'); }
     return response.json();
 };
 
@@ -29,7 +29,7 @@ export const registerUser = async (userData) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Registration failed'); }
     return response.json();
 };
 
@@ -39,7 +39,7 @@ export const getUserProfile = async () => {
     });
     // Valid 401 means not logged in, not necessarily an error to throw
     if (response.status === 401) return null;
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch profile'); }
     return response.json();
 };
 
@@ -49,7 +49,7 @@ export const updateUserProfile = async (data) => {
         headers: getHeaders(),
         body: JSON.stringify(data)
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Profile update failed'); }
     return response.json();
 };
 
@@ -61,7 +61,7 @@ export const createRoom = async (roomData) => {
         headers: getHeaders(),
         body: JSON.stringify(roomData) // Server expects minimal data to generate ID
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to create room'); }
     return response.json(); // returns { roomId }
 };
 
@@ -71,7 +71,7 @@ export const getRoom = async (roomId) => {
     });
     if (!response.ok) {
         if (response.status === 404) return null;
-        throw await response.json();
+        const e = await response.json(); throw new Error(e.message || e.error || `Failed to fetch room`);
     }
     return response.json();
 };
@@ -89,14 +89,14 @@ export const updateRoomCode = async (roomId, code, language) => {
         headers: getHeaders(),
         body: JSON.stringify({ content: code })
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to update code'); }
 };
 
 export const fetchUserRooms = async (userId) => {
     const response = await fetch(`${API_URL}/rooms/my-rooms`, {
         headers: getHeaders()
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch rooms'); }
     return response.json();
 };
 
@@ -106,7 +106,7 @@ export const getLeaderboard = async () => {
     const response = await fetch(`${API_URL}/leaderboard`, {
         headers: getHeaders()
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch leaderboard'); }
     return response.json();
 };
 
@@ -114,7 +114,7 @@ export const getDashboardStats = async () => {
     const response = await fetch(`${API_URL}/dashboard/stats`, {
         headers: getHeaders()
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch stats'); }
     return response.json();
 };
 
@@ -125,7 +125,7 @@ export const getProblems = async (filters = {}) => {
     const response = await fetch(`${API_URL}/problems?${query}`, {
         headers: getHeaders()
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch problems'); }
     return response.json();
 };
 
@@ -133,7 +133,7 @@ export const getProblem = async (problemId) => {
     const response = await fetch(`${API_URL}/problems/${problemId}`, {
         headers: getHeaders()
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Failed to fetch problem'); }
     return response.json();
 };
 
@@ -143,7 +143,7 @@ export const submitSolution = async (problemId, data) => {
         headers: getHeaders(),
         body: JSON.stringify(data)
     });
-    if (!response.ok) throw await response.json();
+    if (!response.ok) { const e = await response.json(); throw new Error(e.message || e.error || 'Solution submission failed'); }
     return response.json();
 };
 

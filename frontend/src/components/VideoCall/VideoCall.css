@@ -1,0 +1,418 @@
+/* src/components/VideoCall/VideoCall.css */
+
+/* ========== DESIGN TOKENS ========== */
+:root {
+    --vc-glass-bg: rgba(15, 23, 42, 0.6);
+    --vc-glass-border: rgba(255, 255, 255, 0.1);
+    --vc-accent-blue: #3b82f6;
+    --vc-accent-red: #ef4444;
+    --vc-accent-green: #22c55e;
+}
+
+/* ========== LAYOUT CONTAINERS ========== */
+.vc-container {
+    display: flex;
+    height: 100%;
+    background-color: #020617;
+    color: #ffffff;
+    border-radius: 32px;
+    border: 1px solid var(--vc-glass-border);
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    position: relative;
+}
+
+.vc-container.fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    border-radius: 0;
+}
+
+.vc-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-width: 0;
+}
+
+/* ========== GLASSMORPHISM COMPONENTS ========== */
+.glass-panel {
+    background: var(--vc-glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--vc-glass-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.glass-badge {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--vc-glass-border);
+    padding: 8px 16px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* ========== HEADER ELEMENTS ========== */
+.vc-header {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 30;
+    pointer-events: none;
+}
+
+.vc-header-left {
+    display: flex;
+    gap: 16px;
+    pointer-events: auto;
+}
+
+.vc-header-right {
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.status-dot {
+    position: relative;
+    display: flex;
+    height: 12px;
+    width: 12px;
+}
+
+.status-dot .ping {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    border-radius: 9999px;
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.status-dot.red .ping {
+    background-color: var(--vc-accent-red);
+    opacity: 0.75;
+}
+
+.status-dot.red .core {
+    background-color: var(--vc-accent-red);
+}
+
+.status-dot.green .ping {
+    background-color: var(--vc-accent-green);
+    opacity: 0.75;
+}
+
+.status-dot.green .core {
+    background-color: var(--vc-accent-green);
+}
+
+.status-dot .core {
+    position: relative;
+    border-radius: 9999px;
+    height: 12px;
+    width: 12px;
+}
+
+@keyframes ping {
+
+    75%,
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* ========== VIDEO TRACKS & GRID ========== */
+.vc-grid-container {
+    flex: 1;
+    min-height: 0;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vc-track-card {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #0f172a;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 2px solid #1e293b;
+    transition: all 0.5s ease;
+}
+
+.vc-track-card.speaking {
+    border-color: var(--vc-accent-blue);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.4);
+}
+
+.vc-video-element {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 1s ease;
+}
+
+.vc-avatar-container {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+}
+
+.vc-avatar-circle {
+    width: 96px;
+    height: 96px;
+    background-color: #1e293b;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #334155;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ========== CONTROLS DOCK ========== */
+.vc-controls-dock {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    z-index: 30;
+}
+
+.vc-controls {
+    display: flex;
+    gap: 12px;
+    padding: 8px 16px;
+    border-radius: 24px;
+}
+
+.vc-tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.2s ease;
+    border: 1px solid var(--vc-glass-border);
+    z-index: 50;
+}
+
+.vc-btn:hover .vc-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.vc-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--vc-glass-border);
+    background: rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vc-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.vc-btn.active {
+    background: var(--vc-accent-blue);
+    color: #ffffff;
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+.vc-btn.danger {
+    background: var(--vc-accent-red);
+    color: #ffffff;
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+.vc-btn.danger:hover {
+    background: #dc2626;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+/* ========== GRID LAYOUTS ========== */
+.vc-grid {
+    display: grid;
+    gap: 16px;
+    padding: 16px;
+    height: 100%;
+    width: 100%;
+}
+
+.vc-grid.cols-1 {
+    grid-template-columns: 1fr;
+}
+
+.vc-grid.cols-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.vc-grid.cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.vc-grid.cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.vc-grid.rows-1 {
+    grid-template-rows: 1fr;
+}
+
+.vc-grid.rows-2 {
+    grid-template-rows: 1fr 1fr;
+}
+
+.vc-grid.rows-3 {
+    grid-template-rows: repeat(3, 1fr);
+}
+
+/* ========== AVATAR STYLES ========== */
+.vc-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #0f172a;
+    background: #1e293b;
+    overflow: hidden;
+    transition: transform 0.2s ease;
+}
+
+.vc-user-avatar:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.vc-avatar-ring {
+    box-shadow: 0 0 0 2px var(--vc-accent-blue);
+}
+
+.vc-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--vc-glass-border);
+}
+
+
+/* ========== SIDEBAR ========== */
+.vc-sidebar {
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-left: 1px solid var(--vc-glass-border);
+    position: relative;
+    z-index: 40;
+    overflow: hidden;
+}
+
+.vc-sidebar-content {
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(24px);
+    border-radius: 24px;
+    padding: 24px;
+    border: 1px solid var(--vc-glass-border);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.vc-participant-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+}
+
+.vc-participant-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(4px);
+}
+
+.vc-badge-me {
+    font-size: 9px;
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--vc-accent-blue);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* ========== SMALL UTILITIES ========== */
+.text-xs-caps {
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+.font-mono-bold {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-weight: 700;
+}

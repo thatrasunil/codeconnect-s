@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import {
     doc,
     setDoc,
+    updateDoc,
     deleteDoc,
     onSnapshot,
     collection,
@@ -84,6 +85,12 @@ export const useVideoCall = (socket, roomId, currentUser) => {
 
             await setDoc(doc(db, 'rooms', roomId, 'participants', currentUserId), userData);
 
+            // 4. Update room-wide call state
+            await updateDoc(doc(db, 'rooms', roomId), {
+                isVideoCallActive: true,
+                callStartedAt: serverTimestamp()
+            });
+
             setLoading(false);
         } catch (error) {
             console.error('Error starting video call:', error);
@@ -99,6 +106,14 @@ export const useVideoCall = (socket, roomId, currentUser) => {
             closeAllConnections();
             stopLocalStream();
             videoStore.reset();
+
+            // Check if any other participants are left
+            const participantsSnapshot = await getDocs(collection(db, 'rooms', roomId, 'participants'));
+            if (participantsSnapshot.empty) {
+                await updateDoc(doc(db, 'rooms', roomId), {
+                    isVideoCallActive: false
+                });
+            }
         } catch (error) {
             console.error('Error ending video call:', error);
         }

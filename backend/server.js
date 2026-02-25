@@ -561,6 +561,7 @@ app.post('/api/execute', async (req, res) => {
   const { code, language } = req.body;
 
   try {
+    console.log(`🚀 Executing ${language} code...`);
     // Use the same execution logic as test cases but for a single run
     const results = await TestExecutor.executeCode(code, language, [{
       input: '',
@@ -569,6 +570,7 @@ app.post('/api/execute', async (req, res) => {
     }]);
 
     const runResult = results[0];
+    console.log('✅ Execution result:', runResult);
 
     // Transform to match frontend expectation
     res.json({

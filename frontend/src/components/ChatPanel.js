@@ -13,6 +13,111 @@ import useVoice from '../hooks/useVoice';
 import styles from '../styles/ChatPanelRedesign.module.css';
 
 // Extracted MessageItem Component
+const ImageViewer = ({ src, onClose }) => (
+    <div
+        onClick={onClose}
+        style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'zoom-out'
+        }}
+    >
+        <img
+            src={src}
+            alt="Full size"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: '12px', boxShadow: '0 0 40px rgba(0,0,0,0.8)' }}
+        />
+        <button
+            onClick={onClose}
+            style={{
+                position: 'absolute', top: 20, right: 24,
+                background: 'rgba(255,255,255,0.15)', border: 'none',
+                color: '#fff', fontSize: '1.5rem', cursor: 'pointer',
+                borderRadius: '50%', width: 40, height: 40,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}
+        >✕</button>
+    </div>
+);
+
+const ChatImage = ({ src }) => {
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    return (
+        <>
+            {expanded && <ImageViewer src={src} onClose={() => setExpanded(false)} />}
+            <div
+                style={{
+                    position: 'relative', cursor: 'zoom-in',
+                    borderRadius: '10px', overflow: 'hidden',
+                    maxWidth: '260px', background: 'rgba(0,0,0,0.3)',
+                    minHeight: loaded || error ? 'auto' : '120px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+                onClick={() => !error && setExpanded(true)}
+            >
+                {!loaded && !error && (
+                    <div style={{ color: '#94a3b8', fontSize: '0.75rem', padding: '1rem' }}>Loading image...</div>
+                )}
+                {error ? (
+                    <div style={{ color: '#ef4444', fontSize: '0.75rem', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🖼️ Image unavailable
+                    </div>
+                ) : (
+                    <img
+                        src={src}
+                        alt="Shared"
+                        onLoad={() => setLoaded(true)}
+                        onError={() => setError(true)}
+                        style={{
+                            maxWidth: '100%', maxHeight: '300px',
+                            borderRadius: '10px', display: loaded ? 'block' : 'none',
+                            transition: 'transform 0.2s'
+                        }}
+                    />
+                )}
+                {loaded && !error && (
+                    <div style={{
+                        position: 'absolute', bottom: 6, right: 8,
+                        background: 'rgba(0,0,0,0.5)', color: '#fff',
+                        fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px'
+                    }}>
+                        🔍 Click to expand
+                    </div>
+                )}
+            </div>
+        </>
+    );
+};
+
+// Detect image URLs in plain text
+const IMAGE_URL_REGEX = /https?:\/\/\S+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?\S*)?/gi;
+
+const RenderContent = ({ content }) => {
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    IMAGE_URL_REGEX.lastIndex = 0;
+    while ((match = IMAGE_URL_REGEX.exec(content)) !== null) {
+        if (match.index > lastIndex) {
+            parts.push(<span key={lastIndex}>{content.slice(lastIndex, match.index)}</span>);
+        }
+        parts.push(<ChatImage key={match.index} src={match[0]} />);
+        lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < content.length) {
+        parts.push(<span key={lastIndex}>{content.slice(lastIndex)}</span>);
+    }
+    return (
+        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {parts.length > 0 ? parts : content}
+        </div>
+    );
+};
+
 const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages }) => {
     const [isHovered, setIsHovered] = useState(false);
     const isMe = msg.senderName === (user?.username || user?.displayName);
@@ -106,16 +211,20 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages })
 
                 {/* Content */}
                 {msg.type === 'IMAGE' ? (
-                    <img src={msg.attachmentUrl || msg.fileUrl} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+                    <ChatImage src={msg.attachmentUrl || msg.fileUrl} />
                 ) : msg.type === 'AUDIO' ? (
                     <audio controls src={msg.attachmentUrl || msg.fileUrl} style={{ maxWidth: '200px' }} />
+                ) : msg.type === 'FILE' ? (
+                    <a
+                        href={msg.attachmentUrl || msg.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                    >
+                        📎 {msg.content || 'Download file'}
+                    </a>
                 ) : (
-                    <div style={{
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                        overflowWrap: 'break-word',
-                        maxWidth: '100%'
-                    }}>{String(msg.content || '')}</div>
+                    <RenderContent content={String(msg.content || '')} />
                 )}
 
                 {/* Timestamp */}
@@ -169,6 +278,7 @@ const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages })
         </div>
     );
 });
+
 
 const ChatPanel = ({
     roomId,
