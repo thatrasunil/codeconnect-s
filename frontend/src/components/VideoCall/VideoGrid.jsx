@@ -40,8 +40,8 @@ const VideoGrid = () => {
                 {/* Remote Videos */}
                 {participants.map((participant) => (
                     <VideoTrack
-                        key={participant.socketId}
-                        stream={remoteStreams.get(participant.socketId)}
+                        key={participant.peerId}
+                        stream={remoteStreams.get(participant.peerId)}
                         userName={participant.userName}
                         isLocal={false}
                         videoEnabled={participant.videoEnabled !== false}
@@ -54,7 +54,7 @@ const VideoGrid = () => {
             <div className="bg-slate-900/80 backdrop-blur-md px-4 py-2 text-white text-[11px] border-t border-slate-800/50 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
                 <span className="font-bold text-blue-400 uppercase tracking-tighter mr-2">{participants.length + 1} Active</span>
                 {participants.map(p => (
-                    <span key={p.socketId} className="bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">
+                    <span key={p.peerId} className="bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">
                         {p.userName}
                     </span>
                 ))}

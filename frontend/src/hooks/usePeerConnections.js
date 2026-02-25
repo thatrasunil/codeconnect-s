@@ -1,5 +1,11 @@
 // src/hooks/usePeerConnections.js
 import { useRef, useCallback } from 'react';
+import { db } from '../firebase';
+import {
+    collection,
+    addDoc,
+    serverTimestamp
+} from 'firebase/firestore';
 import { useVideoStore } from '../store/videoStore';
 
 // STUN servers for NAT traversal
@@ -11,9 +17,28 @@ const STUN_SERVERS = [
     { urls: 'stun:stun4.l.google.com:19302' }
 ];
 
-export const usePeerConnections = (socket, localStream) => {
-    const peerConnections = useRef(new Map()); // socketId -> RTCPeerConnection
-    const { setRemoteStreams, removeRemoteStream, roomId } = useVideoStore();
+export const usePeerConnections = (localStream) => {
+    const peerConnections = useRef(new Map()); // peerId -> RTCPeerConnection
+    const { setRemoteStreams, removeRemoteStream, roomId, currentUser } = useVideoStore();
+
+    const currentUserId = currentUser?.uid || currentUser?.id;
+
+    // Send signaling message via Firestore
+    const sendSignalingMessage = useCallback(async (to, type, data) => {
+        if (!roomId || !currentUserId) return;
+
+        try {
+            await addDoc(collection(db, 'rooms', roomId, 'signaling'), {
+                from: currentUserId,
+                to: to,
+                type: type,
+                data: JSON.stringify(data),
+                timestamp: serverTimestamp()
+            });
+        } catch (error) {
+            console.error(`Error sending signaling ${type}:`, error);
+        }
+    }, [roomId, currentUserId]);
 
     // Remove peer connection
     const removePeerConnection = useCallback((peerId) => {
@@ -46,11 +71,7 @@ export const usePeerConnections = (socket, localStream) => {
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
-                socket.emit('video:ice-candidate', {
-                    to: peerId,
-                    candidate: event.candidate,
-                    roomId: useVideoStore.getState().roomId || roomId
-                });
+                sendSignalingMessage(peerId, 'candidate', event.candidate);
             }
         };
 
@@ -74,7 +95,7 @@ export const usePeerConnections = (socket, localStream) => {
 
         peerConnections.current.set(peerId, peerConnection);
         return peerConnection;
-    }, [localStream, socket, removePeerConnection, roomId, setRemoteStreams]);
+    }, [localStream, sendSignalingMessage, removePeerConnection, setRemoteStreams]);
 
     // Create and send offer
     const createOffer = useCallback(async (peerId) => {
@@ -88,42 +109,32 @@ export const usePeerConnections = (socket, localStream) => {
 
             await peerConnection.setLocalDescription(offer);
 
-            socket.emit('video:offer', {
-                to: peerId,
-                offer: peerConnection.localDescription,
-                roomId: useVideoStore.getState().roomId || roomId
-            });
+            await sendSignalingMessage(peerId, 'offer', peerConnection.localDescription);
         } catch (error) {
             console.error('Error creating offer:', error);
         }
-    }, [createPeerConnection, socket, roomId]);
+    }, [createPeerConnection, sendSignalingMessage]);
 
     // Handle received offer
-    const handleOffer = useCallback(async (data) => {
+    const handleOffer = useCallback(async (peerId, offer) => {
         try {
-            const { from, offer } = data;
-            const peerConnection = createPeerConnection(from);
+            const peerConnection = createPeerConnection(peerId);
 
             await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
 
-            socket.emit('video:answer', {
-                to: from,
-                answer: peerConnection.localDescription,
-                roomId: useVideoStore.getState().roomId || roomId
-            });
+            await sendSignalingMessage(peerId, 'answer', peerConnection.localDescription);
         } catch (error) {
             console.error('Error handling offer:', error);
         }
-    }, [createPeerConnection, socket, roomId]);
+    }, [createPeerConnection, sendSignalingMessage]);
 
     // Handle received answer
-    const handleAnswer = useCallback(async (data) => {
+    const handleAnswer = useCallback(async (peerId, answer) => {
         try {
-            const { from, answer } = data;
-            const peerConnection = peerConnections.current.get(from);
+            const peerConnection = peerConnections.current.get(peerId);
 
             if (peerConnection) {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
@@ -134,10 +145,9 @@ export const usePeerConnections = (socket, localStream) => {
     }, []);
 
     // Handle ICE candidate
-    const handleIceCandidate = useCallback(async (data) => {
+    const handleIceCandidate = useCallback(async (peerId, candidate) => {
         try {
-            const { from, candidate } = data;
-            const peerConnection = peerConnections.current.get(from);
+            const peerConnection = peerConnections.current.get(peerId);
 
             if (peerConnection && candidate) {
                 await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));

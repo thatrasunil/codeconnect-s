@@ -4,7 +4,7 @@ import { create } from 'zustand';
 export const useVideoStore = create((set, get) => ({
     // State
     localStream: null,
-    remoteStreams: new Map(), // socketId -> MediaStream
+    remoteStreams: new Map(), // peerId -> MediaStream
     participants: [], // List of all participants
     localVideoEnabled: true,
     localAudioEnabled: true,
@@ -14,21 +14,21 @@ export const useVideoStore = create((set, get) => ({
     error: null,
 
     // Getters
-    getRemoteStream: (socketId) => get().remoteStreams.get(socketId),
+    getRemoteStream: (peerId) => get().remoteStreams.get(peerId),
     getParticipantCount: () => get().participants.length + 1, // +1 for local
 
     // Setters
     setLocalStream: (stream) => set({ localStream: stream }),
 
-    setRemoteStreams: (socketId, stream) => set((state) => {
+    setRemoteStreams: (peerId, stream) => set((state) => {
         const newStreams = new Map(state.remoteStreams);
-        newStreams.set(socketId, stream);
+        newStreams.set(peerId, stream);
         return { remoteStreams: newStreams };
     }),
 
-    removeRemoteStream: (socketId) => set((state) => {
+    removeRemoteStream: (peerId) => set((state) => {
         const newStreams = new Map(state.remoteStreams);
-        newStreams.delete(socketId);
+        newStreams.delete(peerId);
         return { remoteStreams: newStreams };
     }),
 

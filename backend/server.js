@@ -1,6 +1,4 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -40,7 +38,6 @@ const teamsRouter = require('./routes/teams');
 const Room = require('./models/Room');
 
 const app = express();
-const server = http.createServer(app);
 
 // ===== CRITICAL: CORS Configuration for Vercel & Render =====
 const allowedOrigins = [
@@ -53,18 +50,6 @@ const allowedOrigins = [
   'https://codeconnect-frontend.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
-
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
-  }
-});
-
-// Initialize video signaling
-const VideoSignalingService = require('./services/signalingService');
-const videoSignaling = new VideoSignalingService(io);
-videoSignaling.registerHandlers();
 
 // CORS with credentials support
 app.use(cors({
@@ -616,8 +601,10 @@ app.use((req, res) => {
 
 // Always listen on PORT for Render / Local
 // IN VERCEL, WE DO NOT LISTEN
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
-  server.listen(PORT, '0.0.0.0', () => {
+// Always listen on PORT for Local or direct node execution
+// IN VERCEL, WE DO NOT LISTEN - it handles the export
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL && !process.env.FIREBASE_CONFIG) {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

@@ -13,7 +13,6 @@ import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
 import Whiteboard from './Whiteboard';
 import VideoCall from './VideoCall/VideoCall';
-import socketService from '../services/socketService';
 import { useVideoStore } from '../store/videoStore';
 import config from '../config';
 import useRoomMessages from '../hooks/useRoomMessages'; // Hooks updated to use API/Socket
@@ -66,7 +65,6 @@ const CodeEditor = () => {
     const [showWhiteboard, setShowWhiteboard] = useState(false);
     const [showVideoCall, setShowVideoCall] = useState(false);
     const isCallActive = useVideoStore(state => state.isCallActive);
-    const [socket, setSocket] = useState(null);
     const [aiMode, setAiMode] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -162,15 +160,10 @@ const CodeEditor = () => {
             }
         });
 
-        // Initialize Socket.IO for Video Signaling
-        const newSocket = socketService.connect();
-        setSocket(newSocket);
-
         return () => {
             if (unsubscribeCode) unsubscribeCode();
             if (unsubscribeTyping) unsubscribeTyping();
             if (unsubscribeDraw) unsubscribeDraw();
-            socketService.disconnect();
             realtimeService.disconnect();
         };
     }, [roomId, user]);
@@ -906,7 +899,6 @@ const CodeEditor = () => {
                         style={{ background: '#0f172a', borderLeft: '1px solid #334155' }}
                     >
                         <VideoCall
-                            socket={socket}
                             roomId={roomId}
                             currentUser={user || { uid: 'guest', displayName: 'Guest' }}
                         />

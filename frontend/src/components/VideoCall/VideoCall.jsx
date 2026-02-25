@@ -7,7 +7,7 @@ import { useVideoCall } from '../../hooks/useVideoCall';
 import { useVideoStore } from '../../store/videoStore';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const VideoCall = ({ socket, roomId, currentUser }) => {
+const VideoCall = ({ roomId, currentUser }) => {
     const {
         startVideoCall,
         endVideoCall,
@@ -18,7 +18,7 @@ const VideoCall = ({ socket, roomId, currentUser }) => {
         error,
         localVideoEnabled,
         localAudioEnabled
-    } = useVideoCall(socket, roomId, currentUser);
+    } = useVideoCall(null, roomId, currentUser);
 
     const [screenShareActive, setScreenShareActive] = useState(false);
     const [showFullParticipants, setShowFullParticipants] = useState(false);

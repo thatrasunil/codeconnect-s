@@ -36,7 +36,7 @@ const ParticipantList = () => {
                 {/* Remote Participants */}
                 {participants.map(participant => (
                     <div
-                        key={participant.socketId}
+                        key={participant.peerId}
                         className="flex items-center gap-3 p-2.5 bg-slate-800/30 rounded-lg border border-slate-700/30 hover:border-slate-600/50 transition-all"
                     >
                         <div className="relative">
