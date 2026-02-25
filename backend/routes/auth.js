@@ -121,7 +121,11 @@ module.exports = (db) => {
                 stack: error.stack,
                 body: req.body
             });
-            res.status(500).json({ error: error.message });
+            res.status(500).json({
+                error: 'Firebase Auth Sync failed',
+                details: error.message,
+                dbState: db ? db.readyState : 'unknown'
+            });
         }
     });
 

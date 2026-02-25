@@ -188,7 +188,23 @@ connectDB();
 
 // Health Check
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString(), dbState: mongoose.connection.readyState });
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    dbState: mongoose.connection.readyState,
+    firebase: admin.apps.length > 0 ? 'initialized' : 'missing'
+  });
+});
+
+app.get('/api/status', (req, res) => {
+  res.json({
+    node: process.version,
+    env: process.env.NODE_ENV,
+    db: mongoose.connection.readyState,
+    firebase: admin.apps.length > 0 ? 'initialized' : 'missing',
+    hasServiceAccount: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+    serviceAccountLength: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.length : 0
+  });
 });
 
 // --- In-memory Stores (Fallback) ---
