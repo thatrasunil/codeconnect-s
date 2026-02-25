@@ -11,78 +11,42 @@ class TestExecutor {
      * @returns {Promise<Object>} Test results
      */
     static async executeCode(code, language, testCases, functionName = null, timeout = 5000) {
-        const languageMap = {
-            'javascript': 'javascript',
-            'python': 'python',
-            'java': 'java',
-            'cpp': 'cpp',
-            'c': 'c',
-            'go': 'go',
-            'rust': 'rust',
-            'typescript': 'typescript'
-        };
+        const engine = process.env.EXECUTION_ENGINE || 'django'; // Default to internal django for reliability
+        const executionUrl = process.env.EXECUTION_URL;
 
-        const pistonLang = languageMap[language] || language;
         const results = [];
 
         for (let i = 0; i < testCases.length; i++) {
             const testCase = testCases[i];
-
             try {
                 const startTime = Date.now();
-
-                // Prepare code with test case input
                 const fullCode = this.prepareCode(code, testCase.input, language, functionName);
 
-                const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        language: pistonLang,
-                        version: '*',
-                        files: [
-                            {
-                                content: fullCode
-                            }
-                        ],
-                        stdin: testCase.input || ''
-                    })
-                });
-
-                const data = await response.json();
-                const executionTime = Date.now() - startTime;
-
-                if (response.ok) {
-                    const output = (data.run.stdout || '').trim();
-                    const error = (data.run.stderr || '').trim();
-                    const expected = testCase.expectedOutput.trim();
-
-                    results.push({
-                        testId: i + 1,
-                        passed: output === expected && !error,
-                        input: testCase.input,
-                        expectedOutput: expected,
-                        actualOutput: output,
-                        error: error || null,
-                        executionTime: `${executionTime}ms`,
-                        memory: data.run.memory || 'N/A',
-                        hidden: testCase.hidden || false
-                    });
+                let resultData;
+                if (engine === 'judge0') {
+                    resultData = await this.executeWithJudge0(fullCode, language, testCase.input, executionUrl);
+                } else if (engine === 'django') {
+                    resultData = await this.executeWithDjango(fullCode, language, testCase.input);
                 } else {
-                    results.push({
-                        testId: i + 1,
-                        passed: false,
-                        input: testCase.input,
-                        expectedOutput: testCase.expectedOutput,
-                        actualOutput: '',
-                        error: data.message || 'Execution failed',
-                        executionTime: `${executionTime}ms`,
-                        memory: 'N/A',
-                        hidden: testCase.hidden || false
-                    });
+                    // Fallback to Piston (might be restricted)
+                    resultData = await this.executeWithPiston(fullCode, language, testCase.input);
                 }
+
+                const executionTime = Date.now() - startTime;
+                const expected = (testCase.expectedOutput || '').trim();
+                const actual = (resultData.stdout || '').trim();
+
+                results.push({
+                    testId: i + 1,
+                    passed: actual === expected && !resultData.stderr,
+                    input: testCase.input,
+                    expectedOutput: expected,
+                    actualOutput: actual,
+                    error: resultData.stderr || resultData.compile_output || null,
+                    executionTime: `${resultData.time || executionTime}ms`,
+                    memory: resultData.memory || 'N/A',
+                    hidden: testCase.hidden || false
+                });
             } catch (error) {
                 results.push({
                     testId: i + 1,
@@ -99,6 +63,74 @@ class TestExecutor {
         }
 
         return results;
+    }
+
+    static async executeWithPiston(code, language, input) {
+        const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language,
+                version: '*',
+                files: [{ content: code }],
+                stdin: input || ''
+            })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Piston execution failed');
+        return {
+            stdout: data.run.stdout,
+            stderr: data.run.stderr,
+            memory: data.run.memory
+        };
+    }
+
+    static async executeWithDjango(code, language, input) {
+        // Assume backend_django is reachable via internal or configured URL
+        const djangoUrl = process.env.DJANGO_BACKEND_URL || 'http://localhost:8000';
+        const response = await fetch(`${djangoUrl}/api/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, language, input })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Django execution failed');
+
+        // Django ExecuteCodeView returns results array, we just need the first one if single run
+        // but here we call it per test case for compatibility with existing loop
+        const result = data.results[0];
+        return {
+            stdout: result.actual,
+            stderr: result.error,
+            time: result.runtime
+        };
+    }
+
+    static async executeWithJudge0(code, language, input, url) {
+        const judge0Url = url || 'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true';
+        const languageMap = { 'javascript': 63, 'python': 71, 'c': 50, 'cpp': 54, 'java': 62 };
+
+        const response = await fetch(judge0Url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+                'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+            },
+            body: JSON.stringify({
+                source_code: code,
+                language_id: languageMap[language] || 63,
+                stdin: input || ''
+            })
+        });
+        const data = await response.json();
+        return {
+            stdout: data.stdout,
+            stderr: data.stderr,
+            compile_output: data.compile_output,
+            time: data.time,
+            memory: data.memory
+        };
     }
 
     /**
