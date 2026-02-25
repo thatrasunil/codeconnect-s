@@ -17,7 +17,7 @@ import useRoomMessages from '../hooks/useRoomMessages'; // Hooks updated to use 
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
 
 // Services
-import socketService from '../services/socketService';
+import realtimeService from '../services/realtimeService';
 import { getRoom } from '../services/apiService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
@@ -93,13 +93,9 @@ const CodeEditor = () => {
     const editorRef = useRef(null);
     const monaco = useMonaco();
 
-    // 1. Join Room & Subscribe to Socket Events
+    // 1. Join Room & Subscribe to Changes via Firestore
     useEffect(() => {
         if (!roomId) return;
-
-        // Connect socket
-        const token = localStorage.getItem('token');
-        const socket = socketService.connect(token);
 
         // Join room logic
         let myUser = user;
@@ -107,7 +103,7 @@ const CodeEditor = () => {
             const guestName = localStorage.getItem('codeconnect_guest_name') || 'Guest';
             myUser = { uid: 'guest_' + Math.floor(Math.random() * 10000), username: guestName };
         }
-        socketService.joinRoom(roomId, myUser);
+        realtimeService.joinRoom(roomId, myUser);
 
         // Initial Data Fetch via API (for robust loading state)
         const fetchInitialData = async () => {
@@ -119,7 +115,6 @@ const CodeEditor = () => {
                         lastSavedCodeRef.current = roomData.code;
                     }
                     if (roomData.language) setLanguage(roomData.language);
-                    // Participants might come from API or Socket 'room-joined' event
                 }
             } catch (err) {
                 console.error("Error fetching room:", err);
@@ -128,25 +123,11 @@ const CodeEditor = () => {
         };
         fetchInitialData();
 
-        // Socket Listeners
-
-        // Room Joined Event (ACK from server)
-        socket.on('room-joined', (data) => {
-            console.log('Successfully joined room:', data);
-            if (data.code) {
-                setCode(data.code);
-                lastSavedCodeRef.current = data.code;
-            }
-            if (data.language) setLanguage(data.language);
-        });
-
-        // Code Updates
-        socketService.onCodeChange(({ code: newCode, language: newLang }) => {
-            // Update Code if changed remotely and we aren't typing furiously
+        // Listen for Code Updates
+        const unsubscribeCode = realtimeService.onCodeChange(roomId, ({ code: newCode, language: newLang }) => {
             if (newCode && newCode !== lastSavedCodeRef.current) {
-                // Check if local code is significantly different or if we just typed
                 const timeSinceType = Date.now() - lastTypeTimeRef.current;
-                if (timeSinceType > 2000) { // Only update if idle for 2s
+                if (timeSinceType > 2000) {
                     setCode(newCode);
                     lastSavedCodeRef.current = newCode;
                 }
@@ -156,36 +137,18 @@ const CodeEditor = () => {
             }
         });
 
-        // Participant Updates
-        socket.on('user-joined', (user) => {
-            // Basic update, ideally we fetch full list or server sends full list
-            // socketService implementations usually simpler.
-            // We can trigger a re-fetch of participants or rely on 'user-count' if that's what we display
-            // Dashboard showed 'Online: X', here we might want list.
-            // Let's assume server broadcasts 'user-joined' with user info or we just bump count
-        });
-
-        socket.on('user-count', (count) => {
-            // setParticipants count?
-            // We display array length.
-            // We might need a participants update event.
-            // For now, let's just make a mock array of length 'count' if we don't have names
-            setParticipants(new Array(count).fill({}));
-        });
-
-        // Typing Status
-        socketService.onTyping((data) => {
-            const { isTyping, user } = data;
-            // Update typing users list
+        // Listen for Typing Status
+        const unsubscribeTyping = realtimeService.onTyping(roomId, (data) => {
+            const { isTyping, user: typingUser } = data;
             if (isTyping) {
-                setCurrentTypingUsers(prev => [...prev.filter(u => u !== user), user]);
+                setCurrentTypingUsers(prev => [...prev.filter(u => u !== typingUser), typingUser]);
             } else {
-                setCurrentTypingUsers(prev => prev.filter(u => u !== user));
+                setCurrentTypingUsers(prev => prev.filter(u => u !== typingUser));
             }
         });
 
-        // Whiteboard
-        socketService.onDraw((data) => {
+        // Listen for Whiteboard Draws
+        const unsubscribeDraw = realtimeService.onDraw(roomId, (data) => {
             if (data.type === 'clear') {
                 setWhiteboardDrawings([]);
             } else {
@@ -194,10 +157,12 @@ const CodeEditor = () => {
         });
 
         return () => {
-            socketService.leaveRoom(roomId);
-            socketService.disconnect(); // Or just leave room if we want to keep connection global
+            if (unsubscribeCode) unsubscribeCode();
+            if (unsubscribeTyping) unsubscribeTyping();
+            if (unsubscribeDraw) unsubscribeDraw();
+            realtimeService.disconnect();
         };
-    }, [roomId, user]); // Run once on mount/roomId change
+    }, [roomId, user]);
 
 
     // Auto-Save (Via Socket)
@@ -210,8 +175,8 @@ const CodeEditor = () => {
                 if (currentCode !== lastSavedCodeRef.current) {
                     setIsSaving(true);
 
-                    // Send update via Socket
-                    socketService.sendCodeChange(roomId, { code: currentCode, language });
+                    // Send update via Firestore
+                    realtimeService.sendCodeChange(roomId, { code: currentCode, language });
 
                     lastSavedCodeRef.current = currentCode;
                     localStorage.setItem(`code_backup_${roomId}`, currentCode);
@@ -445,7 +410,7 @@ const CodeEditor = () => {
             }
 
             if (text.trim() || msgData.type !== 'TEXT') {
-                socketService.sendMessage(roomId, msgData);
+                realtimeService.sendMessage(roomId, msgData);
             }
 
             // Stats handled by backend or not critical
@@ -464,7 +429,7 @@ const CodeEditor = () => {
                 type: 'AI_PROMPT',
                 senderName: user?.username || 'Guest'
             };
-            socketService.sendMessage(roomId, msgData);
+            realtimeService.sendMessage(roomId, msgData);
 
             const res = await fetch(`${config.BACKEND_URL}/api/ai/chat`, {
                 method: 'POST',
@@ -477,7 +442,7 @@ const CodeEditor = () => {
             const aiResponse = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || '');
 
             // Broadcast AI Response
-            socketService.sendMessage(roomId, {
+            realtimeService.sendMessage(roomId, {
                 userId: 'Gemini AI',
                 content: aiResponse,
                 type: 'AI_RESPONSE',
@@ -485,7 +450,7 @@ const CodeEditor = () => {
             });
 
         } catch (err) {
-            socketService.sendMessage(roomId, {
+            realtimeService.sendMessage(roomId, {
                 userId: 'System',
                 content: `AI Error: ${err.message}`,
                 type: 'TEXT',
@@ -507,23 +472,24 @@ const CodeEditor = () => {
         const myUserId = user?.username || 'Guest';
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-        socketService.sendTyping(roomId, { user: myUserId, isTyping: true });
+        realtimeService.sendTyping(roomId, { user: myUserId, isTyping: true });
 
         typingTimeoutRef.current = setTimeout(async () => {
-            socketService.sendTyping(roomId, { user: myUserId, isTyping: false });
+            realtimeService.sendTyping(roomId, { user: myUserId, isTyping: false });
         }, 2000);
     };
 
     const handleReaction = async (msgId, emoji) => {
-        // Reactions: Either simple socket event or ignore for now
-        // This was "toggleMessageReaction" in firestore
-        // Let's implement basic socket logic if we want
-        // socketService.sendReaction(roomId, msgId, emoji);
+        try {
+            realtimeService.sendReaction(roomId, msgId, emoji);
+        } catch (err) {
+            console.error("Failed to send reaction:", err);
+        }
     };
 
     const handleAddDrawing = async (action) => {
         try {
-            socketService.sendDraw(roomId, action);
+            realtimeService.sendDraw(roomId, action);
         } catch (err) {
             console.error("Failed to add drawing:", err);
         }

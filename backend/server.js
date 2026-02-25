@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+// const { Server } = require('socket.io'); // Removed for Vercel migration
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -15,7 +15,8 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
     if (!admin.apps.length) {
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FIREBASE_DATABASE_URL
       });
       console.log('🔥 Firebase Admin initialized successfully');
     }
@@ -23,8 +24,10 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     console.error('❌ Failed to initialize Firebase Admin:', err.message);
   }
 } else {
-  console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT not found. Firebase token verification will be disabled.');
+  console.warn('⚠️ FIREBASE_SERVICE_ACCOUNT not found.');
 }
+
+const db_firestore = admin.apps.length ? admin.firestore() : null;
 
 // Import routes
 const problemsRouter = require('./routes/problems');
@@ -51,23 +54,12 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
+// Socket.io initialization removed for Vercel migration
+/*
 const io = new Server(server, {
-  cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Fallback: allow for now to prevent deployment blocks
-      }
-    },
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    credentials: true,
-  },
-  allowEIO3: true,
-  transports: ['websocket', 'polling'], // Ensure both are enabled
-  pingTimeout: 60000,
-  pingInterval: 25000
+  ...
 });
+*/
 
 // CORS with credentials support
 app.use(cors({
@@ -590,189 +582,12 @@ app.post('/api/execute', async (req, res) => {
 // --- Socket.IO Events ---
 const { logEvent } = require('./utils/logger');
 
-// Socket.io connection handling
+// Socket.io event handlers removed for Vercel migration
+/*
 io.on('connection', (socket) => {
-  // console.log('User connected:', socket.id);
-  logEvent('USER_CONNECT', { socketId: socket.id });
-
-  socket.on('join-room', async ({ roomId, user }) => {
-    socket.join(roomId);
-    // console.log(`User ${user?.username || 'Guest'} joined room: ${roomId}`);
-
-    // ✅ CRITICAL FIX: Generate consistent guest ID if not authenticated
-    const userId = user?.uid || user?.id || `guest-${socket.id}`;  // Add socket.id fallback
-    const username = user?.username || user?.displayName || `Guest-${socket.id.substring(0, 6).toUpperCase()}`;
-
-    logEvent('USER_JOIN', {
-      roomId,
-      user: username,
-      userId: userId
-    });
-
-    // ✅ Broadcast complete user object
-    socket.to(roomId).emit('user-joined', {
-      userId,
-      username,
-      uid: userId,
-      displayName: username
-    });
-
-    socketIdToUserId.set(socket.id, userId);
-
-    if (!activeRooms.has(roomId)) activeRooms.set(roomId, new Map());
-    const roomUsers = activeRooms.get(roomId);
-
-    if (!roomUsers.has(userId)) roomUsers.set(userId, 1);
-    else roomUsers.set(userId, roomUsers.get(userId) + 1);
-
-    // Update DB/Local user list
-    try {
-      // Find room and update user list if needed
-      const room = await Room.findOne({ roomId });
-
-      if (room) {
-        const userExists = room.users.some(u => u.userId === userId);
-        if (!userExists) {
-          await Room.updateOne(
-            { roomId },
-            { $push: { users: { userId, username, joinedAt: new Date() } } }
-          );
-        }
-      } else {
-        // Create room if it doesn't exist (e.g., direct link join)
-        const newRoom = new Room({
-          roomId,
-          code: '',
-          language: 'javascript',
-          messages: [],
-          users: [{ userId, username, joinedAt: new Date() }]
-        });
-        await newRoom.save();
-      }
-
-    } catch (err) {
-      console.error('Error updating room users in DB:', err);
-    }
-
-    // Fetch fresh room data for initial state
-    const currentRoom = await Room.findOne({ roomId });
-
-    // Send room state to the user who joined
-    if (currentRoom) {
-      socket.emit('room-joined', {
-        roomId,
-        code: currentRoom.code || '',
-        language: currentRoom.language || 'javascript',
-        messages: currentRoom.messages || []
-      });
-    }
-
-    // Broadcast valid participant list
-    // We can use activeRooms (memory) for real-time online status
-    // Or fetch from DB. For "online now" memory is better.
-    const activeParticipants = Array.from(roomUsers.keys());
-
-    // Map activeParticipants to user objects (needs better state management, but for now...)
-    const onlineUsers = [];
-    // This part is tricky without fetching user details.
-    // Ideally we broadcast the NEW user, and client appends.
-    // Sending full list might require mapped details.
-
-    if (roomUsers.get(userId) === 1) socket.to(roomId).emit('user-joined', userId);
-    io.to(roomId).emit('user-count', roomUsers.size);
-  });
-
-  socket.on('code-change', async (data) => {
-    const { roomId, code, language } = data;
-    try {
-      // Debounce or just fire and forget usually, but here we await
-      await Room.updateOne({ roomId }, { code, language });
-    } catch (e) {
-      console.error('Code update failed', e);
-    }
-    socket.to(roomId).emit('code-update', { code, language });
-  });
-
-  socket.on('typing', (data) => {
-    socket.to(data.roomId).emit('user-typing', data);
-  });
-
-  socket.on('send-message', async (data) => {
-    const { roomId, id, content, userId, type = 'text', senderName } = data;
-
-    // ✅ CRITICAL FIX: Ensure message has complete sender info
-    const newMessage = {
-      // id: id, // Mongoose subdocs have _id by default, but we can keep id if frontend needs it
-      userId: userId || socketIdToUserId.get(socket.id) || `guest-${socket.id}`,
-      senderName: senderName || `Guest-${socket.id.substring(0, 6).toUpperCase()}`,
-      content,
-      type,
-      timestamp: new Date()
-    };
-
-    try {
-      await Room.updateOne(
-        { roomId },
-        { $push: { messages: newMessage } }
-      );
-    } catch (e) {
-      console.error('Message update failed', e);
-    }
-
-    // ✅ Broadcast to all clients including sender
-    // Note: If using Mongoose subdoc _id, we might want to return that. 
-    // For now, let's assume frontend generates ID or doesn't strictly need DB ID immediately.
-    io.to(roomId).emit('new-message', newMessage);
-  });
-
-  socket.on('cursor-update', (data) => socket.to(data.roomId).emit('cursor-update', data));
-
-  socket.on('cursor-leave', (userId) => {
-    for (const roomId of socket.rooms) {
-      if (roomId !== socket.id) socket.to(roomId).emit('cursor-leave', userId);
-    }
-  });
-
-  socket.on('end-room', async (roomId, userId) => {
-    try {
-      await Room.updateOne(
-        { roomId },
-        {
-          code: '',
-          language: 'javascript',
-          messages: [],
-          // endedAt: new Date() // Add to schema if needed
-        }
-      );
-    } catch (e) {
-      console.error('End room failed', e);
-    }
-    io.to(roomId).emit('room-ended', { roomId, message: 'Room ended' });
-    activeRooms.delete(roomId);
-  });
-
-  socket.on('disconnect', () => {
-    const userId = socketIdToUserId.get(socket.id);
-    if (!userId) return;
-
-    for (const roomId of socket.rooms) {
-      if (activeRooms.has(roomId) && roomId !== socket.id) {
-        const roomUsers = activeRooms.get(roomId);
-        if (roomUsers.has(userId)) {
-          roomUsers.set(userId, roomUsers.get(userId) - 1);
-          if (roomUsers.get(userId) === 0) {
-            roomUsers.delete(userId);
-            socket.to(roomId).emit('user-left', userId);
-          }
-          const newCount = roomUsers.size;
-          io.to(roomId).emit('user-count', newCount);
-          if (newCount === 0) activeRooms.delete(roomId);
-        }
-      }
-    }
-    socketIdToUserId.delete(socket.id);
-  });
+  ...
 });
+*/
 
 // 404 Handler - Must be last
 app.use((req, res) => {
@@ -781,7 +596,8 @@ app.use((req, res) => {
 });
 
 // Always listen on PORT for Render / Local
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+// IN VERCEL, WE DO NOT LISTEN
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });

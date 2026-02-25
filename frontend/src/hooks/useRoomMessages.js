@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import socketService from "../services/socketService";
+import realtimeService from "../services/realtimeService";
 import { getRoom } from "../services/apiService";
 
 function useRoomMessages(roomId) {
@@ -10,9 +10,6 @@ function useRoomMessages(roomId) {
 
         // Fetch initial messages
         const fetchMessages = async () => {
-            // Ideally getRoom includes messages or we have a specific endpoint. 
-            // Using getRoom for now as it's likely to return recent chat.
-            // If not, we might need a separate endpoint /api/rooms/:id/messages
             try {
                 const roomData = await getRoom(roomId);
                 if (roomData && roomData.messages) {
@@ -26,17 +23,16 @@ function useRoomMessages(roomId) {
         fetchMessages();
 
         // Listen for new messages
-        const handleNewMessage = (msg) => {
-            setMessages((prev) => [...prev, msg]);
-        };
-
-        socketService.onMessageReceived(handleNewMessage);
+        const unsubscribe = realtimeService.onMessageReceived(roomId, (msg) => {
+            setMessages((prev) => {
+                // Avoid duplicates
+                if (prev.find(m => m.id === msg.id)) return prev;
+                return [...prev, msg];
+            });
+        });
 
         return () => {
-            // socketService.off('receive-message', handleNewMessage); // If we added off method
-            // For now, React unmount cleaning might require socketService to support removing listener specific to this component
-            // But simple implementation might just be global. 
-            // Better to implement off method in socketService.
+            if (unsubscribe) unsubscribe();
         };
     }, [roomId]);
 
