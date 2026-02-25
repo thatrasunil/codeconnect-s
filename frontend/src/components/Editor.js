@@ -499,7 +499,6 @@ const CodeEditor = () => {
         if (window.confirm("Are you sure you want to end this session?")) {
             try {
                 // await cleanupRoomData(roomId); 
-                // socketService.emit('end-room', roomId);
                 navigate('/dashboard');
             } catch (err) {
                 console.error("Error ending session:", err);
@@ -575,7 +574,7 @@ const CodeEditor = () => {
                                     }
 
                                     // Broadcast change
-                                    socketService.sendCodeChange(roomId, { code: newCode, language: newLang });
+                                    realtimeService.sendCodeChange(roomId, { code: newCode, language: newLang });
                                 }}
                                 style={{
                                     background: '#334155',
@@ -925,9 +924,9 @@ const CodeEditor = () => {
                                         if (isEmpty || isDefaultTemplate) {
                                             const newCode = newLangObj?.template || '';
                                             setCode(newCode);
-                                            socketService.sendCodeChange(roomId, { code: newCode, language: newLang });
+                                            realtimeService.sendCodeChange(roomId, { code: newCode, language: newLang });
                                         } else {
-                                            socketService.sendCodeChange(roomId, { code, language: newLang });
+                                            realtimeService.sendCodeChange(roomId, { code, language: newLang });
                                         }
                                     }}
                                     style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
