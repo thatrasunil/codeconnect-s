@@ -12,6 +12,9 @@ import ProblemPanel from './ProblemPanel';
 import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
 import Whiteboard from './Whiteboard';
+import VideoCall from './VideoCall/VideoCall';
+import socketService from '../services/socketService';
+import { useVideoStore } from '../store/videoStore';
 import config from '../config';
 import useRoomMessages from '../hooks/useRoomMessages'; // Hooks updated to use API/Socket
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
@@ -61,6 +64,9 @@ const CodeEditor = () => {
     const [showChat, setShowChat] = useState(true);
     const [showInterview, setShowInterview] = useState(!!initialQuestionId);
     const [showWhiteboard, setShowWhiteboard] = useState(false);
+    const [showVideoCall, setShowVideoCall] = useState(false);
+    const isCallActive = useVideoStore(state => state.isCallActive);
+    const [socket, setSocket] = useState(null);
     const [aiMode, setAiMode] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -156,10 +162,15 @@ const CodeEditor = () => {
             }
         });
 
+        // Initialize Socket.IO for Video Signaling
+        const newSocket = socketService.connect();
+        setSocket(newSocket);
+
         return () => {
             if (unsubscribeCode) unsubscribeCode();
             if (unsubscribeTyping) unsubscribeTyping();
             if (unsubscribeDraw) unsubscribeDraw();
+            socketService.disconnect();
             realtimeService.disconnect();
         };
     }, [roomId, user]);
@@ -385,7 +396,10 @@ const CodeEditor = () => {
         if (snapshots.length > 5) setSnapshots(prev => prev.slice(0, 5));
     }, [snapshots]);
 
-    const handleGoogleMeet = () => window.open('https://meet.google.com/new', '_blank');
+    const handleVideoCallToggle = () => {
+        setShowVideoCall(!showVideoCall);
+        if (showVideoCall) setShowWhiteboard(false);
+    };
 
     // Chat / Socket Messages
     const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null, extraData = {}) => {
@@ -671,7 +685,7 @@ const CodeEditor = () => {
                     {/* Desktop Actions */}
                     <div className="hide-mobile-only" style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleDownloadCode} title="Save to Device"><FaGoogleDrive /> Save</button>
-                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
+                        <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleVideoCallToggle} title="Start Collaboration Meet"><FaVideo /> Meet</button>
                         <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
                     </div>
 
@@ -881,6 +895,23 @@ const CodeEditor = () => {
                         />
                     </motion.div>
                 )}
+
+                {/* Video Call Panel - Desktop */}
+                {!isMobile && showVideoCall && (
+                    <motion.div
+                        className="editor-sidebar-right videocall-sidebar"
+                        initial={{ width: 400, opacity: 1 }}
+                        animate={{ width: 400, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        style={{ background: '#0f172a', borderLeft: '1px solid #334155' }}
+                    >
+                        <VideoCall
+                            socket={socket}
+                            roomId={roomId}
+                            currentUser={user || { uid: 'guest', displayName: 'Guest' }}
+                        />
+                    </motion.div>
+                )}
             </div>
 
             {/* Mobile Menu Overlay */}
@@ -962,7 +993,7 @@ const CodeEditor = () => {
                                 <FaPlay /> Run Code
                             </button>
 
-                            <button className="btn" onClick={() => { handleGoogleMeet(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
+                            <button className="btn" onClick={() => { handleVideoCallToggle(); setIsMobileMenuOpen(false); }} style={{ justifyContent: 'flex-start', background: 'transparent', color: 'white' }}>
                                 <FaVideo /> Meet
                             </button>
 

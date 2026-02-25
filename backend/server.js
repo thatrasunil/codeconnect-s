@@ -1,6 +1,6 @@
 const express = require('express');
 const http = require('http');
-// const { Server } = require('socket.io'); // Removed for Vercel migration
+const { Server } = require('socket.io');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -54,12 +54,17 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-// Socket.io initialization removed for Vercel migration
-/*
 const io = new Server(server, {
-  ...
+  cors: {
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
+  }
 });
-*/
+
+// Initialize video signaling
+const VideoSignalingService = require('./services/signalingService');
+const videoSignaling = new VideoSignalingService(io);
+videoSignaling.registerHandlers();
 
 // CORS with credentials support
 app.use(cors({
