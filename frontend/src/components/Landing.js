@@ -652,11 +652,25 @@ function Landing() {
 // AdUnit Component for AdSense
 const AdUnit = () => {
   useEffect(() => {
+    // Dynamically load AdSense script only on this high-content page
+    const script = document.createElement('script');
+    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7175260853905543";
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    document.head.appendChild(script);
+
     try {
       (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (e) {
       console.error('AdSense error:', e);
     }
+
+    return () => {
+      // Cleanup script on unmount to keep utility pages clean
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
   }, []);
 
   return (

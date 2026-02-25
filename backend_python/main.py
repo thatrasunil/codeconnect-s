@@ -1,6 +1,10 @@
 import socketio
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import firebase_admin
+from firebase_admin import auth, credentials
+import json
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import update, delete
@@ -14,6 +18,19 @@ from models import Room, Message, RoomParticipant
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
+
+# Initialize Firebase Admin
+firebase_service_account = os.getenv("FIREBASE_SERVICE_ACCOUNT")
+if firebase_service_account:
+    try:
+        service_account_info = json.loads(firebase_service_account)
+        cred = credentials.Certificate(service_account_info)
+        firebase_admin.initialize_app(cred)
+        print("🔥 Firebase Admin initialized successfully")
+    except Exception as e:
+        print(f"❌ Failed to initialize Firebase Admin: {e}")
+else:
+    print("⚠️ FIREBASE_SERVICE_ACCOUNT not found. Auth verification will be disabled.")
 
 PORT = int(os.getenv("PORT", 3001))
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
@@ -53,6 +70,20 @@ async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+# --- Auth Middleware ---
+security = HTTPBearer()
+
+async def get_current_user(res: HTTPAuthorizationCredentials = Depends(security)):
+    token = res.credentials
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid authentication credentials: {str(e)}"
+        )
+
 # --- Helper Functions ---
 def generate_room_id():
     return str(random.randint(10000000, 99999999))
@@ -64,9 +95,10 @@ async def root():
     return {"message": "CodeConnect Backend API is running (Python)"}
 
 @app.post("/api/create-room")
-async def create_room(db: AsyncSession = Depends(get_db)):
+async def create_room(db: AsyncSession = Depends(get_db), current_user: dict = Depends(get_current_user)):
     room_id = generate_room_id()
     # Use room_id as the primary key id as well
+    # Link to user if possible (requires schema update, but for now we just verify auth)
     new_room = Room(id=room_id, room_id=room_id)
     db.add(new_room)
     try:
