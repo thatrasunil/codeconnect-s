@@ -49,13 +49,13 @@ class TestExecutor {
 
         const engine = process.env.EXECUTION_ENGINE || 'django'; // Default to internal django for reliability
         const executionUrl = process.env.EXECUTION_URL;
-        
+
         // Validate and normalize engine
         const normalizedEngine = (engine || 'django').toLowerCase();
         if (!['django', 'judge0'].includes(normalizedEngine)) {
             throw new Error('Invalid EXECUTION_ENGINE: ' + engine + '. Supported engines: django, judge0');
         }
-        
+
         console.log('[CodeExecution] Engine: ' + normalizedEngine + ', URL: ' + (executionUrl || 'default'));
 
         const results = [];
@@ -119,13 +119,50 @@ class TestExecutor {
     }
 
     static async executeWithPiston(code, language, input) {
-        // Piston API is no longer supported due to authentication issues
-        throw new Error('Piston execution engine has been deprecated. Please use Django or Judge0 instead.');
+        // Piston API v2 - free, no auth required, works in production
+        const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+        const langMap = {
+            'python': { language: 'python', version: '3.10.0' },
+            'python3': { language: 'python', version: '3.10.0' },
+            'javascript': { language: 'javascript', version: '18.15.0' },
+            'js': { language: 'javascript', version: '18.15.0' },
+            'java': { language: 'java', version: '15.0.2' },
+            'c': { language: 'c', version: '10.2.0' },
+            'cpp': { language: 'c++', version: '10.2.0' },
+        };
+        const lang = langMap[language] || { language, version: '*' };
+
+        console.log('[Piston] Executing ' + lang.language + ' code');
+
+        const response = await fetch(PISTON_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language: lang.language,
+                version: lang.version,
+                files: [{ content: code }],
+                stdin: input ? String(input) : ''
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Piston API returned ' + response.status);
+        }
+
+        const data = await response.json();
+        const run = data.run || {};
+        console.log('[Piston] Success');
+        return {
+            stdout: run.stdout || '',
+            stderr: run.stderr || '',
+            time: run.wall_time ? run.wall_time + 'ms' : '0ms',
+            compile_output: data.compile ? (data.compile.stderr || null) : null
+        };
     }
 
     static async executeWithDjango(code, language, input, testCase = null) {
         const djangoUrl = process.env.DJANGO_BACKEND_URL || 'http://localhost:8000';
-        
+
         // Normalize language for Django backend
         const langMap = {
             'python3': 'python',
@@ -136,24 +173,24 @@ class TestExecutor {
             'cpp': 'cpp',
             'java': 'java'
         };
-        
+
         const normalizedLanguage = langMap[language] || language;
-        
+
         console.log('[Django] Executing ' + normalizedLanguage + ' code at ' + djangoUrl + '/api/execute');
-        
+
         try {
             // Format test case for Django API
             const testCases = testCase ? [{
                 input: testCase.input,
                 expected: testCase.expectedOutput
             }] : [];
-            
+
             const response = await fetch(djangoUrl + '/api/execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    code, 
-                    language: normalizedLanguage, 
+                body: JSON.stringify({
+                    code,
+                    language: normalizedLanguage,
                     testCases: testCases
                 }),
                 timeout: 15000
@@ -166,21 +203,21 @@ class TestExecutor {
                 } catch (e) {
                     // Response is not JSON
                 }
-                
+
                 const errorMsg = errorData.error || errorData.message || ('Django API returned ' + response.status + ': ' + response.statusText);
                 console.error('[Django] Error: ' + errorMsg);
                 throw new Error(errorMsg);
             }
 
             const data = await response.json();
-            
+
             if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
                 throw new Error('Invalid response format from Django API: no results');
             }
 
             const result = data.results[0];
             console.log('[Django] Success - ' + (result.actual ? result.actual.length : 0) + ' chars output');
-            
+
             return {
                 stdout: result.actual || '',
                 stderr: result.error || '',
@@ -188,15 +225,20 @@ class TestExecutor {
                 compile_output: null
             };
         } catch (error) {
-            console.error('[Django] Execution failed:', error.message);
-            throw new Error('Django execution failed: ' + error.message);
+            console.warn('[Django] Execution failed, trying Piston fallback:', error.message);
+            try {
+                return await this.executeWithPiston(code, language, input);
+            } catch (pistonError) {
+                console.error('[Piston] Fallback also failed:', pistonError.message);
+                throw new Error('All execution engines failed. Django: ' + error.message + '. Piston: ' + pistonError.message);
+            }
         }
     }
 
     static async executeWithJudge0(code, language, input, url) {
         const judge0Url = url || 'https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true';
         const languageMap = { 'javascript': 63, 'python': 71, 'c': 50, 'cpp': 54, 'java': 62 };
-        
+
         if (!process.env.RAPIDAPI_KEY) {
             throw new Error('Judge0 requires RAPIDAPI_KEY environment variable');
         }
@@ -221,10 +263,10 @@ class TestExecutor {
             if (!response.ok) {
                 throw new Error('Judge0 API returned ' + response.status + ': ' + response.statusText);
             }
-            
+
             const data = await response.json();
             console.log('[Judge0] Success');
-            
+
             return {
                 stdout: data.stdout || '',
                 stderr: data.stderr || '',

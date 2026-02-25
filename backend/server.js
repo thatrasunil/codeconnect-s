@@ -605,7 +605,8 @@ app.use((req, res) => {
 // IN VERCEL, WE DO NOT LISTEN
 // Always listen on PORT for Local or direct node execution
 // IN VERCEL, WE DO NOT LISTEN - it handles the export
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL && !process.env.FIREBASE_CONFIG) {
+// Always listen unless on Vercel (which handles exports)
+if (!process.env.VERCEL) {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });

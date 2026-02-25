@@ -97,7 +97,11 @@ const CodeEditor = () => {
     const typingTimeoutRef = useRef(null);
 
     const editorRef = useRef(null);
+    const languageRef = useRef(language);
     const monaco = useMonaco();
+
+    // Keep languageRef in sync with language state
+    useEffect(() => { languageRef.current = language; }, [language]);
 
     const [isRoomCallActive, setIsRoomCallActive] = useState(false);
 
@@ -148,7 +152,8 @@ const CodeEditor = () => {
                     lastSavedCodeRef.current = newCode;
                 }
             }
-            if (newLang && newLang !== language) {
+            if (newLang && newLang !== languageRef.current) {
+                languageRef.current = newLang;
                 setLanguage(newLang);
             }
         });
@@ -179,7 +184,7 @@ const CodeEditor = () => {
             if (unsubscribeDraw) unsubscribeDraw();
             realtimeService.disconnect();
         };
-    }, [roomId, user, language]);
+    }, [roomId, user]); // ⚠️ language intentionally omitted — use languageRef to avoid re-subscribe loop
 
 
     // Auto-Save (Via Socket)
