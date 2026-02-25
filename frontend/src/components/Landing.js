@@ -29,6 +29,7 @@ function Landing() {
     if (firebaseUser || user) {
       console.log('🚀 Landing: User is authenticated, redirecting to Dashboard...');
       navigate('/dashboard');
+      return; // Stop further execution
     }
   }, [firebaseUser, user, navigate]);
 
@@ -84,8 +85,8 @@ function Landing() {
     { num: '3', title: 'Code Together', desc: 'Real-time sync with < 50ms latency.' }
   ];
 
-  if (isCreating) {
-    return <SecureLoading message="Initializing Secure Environment..." />;
+  if (isCreating || firebaseUser || user) {
+    return <SecureLoading message={isCreating ? "Initializing Secure Environment..." : "Redirecting to Dashboard..."} />;
   }
 
   return (
