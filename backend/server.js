@@ -202,6 +202,8 @@ app.get('/api/health', (req, res) => {
 // --- In-memory Stores (Fallback) ---
 // Reserved for temp data if needed, but primary is now MongoDB
 const localRooms = new Map();
+const activeRooms = new Map();
+const socketIdToUserId = new Map();
 
 // --- Mount Routes ---
 // CRITICAL: Invoke the router factories (passing null or db as they expect a db/connection)
