@@ -781,7 +781,7 @@ const CodeEditor = () => {
                             onChange={handleEditorChange}
                             onMount={(editor) => { editorRef.current = editor; }}
                             options={{
-                                minimap: { enabled: editorSettings.minimap !== false && !isMobile }, // Disable minimap on mobile
+                                minimap: { enabled: editorSettings.minimap !== false && !isMobile },
                                 fontSize: editorSettings.fontSize,
                                 fontFamily: editorSettings.fontFamily || 'Consolas, "Courier New", monospace',
                                 wordWrap: editorSettings.wordWrap,
@@ -789,15 +789,16 @@ const CodeEditor = () => {
                                 tabSize: editorSettings.tabSize,
                                 scrollBeyondLastLine: false,
                                 automaticLayout: true,
-                                readOnly: !permissions.canEdit,
+                                readOnly: !permissions.canEdit || userRole === 'INTERVIEWER',
                                 domReadOnly: !permissions.canEdit,
                                 suggestOnTriggerCharacters: true,
                                 quickSuggestions: { other: true, comments: true, strings: true },
                                 parameterHints: { enabled: true },
-                                suggestSelection: 'first',
+                                suggestSelection: 'recentlyUsed',
+                                tabCompletion: 'on',
                                 acceptSuggestionOnCommitCharacter: true,
                                 acceptSuggestionOnEnter: 'on',
-                                snippetSuggestions: 'top',
+                                snippetSuggestions: 'inline',
                                 wordBasedSuggestions: true,
                                 formatOnPaste: true,
                                 formatOnType: true,
@@ -814,6 +815,10 @@ const CodeEditor = () => {
                                 autoClosingBrackets: 'always',
                                 autoClosingQuotes: 'always',
                                 autoSurround: 'languageDefined',
+                                smoothScrolling: true,
+                                cursorBlinking: 'smooth',
+                                cursorSmoothCaretAnimation: 'on',
+                                mouseWheelZoom: true,
                             }}
                         />
                     </div>
