@@ -516,6 +516,22 @@ function Landing() {
           </div>
         </div>
 
+        {/* AdSense Optimization Text Block */}
+        <div className="seo-content-block" style={{ width: '100%', maxWidth: '900px', margin: '0 auto 8rem', padding: '0 2rem' }}>
+          <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '1.5rem', color: 'white' }}>About Our Platform</h2>
+          <div style={{ color: '#94a3b8', fontSize: '1.05rem', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+            <p>
+              CodeConnect represents the next evolution in remote collaboration and developer productivity. In today's distributed work environment, traditional screen sharing is no longer sufficient for rigorous software engineering tasks. True pair programming requires high-fidelity, bidirectional synchronization where both participants have equal agency over the codebase, terminal, and execution environment. Our platform solves this fundamental friction point by providing an ultra-low latency, browser-based Integrated Development Environment (IDE) that requires absolutely zero configuration or environment setup.
+            </p>
+            <p>
+              Under the hood, CodeConnect utilizes Operational Transformation (OT) and sophisticated Conflict-free Replicated Data Types (CRDTs) to guarantee that code buffers remain in perfect lockstep, regardless of geographical distance or network jitter. This mathematical foundation allows dozens of developers to interact with the same document simultaneously without data corruption. By coupling this synchronization engine with secure, containerized cloud execution environments, teams can compile, test, and debug code in standardized runtimes (ranging from Node.js and Python to C++ and Java) without worrying about local dependency conflicts or the classic "it works on my machine" paradigm.
+            </p>
+            <p>
+              Furthermore, acknowledging the transformative impact of machine learning on software engineering, we have deeply integrated artificial intelligence directly into the collaborative workflow. Our context-aware AI assistant acts as a silent partner, capable of analyzing written code, identifying logical flaws, suggesting optimizations, and even generating comprehensive unit tests on demand. Combined with integrated WebRTC video and audio channels, CodeConnect provides a unified, highly efficient workspace designed specifically for the unique demands of modern technical interviews, educational boot camps, and professional remote engineering teams.
+            </p>
+          </div>
+        </div>
+
       </main>
 
 
