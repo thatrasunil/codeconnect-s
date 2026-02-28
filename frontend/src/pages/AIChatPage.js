@@ -68,8 +68,11 @@ const MarkdownComponents = {
     ul: ({ ...props }) => <ul style={{ marginLeft: 18, marginBottom: 6 }} {...props} />,
     ol: ({ ...props }) => <ol style={{ marginLeft: 18, marginBottom: 6 }} {...props} />,
     li: ({ ...props }) => <li style={{ marginBottom: 3 }} {...props} />,
+    // eslint-disable-next-line jsx-a11y/heading-has-content
     h1: ({ ...props }) => <h1 style={{ fontSize: '1.3rem', margin: '10px 0 6px', color: '#c4b5fd' }} {...props} />,
+    // eslint-disable-next-line jsx-a11y/heading-has-content
     h2: ({ ...props }) => <h2 style={{ fontSize: '1.1rem', margin: '10px 0 6px', color: '#a78bfa' }} {...props} />,
+    // eslint-disable-next-line jsx-a11y/heading-has-content
     h3: ({ ...props }) => <h3 style={{ fontSize: '1rem', margin: '8px 0 4px', color: '#a78bfa' }} {...props} />,
     blockquote: ({ ...props }) => <blockquote style={{
         borderLeft: '3px solid #8b5cf6', paddingLeft: 12, margin: '8px 0',
@@ -156,6 +159,7 @@ const AIChatPage = () => {
             const decoder = new TextDecoder();
             let fullText = '';
 
+            /* eslint-disable no-loop-func */
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -176,6 +180,7 @@ const AIChatPage = () => {
                     } catch (_) { }
                 }
             }
+            /* eslint-enable no-loop-func */
 
             setMessages(prev => prev.map(m =>
                 m.id === aiId ? { ...m, content: fullText, streaming: false } : m
