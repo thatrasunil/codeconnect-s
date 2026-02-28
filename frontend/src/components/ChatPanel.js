@@ -120,7 +120,7 @@ const RenderContent = ({ content }) => {
 
 const MessageItem = React.memo(({ msg, user, onReaction, onReply, allMessages }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const isMe = msg.senderName === (user?.username || user?.displayName);
+    const isMe = msg.senderName === (user?.username || user?.displayName || localStorage.getItem('codeconnect_guest_name') || '');
     const isAI = msg.userId === 'Gemini AI';
     // Helper to safely get Date object from Firestore Timestamp or other formats
     const getMessageDate = (msg) => {

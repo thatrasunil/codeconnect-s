@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FaSignOutAlt, FaCode, FaBars, FaTimes } from 'react-icons/fa';
+import { FaSignOutAlt, FaCode, FaBars, FaTimes, FaRobot } from 'react-icons/fa';
 import Logo from '../logo.svg';
 import './Navbar.css';
 
@@ -53,6 +53,9 @@ const Navbar = () => {
                         <Link to="/debugging" className={`nav-link ${isActive('/debugging')}`} onClick={closeMenu}>Debugging</Link>
                         <Link to="/testing" className={`nav-link ${isActive('/testing')}`} onClick={closeMenu}>Testing</Link>
                         <Link to="/codegen" className={`nav-link ${isActive('/codegen')}`} onClick={closeMenu}>Code Gen</Link>
+                        <Link to="/chat" className={`nav-link ${isActive('/chat')}`} onClick={closeMenu} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <FaRobot size={13} /> AI Chat
+                        </Link>
                     </>
                 )}
 

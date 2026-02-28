@@ -30,6 +30,17 @@ const Testing = lazy(() => import('./pages/Testing'));
 const CodeGen = lazy(() => import('./pages/CodeGen'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
 const ChatWidget = lazy(() => import('./components/ChatWidget'));
+const AIChatPage = lazy(() => import('./pages/AIChatPage'));
+
+// Compliance Pages
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const ContactUs = lazy(() => import('./pages/ContactUs'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
+const Disclaimer = lazy(() => import('./pages/Disclaimer'));
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
 
 // Team Pages
 const Teams = lazy(() => import('./pages/Teams'));
@@ -104,6 +115,15 @@ function App() {
                     } />
                     <Route path="/room/:roomId" element={<Editor />} />
                     <Route path="/solve/:roomId" element={<ProblemSolver />} />
+                    <Route path="/chat" element={<AIChatPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/terms" element={<TermsOfService />} />
+                    <Route path="/contact" element={<ContactUs />} />
+                    <Route path="/about" element={<AboutUs />} />
+                    <Route path="/cookie-policy" element={<CookiePolicy />} />
+                    <Route path="/disclaimer" element={<Disclaimer />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/blog/:id" element={<BlogPost />} />
                   </Routes>
                 </Suspense>
 
@@ -124,8 +144,8 @@ function App() {
 // Dispatcher to control which chatbot to show
 const ChatbotDispatcher = ({ isChatOpen, setIsChatOpen }) => {
   const location = useLocation();
-  const publicRoutes = ['/', '/login', '/signup'];
-  const isPublic = publicRoutes.includes(location.pathname);
+  const publicRoutes = ['/', '/login', '/signup', '/privacy', '/terms', '/contact', '/about', '/cookie-policy', '/disclaimer', '/blog'];
+  const isPublic = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/');
   const [context, setContext] = React.useState('');
   const [initialMessage, setInitialMessage] = React.useState(null);
 

@@ -415,14 +415,18 @@ const CodeEditor = () => {
     // Chat / Socket Messages
     const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null, extraData = {}) => {
         const finalType = aiMode ? 'AI_PROMPT' : type;
+        // For guests, read the name they entered from localStorage
+        const guestName = localStorage.getItem('codeconnect_guest_name') || 'Guest';
+        const displayName = user?.username || user?.displayName || guestName;
+        const userId = user?.uid || ('guest_' + guestName.toLowerCase().replace(/\s+/g, '_'));
         const msgData = {
-            userId: extraData.userId || user?.uid || user?.username || 'Guest',
+            userId: extraData.userId || userId,
             content: text,
             type: finalType,
             fileUrl,
             parentId,
             avatar: extraData.avatar || user?.photoURL || null,
-            senderName: extraData.senderName || user?.username || user?.displayName || 'Guest'
+            senderName: extraData.senderName || displayName
         };
 
         try {

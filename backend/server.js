@@ -551,6 +551,92 @@ app.post('/api/ai/explain', async (req, res) => {
   }
 });
 
+// --- Streaming AI Endpoint (SSE) ---
+app.post('/api/ai/stream', async (req, res) => {
+  const { messages: chatHistory, context } = req.body;
+
+  if (!chatHistory || !Array.isArray(chatHistory)) {
+    return res.status(400).json({ error: 'messages array is required' });
+  }
+
+  if (!GROQ_API_KEY) {
+    return res.status(500).json({ error: 'API Key not configured' });
+  }
+
+  // Set SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.flushHeaders();
+
+  const systemPrompt = context
+    ? `You are CodeConnect AI, an expert coding assistant. You help with code, debugging, explanations and best practices. Current code context:\n\`\`\`\n${context}\n\`\`\``
+    : `You are CodeConnect AI, an expert coding assistant. Help with code, debugging, explanations, algorithms and best practices. Be concise but thorough.`;
+
+  const apiMessages = [
+    { role: 'system', content: systemPrompt },
+    ...chatHistory.map(m => ({ role: m.role, content: m.content }))
+  ];
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: apiMessages,
+        temperature: 0.7,
+        max_tokens: 2048,
+        stream: true
+      })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      res.write(`data: ${JSON.stringify({ error: 'AI service error: ' + response.status })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(l => l.trim());
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data === '[DONE]') {
+            res.write('data: [DONE]\n\n');
+            break;
+          }
+          try {
+            const parsed = JSON.parse(data);
+            const token = parsed.choices?.[0]?.delta?.content;
+            if (token) {
+              res.write(`data: ${JSON.stringify({ token })}\n\n`);
+            }
+          } catch (_) { }
+        }
+      }
+    }
+    res.end();
+  } catch (err) {
+    console.error('Streaming error:', err);
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.end();
+  }
+});
+
 // --- Code Execution (Piston API Proxy) ---
 // Note: Handled by global CORS
 

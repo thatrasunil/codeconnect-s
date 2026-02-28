@@ -1,13 +1,14 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { FaTwitter, FaGithub, FaDiscord, FaLinkedin, FaHeart } from 'react-icons/fa';
 import Logo from '../logo.svg';
 
 const Footer = () => {
     const location = useLocation();
 
-    // Only show Footer on Landing Page
-    if (location.pathname !== '/') {
+    // Only show Footer on Public Pages
+    const publicPages = ['/', '/privacy', '/terms', '/contact', '/about', '/cookie-policy', '/disclaimer', '/blog'];
+    if (!publicPages.includes(location.pathname) && !location.pathname.startsWith('/blog/')) {
         return null;
     }
 
@@ -58,17 +59,25 @@ const Footer = () => {
                             <li><a href="#">Documentation</a></li>
                             <li><a href="#">API Reference</a></li>
                             <li><a href="#">Community</a></li>
-                            <li><a href="#">Blog</a></li>
+                            <li><Link to="/blog">Blog</Link></li>
                         </ul>
                     </div>
 
                     <div className="footer-section">
                         <h4>Legal</h4>
                         <ul>
-                            <li><a href="#">Privacy Policy</a></li>
-                            <li><a href="#">Terms of Service</a></li>
-                            <li><a href="#">Cookie Policy</a></li>
-                            <li><a href="#">Security</a></li>
+                            <li><Link to="/privacy">Privacy Policy</Link></li>
+                            <li><Link to="/terms">Terms of Service</Link></li>
+                            <li><Link to="/cookie-policy">Cookie Policy</Link></li>
+                            <li><Link to="/disclaimer">Disclaimer</Link></li>
+                        </ul>
+                    </div>
+
+                    <div className="footer-section">
+                        <h4>Company</h4>
+                        <ul>
+                            <li><Link to="/about">About Us</Link></li>
+                            <li><Link to="/contact">Contact Us</Link></li>
                         </ul>
                     </div>
                 </div>
