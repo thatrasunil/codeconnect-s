@@ -76,6 +76,19 @@ export const getRoom = async (roomId) => {
     return response.json();
 };
 
+export const verifyRoomAccess = async (roomId, password) => {
+    const response = await fetch(`${API_URL}/rooms/${roomId}/verify`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ password })
+    });
+    if (!response.ok) {
+        const e = await response.json();
+        throw new Error(e.message || e.error || 'Invalid password');
+    }
+    return response.json();
+};
+
 export const joinRoom = async (roomId, user) => {
     // Only needed if we want to track join via REST, but Socket usually handles this.
     // For compatibility with old logic returning a memberId:

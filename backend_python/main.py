@@ -86,7 +86,7 @@ async def get_current_user(res: HTTPAuthorizationCredentials = Depends(security)
 
 # --- Helper Functions ---
 def generate_room_id():
-    return str(random.randint(10000000, 99999999))
+    return str(random.randint(100000, 999999))
 
 # --- API Routes ---
 

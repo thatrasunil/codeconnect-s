@@ -22,7 +22,7 @@ import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '
 import { db } from '../firebase';
 // Services
 import realtimeService from '../services/realtimeService';
-import { getRoom } from '../services/apiService';
+import { getRoom, verifyRoomAccess } from '../services/apiService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
 const MemoizedProblemPanel = React.memo(ProblemPanel);
@@ -38,6 +38,7 @@ const CodeEditor = () => {
 
     // Auth State
     const [isLocked, setIsLocked] = useState(false);
+    const [roomPassword, setRoomPassword] = useState('');
     const [accessError, setAccessError] = useState('');
 
     const queryParams = new URLSearchParams(location.search);
@@ -109,9 +110,17 @@ const CodeEditor = () => {
                 else if (msg.type === "FILE") bodyText = "📎 File attaching";
                 else bodyText = String(msg.content || "").substring(0, 50) + (String(msg.content || "").length > 50 ? '...' : '');
 
-                new Notification(`New message from ${msg.senderName}`, {
-                    body: bodyText,
-                });
+                try {
+                    navigator.serviceWorker.getRegistration().then((reg) => {
+                        if (reg) {
+                            reg.showNotification(`New message from ${msg.senderName}`, { body: bodyText });
+                        } else {
+                            new Notification(`New message from ${msg.senderName}`, { body: bodyText });
+                        }
+                    });
+                } catch (e) {
+                    new Notification(`New message from ${msg.senderName}`, { body: bodyText });
+                }
             }
         }
     }, [user, toast]);
@@ -159,6 +168,10 @@ const CodeEditor = () => {
             try {
                 const roomData = await getRoom(roomId);
                 if (roomData) {
+                    if (roomData.isPublic === false) {
+                        setIsLocked(true);
+                        return; // Stop initialization until unlocked
+                    }
                     if (roomData.code) {
                         setCode(roomData.code);
                         lastSavedCodeRef.current = roomData.code;
@@ -171,6 +184,8 @@ const CodeEditor = () => {
             }
         };
         fetchInitialData();
+
+        if (isLocked) return; // Do not subscribe to sockets if not authenticated yet
 
         // Listen for Code Updates
         const unsubscribeCode = realtimeService.onCodeChange(roomId, ({ code: newCode, language: newLang }) => {
@@ -213,7 +228,7 @@ const CodeEditor = () => {
             if (unsubscribeDraw) unsubscribeDraw();
             realtimeService.disconnect();
         };
-    }, [roomId, user]); // ⚠️ language intentionally omitted — use languageRef to avoid re-subscribe loop
+    }, [roomId, user, isLocked]); // ⚠️ language intentionally omitted — use languageRef to avoid re-subscribe loop
 
 
     // Auto-Save (Via Socket)
@@ -567,14 +582,43 @@ const CodeEditor = () => {
         }
     };
 
+    const handleUnlockRoom = async (e) => {
+        e.preventDefault();
+        try {
+            await verifyRoomAccess(roomId, roomPassword);
+            setIsLocked(false);
+            setAccessError('');
+            toast.success("Room unlocked!");
+        } catch (err) {
+            setAccessError(err.message || 'Invalid password');
+            toast.error("Invalid password.");
+        }
+    };
+
     if (isLocked) {
         return (
-            // Lock Screen (Simplified, as password logic requires valid backend usually)
-            // We can assume open for now or check roomData.password in firestore
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
-                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <h2>Room Locked</h2>
-                    <p>Please contact room owner.</p>
+            <div className="lock-screen-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', background: '#0f172a', padding: '1rem' }}>
+                <div style={{ background: '#1e293b', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+                    <FaLock size={48} color="#ef4444" style={{ marginBottom: '1rem' }} />
+                    <h2 style={{ color: 'white', marginBottom: '0.5rem' }}>Private Session</h2>
+                    <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Please enter the access code to join Room #{roomId}.</p>
+
+                    <form onSubmit={handleUnlockRoom}>
+                        <input
+                            type="password"
+                            placeholder="Enter password..."
+                            value={roomPassword}
+                            onChange={(e) => setRoomPassword(e.target.value)}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', marginBottom: '1rem' }}
+                            autoFocus
+                        />
+                        {accessError && <p style={{ color: '#ef4444', fontSize: '0.85rem', marginBottom: '1rem' }}>{accessError}</p>}
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button type="button" onClick={() => navigate('/dashboard')} style={{ flex: 1, padding: '0.75rem', background: 'rgba(255,255,255,0.05)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Cancel</button>
+                            <button type="submit" style={{ flex: 1, padding: '0.75rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Unlock</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         );

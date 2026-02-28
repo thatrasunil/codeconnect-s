@@ -213,16 +213,19 @@ app.use('/api/teams', teamsRouter(mongoose.connection));
 // --- API Routes ---
 // --- API Routes ---
 function generateRoomId() {
-  const randomNum = crypto.randomBytes(4).readUInt32BE(0) % 90000000 + 10000000;
+  const randomNum = crypto.randomBytes(4).readUInt32BE(0) % 900000 + 100000;
   return randomNum.toString();
 }
 
 app.post('/api/create-room', async (req, res) => {
   const roomId = generateRoomId();
+  const { isPublic = true, password = '' } = req.body;
 
   try {
     const newRoom = new Room({
       roomId,
+      isPublic,
+      password,
       code: '',
       language: 'javascript',
       messages: [],
@@ -300,7 +303,19 @@ app.get('/api/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
     const room = await Room.findOne({ roomId });
-    const responseData = room ? room.toObject() : { code: '', language: 'javascript' };
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    // Determine what to return based on public/private status
+    const isPublic = room.isPublic !== false; // Default to true if undefined
+
+    // If not public, only return basic metadata indicating a lock is required
+    if (!isPublic) {
+      return res.json({ roomId, isPublic: false });
+    }
+
+    const responseData = room.toObject();
 
     // Merge with Firestore messages if available
     if (db_firestore) {
@@ -320,6 +335,28 @@ app.get('/api/rooms/:roomId', async (req, res) => {
   } catch (err) {
     console.error('Error fetching room:', err);
     res.status(500).json({ error: 'Failed to fetch room' });
+  }
+});
+
+// POST Verify Room Access
+app.post('/api/rooms/:roomId/verify', async (req, res) => {
+  const { roomId } = req.params;
+  const { password } = req.body;
+
+  try {
+    const room = await Room.findOne({ roomId });
+    if (!room) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    if (room.isPublic !== false || room.password === password) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ error: 'Invalid password' });
+    }
+  } catch (err) {
+    console.error('Error verifying room access:', err);
+    res.status(500).json({ error: 'Failed to verify room access' });
   }
 });
 

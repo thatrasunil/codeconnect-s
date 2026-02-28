@@ -17,6 +17,8 @@ const RoomUserSchema = new mongoose.Schema({
 const RoomSchema = new mongoose.Schema({
     roomId: { type: String, required: true, unique: true }, // Public ID like '123456'
     ownerId: { type: String }, // Optional
+    isPublic: { type: Boolean, default: true },
+    password: { type: String, default: '' },
     code: { type: String, default: '' },
     language: { type: String, default: 'javascript' },
     messages: [MessageSchema],
