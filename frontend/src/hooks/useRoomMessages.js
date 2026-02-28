@@ -2,10 +2,15 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import realtimeService from "../services/realtimeService";
 import { getRoom } from "../services/apiService";
 
-function useRoomMessages(roomId) {
+function useRoomMessages(roomId, onMessageReceived) {
     const [messages, setMessages] = useState([]);
     // Track optimistic message IDs so we can deduplicate when Firestore echoes them
     const optimisticIds = useRef(new Set());
+    const onMessageReceivedRef = useRef(onMessageReceived);
+
+    useEffect(() => {
+        onMessageReceivedRef.current = onMessageReceived;
+    }, [onMessageReceived]);
 
     useEffect(() => {
         if (!roomId) return;
@@ -31,6 +36,15 @@ function useRoomMessages(roomId) {
                 const optimisticIndex = prev.findIndex(
                     m => m._optimistic && m.content === msg.content && m.senderName === msg.senderName
                 );
+
+                // Ignore if it's optimistic or if exact ID already exists
+                const isOptimisticOrExists = optimisticIndex !== -1 || prev.find(m => m.id === msg.id);
+
+                // Trigger callback if it's genuinely a new message arriving from the network
+                if (!isOptimisticOrExists && onMessageReceivedRef.current) {
+                    onMessageReceivedRef.current(msg);
+                }
+
                 if (optimisticIndex !== -1) {
                     // Replace optimistic message with real Firestore message
                     const updated = [...prev];

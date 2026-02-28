@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaComments, FaRobot, FaDownload, FaCopy, FaHistory, FaLock, FaBook, FaBars, FaPencilAlt, FaTimes } from 'react-icons/fa';
@@ -77,7 +77,6 @@ const CodeEditor = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Adjust defaults for mobile
     useEffect(() => {
         if (isMobile) {
             setShowChat(false);
@@ -85,9 +84,39 @@ const CodeEditor = () => {
         }
     }, [isMobile]);
 
+    // Request Notification Permission
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }, []);
+
     // Real-time Data
     const [participants, setParticipants] = useState([]);
-    const { messages, addOptimisticMessage } = useRoomMessages(roomId);
+
+    const handleNewMessage = useCallback((msg) => {
+        const guestName = localStorage.getItem('codeconnect_guest_name') || 'Guest';
+        const currentUserId = user?.uid || user?.id || `guest_${guestName.toLowerCase().replace(/\s+/g, '_')}`;
+        const currentUserName = user?.username || user?.displayName || guestName;
+
+        if (msg.senderName !== currentUserName && msg.userId !== currentUserId && msg.userId !== 'Gemini AI') {
+            toast.info(`New message from ${msg.senderName}`);
+
+            if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+                let bodyText = "";
+                if (msg.type === "IMAGE") bodyText = "📷 Image";
+                else if (msg.type === "AUDIO") bodyText = "🎵 Voice Message";
+                else if (msg.type === "FILE") bodyText = "📎 File attaching";
+                else bodyText = String(msg.content || "").substring(0, 50) + (String(msg.content || "").length > 50 ? '...' : '');
+
+                new Notification(`New message from ${msg.senderName}`, {
+                    body: bodyText,
+                });
+            }
+        }
+    }, [user, toast]);
+
+    const { messages, addOptimisticMessage } = useRoomMessages(roomId, handleNewMessage);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
     const [whiteboardDrawings, setWhiteboardDrawings] = useState([]);
     const [userRole, setUserRole] = useState('CANDIDATE');
