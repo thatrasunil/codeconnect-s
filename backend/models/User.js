@@ -11,7 +11,7 @@ const UserSchema = new mongoose.Schema({
     provider: { type: String, default: 'local' }, // 'local', 'firebase', etc.
     stats: {
         problemsSolved: { type: Number, default: 0 },
-        points: { type: Number, default: 0 },
+        points: { type: Number, default: 0, index: true },
         rank: { type: Number, default: 0 }
     },
     createdAt: { type: Date, default: Date.now },

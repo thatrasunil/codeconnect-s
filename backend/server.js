@@ -219,15 +219,16 @@ function generateRoomId() {
 
 app.post('/api/create-room', async (req, res) => {
   const roomId = generateRoomId();
-  const { isPublic = true, password = '' } = req.body;
+  const { isPublic = true, password = '', ownerId, language = 'javascript' } = req.body;
 
   try {
     const newRoom = new Room({
       roomId,
+      ownerId,
       isPublic,
       password,
       code: '',
-      language: 'javascript',
+      language,
       messages: [],
       users: []
     });
@@ -245,9 +246,8 @@ app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
   try {
     const userId = req.user.uid || req.user._id; // Handle both JWT formats
 
-    // Get rooms created by user
-    // Note: Room model has ownerId as String for now, might need ObjectId conversion if schema changes
-    const rooms = await Room.find({ ownerId: userId });
+    // Optimized query: only fetch language field to reduce data transfer
+    const rooms = await Room.find({ ownerId: userId }).select('language');
 
     const stats = {
       totalSessions: rooms.length,
@@ -291,7 +291,8 @@ app.get('/api/leaderboard', async (req, res) => {
 app.get('/api/rooms/my-rooms', verifyToken, async (req, res) => {
   try {
     const userId = req.user.uid || req.user._id;
-    const rooms = await Room.find({ ownerId: userId });
+    // Exclude large messages and users arrays from the list view
+    const rooms = await Room.find({ ownerId: userId }).select('-messages -users').sort({ createdAt: -1 });
     res.json(rooms);
   } catch (err) {
     console.error('Error fetching my rooms:', err);

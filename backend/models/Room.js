@@ -23,8 +23,11 @@ const RoomSchema = new mongoose.Schema({
     language: { type: String, default: 'javascript' },
     messages: [MessageSchema],
     users: [RoomUserSchema],
-    createdAt: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now, index: true },
     updatedAt: { type: Date, default: Date.now }
 });
+
+// Compound index for frequent ownership-based sorting
+RoomSchema.index({ ownerId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Room', RoomSchema);

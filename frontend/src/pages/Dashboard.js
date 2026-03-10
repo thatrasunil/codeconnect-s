@@ -44,19 +44,19 @@ const Dashboard = () => {
             }
 
             try {
-                console.log('📊 Dashboard: Fetching data for user:', currentUser.uid || currentUser.id);
+                const userId = currentUser.uid || currentUser.id;
+                console.log('📊 Dashboard: Fetching data in parallel for user:', userId);
 
-                // 1. Fetch User Stats
-                const userStats = await getDashboardStats();
+                // Fetch all data in parallel to avoid waterfalls
+                const [userStats, rooms, lb] = await Promise.all([
+                    getDashboardStats(),
+                    fetchUserRooms(userId),
+                    getLeaderboard()
+                ]);
+
                 if (userStats) setStats(userStats);
-
-                // 2. Fetch User Rooms
-                const rooms = await fetchUserRooms(currentUser.uid || currentUser.id);
-                setMyRooms(rooms);
-
-                // 3. Fetch Leaderboard
-                const lb = await getLeaderboard();
-                setLeaderboard(lb);
+                if (rooms) setMyRooms(rooms);
+                if (lb) setLeaderboard(lb);
 
             } catch (err) {
                 console.warn("⚠️ Dashboard: Non-critical data load failure:", err);
