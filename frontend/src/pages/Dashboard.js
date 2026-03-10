@@ -35,14 +35,19 @@ const Dashboard = () => {
     const BACKEND_URL = config.BACKEND_URL;
 
     useEffect(() => {
-        const loadDashboardData = async () => {
-            // Proceed if we have ANY auth state
-            const currentUser = user || firebaseUser;
-            if (!currentUser) {
-                console.log('⚠️ Dashboard: No user found, waiting or redirecting...');
-                return;
-            }
+        // While Firebase auth is still resolving, keep showing the spinner
+        if (authLoading) return;
 
+        const currentUser = user || firebaseUser;
+
+        // Auth resolved but no user — stop the spinner immediately
+        if (!currentUser) {
+            console.log('⚠️ Dashboard: No user found after auth resolved.');
+            setLoading(false);
+            return;
+        }
+
+        const loadDashboardData = async () => {
             try {
                 const userId = currentUser.uid || currentUser.id;
                 console.log('📊 Dashboard: Fetching data in parallel for user:', userId);
@@ -65,9 +70,7 @@ const Dashboard = () => {
             }
         };
 
-        if (!authLoading) {
-            loadDashboardData();
-        }
+        loadDashboardData();
     }, [user, firebaseUser, authLoading]);
 
     // Online users subscription removed for now - using empty or mock if needed
