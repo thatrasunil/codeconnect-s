@@ -65,8 +65,11 @@ export const createRoom = async (roomData) => {
     return response.json(); // returns { roomId }
 };
 
-export const getRoom = async (roomId) => {
-    const response = await fetch(`${API_URL}/rooms/${roomId}`, {
+export const getRoom = async (roomId, password = null) => {
+    const url = password
+        ? `${API_URL}/rooms/${roomId}?password=${encodeURIComponent(password)}`
+        : `${API_URL}/rooms/${roomId}`;
+    const response = await fetch(url, {
         headers: getHeaders()
     });
     if (!response.ok) {

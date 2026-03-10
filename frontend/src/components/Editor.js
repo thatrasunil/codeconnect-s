@@ -40,6 +40,8 @@ const CodeEditor = () => {
     const [isLocked, setIsLocked] = useState(false);
     const [roomPassword, setRoomPassword] = useState('');
     const [accessError, setAccessError] = useState('');
+    // Track whether user has already successfully authenticated for a private room
+    const hasUnlockedRef = useRef(false);
 
     const queryParams = new URLSearchParams(location.search);
     const initialQuestionId = queryParams.get('questionId');
@@ -168,7 +170,8 @@ const CodeEditor = () => {
             try {
                 const roomData = await getRoom(roomId);
                 if (roomData) {
-                    if (roomData.isPublic === false) {
+                    // Only lock if user hasn't already unlocked this session
+                    if (roomData.isPublic === false && !hasUnlockedRef.current) {
                         setIsLocked(true);
                         return; // Stop initialization until unlocked
                     }
@@ -585,13 +588,27 @@ const CodeEditor = () => {
     const handleUnlockRoom = async (e) => {
         e.preventDefault();
         try {
+            // 1. Verify password via dedicated endpoint
             await verifyRoomAccess(roomId, roomPassword);
-            setIsLocked(false);
+
+            // 2. Fetch full room data using the verified password
+            const roomData = await getRoom(roomId, roomPassword);
+            if (roomData) {
+                if (roomData.code) {
+                    setCode(roomData.code);
+                    lastSavedCodeRef.current = roomData.code;
+                }
+                if (roomData.language) setLanguage(roomData.language);
+            }
+
+            // 3. Mark as unlocked so the re-triggered useEffect bypasses the lock check
+            hasUnlockedRef.current = true;
             setAccessError('');
-            toast.success("Room unlocked!");
+            setIsLocked(false); // triggers re-subscription of real-time listeners
+            toast.success('Room unlocked! Connecting...');
         } catch (err) {
             setAccessError(err.message || 'Invalid password');
-            toast.error("Invalid password.");
+            toast.error('Invalid password.');
         }
     };
 

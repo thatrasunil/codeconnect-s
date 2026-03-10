@@ -302,6 +302,7 @@ app.get('/api/rooms/my-rooms', verifyToken, async (req, res) => {
 
 app.get('/api/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
+  const { password } = req.query; // Optional password for private room access
   try {
     const room = await Room.findOne({ roomId });
     if (!room) {
@@ -311,9 +312,12 @@ app.get('/api/rooms/:roomId', async (req, res) => {
     // Determine what to return based on public/private status
     const isPublic = room.isPublic !== false; // Default to true if undefined
 
-    // If not public, only return basic metadata indicating a lock is required
+    // If not public, check if a valid password was supplied
     if (!isPublic) {
-      return res.json({ roomId, isPublic: false });
+      if (!password || password !== room.password) {
+        return res.json({ roomId, isPublic: false });
+      }
+      // Password matched — fall through to return full room data
     }
 
     const responseData = room.toObject();

@@ -10,8 +10,9 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin, user }) => {
     const [guestName, setGuestName] = useState('');
 
     const handleJoin = () => {
-        if (roomId.trim()) {
-            onJoin(roomId);
+        const trimmed = roomId.trim();
+        if (trimmed && /^\d{6}$/.test(trimmed)) {
+            onJoin(trimmed);
         }
     };
 
@@ -144,29 +145,33 @@ const RoomChoiceModal = ({ isOpen, onClose, onCreate, onJoin, user }) => {
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <input
                                                 type="text"
-                                                placeholder="Enter Room ID"
+                                                placeholder="6-digit Room ID"
                                                 value={roomId}
-                                                onChange={(e) => setRoomId(e.target.value)}
+                                                maxLength={6}
+                                                onChange={(e) => setRoomId(e.target.value.replace(/\D/g, ''))}
                                                 style={{
                                                     flex: 1, padding: '0.75rem 1rem', borderRadius: '10px',
-                                                    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
-                                                    color: 'white', outline: 'none'
+                                                    background: 'rgba(0,0,0,0.3)', border: `1px solid ${roomId && !/^\d{6}$/.test(roomId) ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
+                                                    color: 'white', outline: 'none', letterSpacing: '0.2em', fontWeight: '600'
                                                 }}
                                                 onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
                                             />
                                             <button
                                                 onClick={handleJoin}
-                                                disabled={!roomId.trim()}
+                                                disabled={!/^\d{6}$/.test(roomId.trim())}
                                                 style={{
                                                     padding: '0 1.25rem', borderRadius: '10px', border: 'none',
-                                                    background: roomId.trim() ? '#10b981' : 'rgba(255,255,255,0.05)',
-                                                    color: roomId.trim() ? 'white' : 'rgba(255,255,255,0.2)',
-                                                    fontWeight: '600', cursor: roomId.trim() ? 'pointer' : 'not-allowed'
+                                                    background: /^\d{6}$/.test(roomId.trim()) ? '#10b981' : 'rgba(255,255,255,0.05)',
+                                                    color: /^\d{6}$/.test(roomId.trim()) ? 'white' : 'rgba(255,255,255,0.2)',
+                                                    fontWeight: '600', cursor: /^\d{6}$/.test(roomId.trim()) ? 'pointer' : 'not-allowed'
                                                 }}
                                             >
                                                 Join
                                             </button>
                                         </div>
+                                        {roomId && !/^\d{6}$/.test(roomId) && (
+                                            <p style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem' }}>Room ID must be exactly 6 digits.</p>
+                                        )}
                                     </div>
                                 </div>
                             ) : mode === 'guest_name' ? (
