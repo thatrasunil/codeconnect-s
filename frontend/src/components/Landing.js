@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaArrowRight, FaCode, FaGlobe, FaComments, FaShare, FaLock, FaMicrophone } from 'react-icons/fa';
@@ -6,12 +6,14 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Sparkles, MeshDistortMaterial, Float } from '@react-three/drei';
 import FlowDiagram3D from './Three/FlowDiagram3D';
 
-
 import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons';
 import { createRoom as createApiRoom } from '../services/apiService';
 import SecureLoading from './SecureLoading';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../logo.svg';
+import Hero3DBackground from './Hero3DBackground';
+import Steps3DFlow from './Steps3DFlow';
+import EnhancedFeatureCard from './EnhancedFeatureCard';
 
 function Landing() {
   const navigate = useNavigate();
@@ -156,273 +158,119 @@ function Landing() {
       <motion.div animate={{ rotate: -360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '20%', right: '-5%', width: '400px', height: '400px', background: 'var(--accent-secondary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
 
       <main className="landing-main">
-        {/* Ad Unit - Top Horizontal */}
-        <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto 2rem auto', textAlign: 'center' }}>
+        {/* Ad Unit - Top Horizontal - Disabled for testing */}
+        {/* <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto 2rem auto', textAlign: 'center' }}>
           <AdUnit />
-        </div>
+        </div> */}
 
-        {/* Hero Section */}
-        <div className="hero-section" suppressHydrationWarning={true}>
-
-          <motion.div
-            className="hero-text"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.1 }}
-          >
-            <div className="hero-badge" style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              color: '#22d3ee', fontSize: '0.85rem', fontWeight: '700', letterSpacing: '0.5px', marginBottom: '1.5rem', textTransform: 'uppercase',
-              background: 'rgba(34, 211, 238, 0.1)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(34, 211, 238, 0.2)'
-            }}>
-              <span style={{ width: '8px', height: '8px', background: '#22d3ee', borderRadius: '50%', boxShadow: '0 0 10px #22d3ee' }}></span>
-              Real-time collaboration
-            </div>
-
-            <h1 className="main-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)', lineHeight: '1.1', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '-0.03em', fontFamily: '"Inter", sans-serif' }}>
-              <span style={{ background: 'linear-gradient(to right, #a78bfa, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Code together</span>
-              <br />
-              <span style={{ color: '#3b82f6', background: 'linear-gradient(to right, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>in perfect sync.</span>
-            </h1>
-
-            <p className="subtitle" style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '600px', marginBottom: '3rem', lineHeight: '1.7' }}>
-              Spin up an interview-ready coding room, share a link, and watch every keystroke live. No setup required.
-            </p>
-
-            <div className="action-buttons" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <motion.button
-                onClick={initiateCreateRoom}
-                className="btn"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                style={{
-                  fontSize: '1.1rem',
-                  padding: '1rem 2.5rem',
-                  background: 'linear-gradient(135deg, #6366f1, #06b6d4)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)',
-                  display: 'flex', alignItems: 'center', gap: '10px'
-                }}
-              >
-                <FaPlus size={14} /> Start Coding Now
-              </motion.button>
-
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(30, 41, 59, 0.8)', padding: '6px', borderRadius: '12px', border: '1px solid #475569', backdropFilter: 'blur(10px)' }}>
-                <input
-                  type="text"
-                  placeholder="Enter Room ID"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  style={{ background: 'transparent', border: 'none', color: 'white', padding: '0.75rem 1rem', outline: 'none', width: '150px', fontSize: '1rem' }}
-                  onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
-                />
-                <button
-                  onClick={joinRoom}
-                  style={{ background: '#3b82f6', border: 'none', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
-                  onMouseOver={(e) => e.target.style.background = '#2563eb'}
-                  onMouseOut={(e) => e.target.style.background = '#3b82f6'}
-                >
-                  Join
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-
-          <motion.div
-            className="hero-image-container"
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3, duration: 0.8 }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1000px', position: 'relative' }}
-          >
-            {/* Glow Effect - Stronger */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '140%',
-              height: '140%',
-              background: 'radial-gradient(circle at center, rgba(59, 130, 246, 0.4) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 70%)',
-              filter: 'blur(80px)',
-              pointerEvents: 'none',
-              zIndex: -1
-            }} />
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '100%',
-              height: '100%',
-              background: 'radial-gradient(circle at center, rgba(99, 102, 241, 0.5) 0%, transparent 60%)',
-              filter: 'blur(40px)',
-              pointerEvents: 'none',
-              zIndex: -1,
-              mixBlendMode: 'screen'
-            }} />
-
+        {/* Hero Section with 3D Background */}
+        <Hero3DBackground>
+          <div className="hero-content-wrapper" style={{
+            width: '100%',
+            maxWidth: '1200px',
+            padding: '3rem 2rem',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '3rem',
+            alignItems: 'center',
+          }}>
             <motion.div
-              animate={{ y: [0, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+              className="hero-text"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.1, type: "spring", stiffness: 100 }}
               style={{
-                background: '#1e1e1e',
-                borderRadius: '16px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1)',
-                width: '100%',
-                maxWidth: '600px',
-                overflow: 'hidden',
-                position: 'relative',
-                transformStyle: 'preserve-3d',
-                transform: 'rotateY(-5deg) rotateX(2deg)'
+                display: 'flex', flexDirection: 'column', alignItems: 'flex-start'
               }}
             >
-              {/* Window Header */}
-              <div style={{
-                background: '#252526',
-                padding: '12px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid #333'
+              <div className="hero-badge" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                color: '#38bdf8', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px', marginBottom: '1.5rem',
+                background: 'rgba(56, 189, 248, 0.1)', padding: '6px 16px', borderRadius: '24px', border: '1px solid rgba(56, 189, 248, 0.2)', backdropFilter: 'blur(10px)'
               }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ff5f56' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ffbd2e' }} />
-                  <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#27c93f' }} />
-                </div>
-                <div style={{ color: '#858585', fontSize: '0.9rem', fontFamily: 'monospace' }}>main.js</div>
-                <div style={{ width: '50px' }} /> {/* Spacer */}
+                <span style={{ width: '6px', height: '6px', background: '#38bdf8', borderRadius: '50%', boxShadow: '0 0 10px #38bdf8' }}></span>
+                New: High-Performance Sync Engine
               </div>
 
-              {/* Code Content */}
-              <div style={{ position: 'relative', display: 'flex' }}>
-                {/* Line Numbers */}
-                <div style={{
-                  padding: '24px 0 24px 20px',
-                  textAlign: 'right',
-                  color: '#6e7681',
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: '0.9rem',
-                  lineHeight: '1.6',
-                  userSelect: 'none',
-                  borderRight: '1px solid rgba(255,255,255,0.05)',
-                  marginRight: '16px',
-                  paddingRight: '16px'
-                }}>
-                  {Array.from({ length: 9 }).map((_, i) => (
-                    <div key={i}>{i + 1}</div>
-                  ))}
-                </div>
+              <h1 className="main-title" style={{ fontSize: 'clamp(3rem, 6vw, 4.5rem)', lineHeight: '1.05', fontWeight: '900', marginBottom: '1.5rem', letterSpacing: '-0.04em', fontFamily: '"Inter", sans-serif' }}>
+                <span style={{ color: '#f8fafc' }}>Code together.</span>
+                <br />
+                <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Zero Friction.</span>
+              </h1>
 
-                {/* Code Area */}
-                <div style={{ padding: '24px 20px 24px 0', fontFamily: "'JetBrains Mono', 'Fira Code', monospace", fontSize: '0.9rem', lineHeight: '1.6', color: '#e2e8f0', flex: 1 }}>
-                  <TypewriterCode />
-                </div>
-              </div>
+              <p className="subtitle" style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '520px', marginBottom: '2.5rem', lineHeight: '1.6', fontWeight: '400' }}>
+                Spin up an interview-ready coding room in seconds. Share a link and collaborate in perfect sync with real-time execution.
+              </p>
 
-              {/* Floating Badge */}
-              <div style={{
-                position: 'absolute',
-                bottom: '20px',
-                right: '25px',
-                background: 'rgba(30, 41, 59, 0.8)',
-                backdropFilter: 'blur(8px)',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '0.85rem',
-                color: 'white',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-              }}>
-                <span className="live-dot" style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#10b981',
-                  boxShadow: '0 0 8px #10b981'
-                }}></span>
-                Live Connection
+              <div className="action-buttons" style={{ display: 'flex', gap: '1.5rem', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+                <motion.button
+                  onClick={initiateCreateRoom}
+                  className="btn"
+                  whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(99, 102, 241, 0.5)' }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    fontSize: '1.1rem',
+                    padding: '1.2rem 2.5rem',
+                    background: '#f8fafc',
+                    color: '#0f172a',
+                    border: 'none',
+                    borderRadius: '14px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <FaPlus size={14} /> Start Coding Now
+                </motion.button>
+
+                <motion.div 
+                  whileHover={{ scale: 1.02 }}
+                  style={{ display: 'flex', alignItems: 'center', background: 'rgba(30, 41, 59, 0.5)', padding: '8px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
+                  <input
+                    type="text"
+                    placeholder="Enter Room ID"
+                    value={roomId}
+                    onChange={(e) => setRoomId(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', color: 'white', padding: '0.8rem 1rem', outline: 'none', width: '160px', fontSize: '1.05rem', fontWeight: '500' }}
+                    onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
+                  />
+                  <button
+                    onClick={joinRoom}
+                    style={{ background: '#334155', border: 'none', color: '#f8fafc', padding: '0.8rem 1.5rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
+                    onMouseOver={(e) => e.target.style.background = '#475569'}
+                    onMouseOut={(e) => e.target.style.background = '#334155'}
+                  >
+                    Join
+                  </button>
+                </motion.div>
               </div>
             </motion.div>
-          </motion.div>
 
-        </div>
-
-        {/* How It Works */}
-        <div className="how-it-works" style={{ width: '100%', maxWidth: '1200px', marginBottom: '8rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem' }}>How It Works</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Get started in seconds. No account needed.</p>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              style={{
+                display: 'none',
+                '@media (max-width: 1024px)': {
+                  display: 'none'
+                }
+              }}
+            >
+            </motion.div>
           </div>
+        </Hero3DBackground>
 
-          {/* 3D Flow Diagram */}
-          <div style={{ width: '100%', height: '400px', marginBottom: '2rem' }}>
-            <Suspense fallback={null}>
-              <Canvas camera={{ position: [0, 2, 8], fov: 45 }}>
-                <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} intensity={1} />
-                <FlowDiagram3D />
-                <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 2} minPolarAngle={Math.PI / 4} />
-              </Canvas>
-            </Suspense>
-          </div>
-
-          <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2.5rem' }}>
-            {steps.map((step, i) => (
-              <motion.div
-                key={i}
-                className="step-card glass-card"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                whileHover={{ y: -10 }}
-                style={{
-                  padding: '2.5rem',
-                  textAlign: 'left',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  background: 'rgba(30, 41, 59, 0.4)',
-                  border: '1px solid rgba(255,255,255,0.05)'
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: '0', right: '0',
-                  fontSize: '8rem', fontWeight: '900', color: 'rgba(255,255,255,0.02)',
-                  lineHeight: '0.8', pointerEvents: 'none'
-                }}>{step.num}</div>
-
-                <div style={{
-                  width: '60px', height: '60px', borderRadius: '16px',
-                  background: `linear-gradient(135deg, ${i === 0 ? '#8b5cf6' : i === 1 ? '#06b6d4' : '#ec4899'}, transparent)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem',
-                  fontSize: '1.5rem', color: 'white', opacity: 0.9
-                }}>
-                  {i === 0 ? <FaPlus /> : i === 1 ? <FaShare /> : <FaCode />}
-                </div>
-
-                <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', fontWeight: '700' }}>{step.title}</h3>
-                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        {/* Steps 3D Flow - Enhanced Component */}
+        <Steps3DFlow />
 
 
 
 
 
 
-        {/* Features Section */}
+        {/* Features Section - Enhanced */}
         <div className="features-section" style={{ width: '100%', maxWidth: '1200px', marginBottom: '8rem' }}>
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
             <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Everything you need</h2>
@@ -438,58 +286,14 @@ function Landing() {
               { title: "Multi-Language", model: <LanguageModel />, color: "#06b6d4", desc: "Support for JavaScript, Python, Java, C++, and more with intelligent syntax highlighting." },
               { title: "Video Chat", model: <VideoModel />, color: "#22c55e", desc: "Built-in video and voice chat integration for seamless team communication." }
             ].map((feature, i) => (
-              <motion.div
+              <EnhancedFeatureCard
                 key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -5, boxShadow: `0 20px 40px -10px ${feature.color}30` }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                style={{
-                  padding: '2.5rem',
-                  borderRadius: '24px',
-                  background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6))',
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1.5rem',
-                  backdropFilter: 'blur(20px)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <div style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
-                  background: `linear-gradient(90deg, transparent, ${feature.color}, transparent)`,
-                  opacity: 0.5
-                }} />
-
-                <div style={{
-                  width: '100%', height: '160px', borderRadius: '16px',
-                  background: 'rgba(0,0,0,0.2)',
-                  position: 'relative',
-                  marginBottom: '0.5rem',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ position: 'absolute', inset: -20 }}>
-                    <Suspense fallback={null}>
-                      <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-                        <ambientLight intensity={0.6} />
-                        <directionalLight position={[5, 5, 5]} intensity={1.5} />
-                        <pointLight position={[-5, -5, -5]} intensity={0.5} color={feature.color} />
-                        <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-                          {feature.model}
-                        </Float>
-
-                      </Canvas>
-                    </Suspense>
-                  </div>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem', color: 'white' }}>{feature.title}</h3>
-                  <p style={{ color: '#94a3b8', lineHeight: '1.6', fontSize: '1rem' }}>{feature.desc}</p>
-                </div>
-              </motion.div>
+                title={feature.title}
+                description={feature.desc}
+                model={feature.model}
+                color={feature.color}
+                index={i}
+              />
             ))}
           </div>
         </div>
@@ -557,6 +361,21 @@ function Landing() {
           margin-bottom: 8rem;
         }
 
+        .hero-content-wrapper {
+          animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         @media (max-width: 1024px) {
           .hero-section {
             grid-template-columns: 1fr;
@@ -564,8 +383,14 @@ function Landing() {
             text-align: center;
           }
 
+          .hero-content-wrapper {
+            grid-template-columns: 1fr !important;
+            padding: 2rem 1rem !important;
+          }
+
           .hero-text {
             order: 1;
+            text-align: center;
           }
 
           .hero-image-container {
@@ -595,6 +420,10 @@ function Landing() {
 
           .hero-badge {
             font-size: 0.75rem !important;
+          }
+
+          .hero-content-wrapper {
+            padding: 1.5rem 1rem !important;
           }
         }
 
@@ -668,32 +497,34 @@ function Landing() {
 
 // AdUnit Component for AdSense
 const AdUnit = () => {
-  useEffect(() => {
-    // Dynamically load AdSense script only on this high-content page
-    const script = document.createElement('script');
-    script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7175260853905543";
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    document.head.appendChild(script);
+  const insRef = useRef(null);
 
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {
-      console.error('AdSense error:', e);
+  useEffect(() => {
+    // Prevent duplicate script injection
+    const SCRIPT_SRC = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7175260853905543";
+    if (!document.querySelector(`script[src="${SCRIPT_SRC}"]`)) {
+      const script = document.createElement('script');
+      script.src = SCRIPT_SRC;
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      document.head.appendChild(script);
     }
 
-    return () => {
-      // Cleanup script on unmount to keep utility pages clean
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+    // Only push if this specific ins element has NOT already been initialized
+    if (insRef.current && insRef.current.getAttribute('data-adsbygoogle-status') === null) {
+      try {
+        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      } catch (e) {
+        console.error('AdSense error:', e);
       }
-    };
+    }
   }, []);
 
   return (
     <div style={{ overflow: 'hidden', minHeight: '100px', margin: '20px 0' }}>
       {/* hori */}
-      <ins className="adsbygoogle"
+      <ins ref={insRef}
+        className="adsbygoogle"
         style={{ display: 'block' }}
         data-ad-client="ca-pub-7175260853905543"
         data-ad-slot="8804074041"

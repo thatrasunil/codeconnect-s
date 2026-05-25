@@ -3,6 +3,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+
+// Initialize database fallback for offline environment
+require('./utils/dbFallback');
+mongoose.set('bufferCommands', false);
+
 const admin = require('firebase-admin');
 
 dotenv.config();

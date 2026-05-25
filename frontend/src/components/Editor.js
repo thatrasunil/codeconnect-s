@@ -671,48 +671,7 @@ const CodeEditor = () => {
                                 {participants.length || 1} Online
                             </div>
 
-                            <div className="toolbar-separator"></div>
 
-                            {/* Language Selector */}
-                            <select
-                                value={language}
-                                onChange={(e) => {
-                                    const newLang = e.target.value;
-                                    setLanguage(newLang);
-                                    localStorage.setItem(`editor_language_${roomId}`, newLang);
-
-                                    // Language Template Logic
-                                    const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.id === language);
-                                    const newLangObj = SUPPORTED_LANGUAGES.find(l => l.id === newLang);
-
-                                    const isDefaultTemplate = currentLangObj && code.trim() === currentLangObj.template?.trim();
-                                    const isEmpty = !code || code.trim() === '' || code === '// Write your code here...';
-
-                                    let newCode = code;
-                                    if (isEmpty || isDefaultTemplate) {
-                                        newCode = newLangObj?.template || '';
-                                        setCode(newCode);
-                                    }
-
-                                    // Broadcast change
-                                    realtimeService.sendCodeChange(roomId, { code: newCode, language: newLang });
-                                }}
-                                style={{
-                                    background: '#334155',
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '5px 10px',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    outline: 'none',
-                                    width: 'auto',
-                                    fontSize: '0.875rem'
-                                }}
-                            >
-                                {SUPPORTED_LANGUAGES.map(lang => (
-                                    <option key={lang.id} value={lang.id}>{lang.name}</option>
-                                ))}
-                            </select>
                         </>
                     )}
 
@@ -960,6 +919,7 @@ const CodeEditor = () => {
                                 cursorBlinking: 'smooth',
                                 cursorSmoothCaretAnimation: 'on',
                                 mouseWheelZoom: true,
+                                renderValidationDecorations: 'off',
                             }}
                         />
                     </div>
@@ -1070,34 +1030,7 @@ const CodeEditor = () => {
 
                             {/* Selectors */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                <select
-                                    value={language}
-                                    onChange={(e) => {
-                                        const newLang = e.target.value;
-                                        setLanguage(newLang);
-                                        localStorage.setItem(`editor_language_${roomId}`, newLang);
 
-                                        // Language Template Logic
-                                        const currentLangObj = SUPPORTED_LANGUAGES.find(l => l.id === language);
-                                        const newLangObj = SUPPORTED_LANGUAGES.find(l => l.id === newLang);
-
-                                        const isDefaultTemplate = currentLangObj && code.trim() === currentLangObj.template?.trim();
-                                        const isEmpty = !code || code.trim() === '' || code === '// Write your code here...';
-
-                                        if (isEmpty || isDefaultTemplate) {
-                                            const newCode = newLangObj?.template || '';
-                                            setCode(newCode);
-                                            realtimeService.sendCodeChange(roomId, { code: newCode, language: newLang });
-                                        } else {
-                                            realtimeService.sendCodeChange(roomId, { code, language: newLang });
-                                        }
-                                    }}
-                                    style={{ width: '100%', padding: '6px', borderRadius: '4px', background: '#334155', color: 'white', border: 'none' }}
-                                >
-                                    {SUPPORTED_LANGUAGES.map(lang => (
-                                        <option key={lang.id} value={lang.id}>{lang.name}</option>
-                                    ))}
-                                </select>
 
                                 <select
                                     value={theme}

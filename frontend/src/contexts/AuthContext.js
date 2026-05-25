@@ -35,16 +35,16 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     console.log('🔄 AuthContext: Initializing onAuthStateChanged listener...');
 
-    // Safety timeout: if auth takes more than 10 seconds, force loading to false
+    // Safety timeout: if auth takes more than 800ms, force loading to false to unblock UI
     const loadingTimeout = setTimeout(() => {
       setAuthState(prev => {
         if (prev.loading) {
-          console.warn('⚠️ AuthContext: Auth check timed out after 10s. Forcing loading to false.');
+          console.warn('⚠️ AuthContext: Auth check timed out after 800ms. Forcing loading to false.');
           return { ...prev, loading: false };
         }
         return prev;
       });
-    }, 10000);
+    }, 800);
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
       clearTimeout(loadingTimeout);
@@ -259,7 +259,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!authState.loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
