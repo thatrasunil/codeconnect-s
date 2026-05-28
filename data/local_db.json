@@ -38,9 +38,53 @@
       "_id": "6a146d9ffa2767ab2eaefb0b",
       "createdAt": "2026-05-25T15:41:19.263Z",
       "updatedAt": "2026-05-25T15:41:19.264Z"
+    },
+    {
+      "roomId": "253634",
+      "ownerId": "guest",
+      "isPublic": true,
+      "password": "",
+      "code": "",
+      "language": "javascript",
+      "messages": [],
+      "users": [],
+      "_id": "6a159da6bb913e80f4c8a29c",
+      "createdAt": "2026-05-26T13:18:30.690Z",
+      "updatedAt": "2026-05-26T13:18:30.695Z"
+    },
+    {
+      "roomId": "231919",
+      "ownerId": "guest",
+      "isPublic": true,
+      "password": "",
+      "code": "",
+      "language": "javascript",
+      "messages": [],
+      "users": [],
+      "_id": "6a1702591a6e3c6725ec413c",
+      "createdAt": "2026-05-27T14:40:25.955Z",
+      "updatedAt": "2026-05-27T14:40:25.956Z"
     }
   ],
-  "User": [],
+  "User": [
+    {
+      "username": "SUNIL T",
+      "email": "thatrasunil@gmail.com",
+      "displayName": "SUNIL T",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=SUNIL T",
+      "firebaseUid": "QHFsoBTLMqO4rQAzLcbHzRtjKXa2",
+      "role": "user",
+      "provider": "firebase",
+      "stats": {
+        "problemsSolved": 0,
+        "points": 0,
+        "rank": 0
+      },
+      "_id": "6a1703ac1a6e3c6725ec413d",
+      "createdAt": "2026-05-27T14:46:04.291Z",
+      "updatedAt": "2026-05-27T14:46:04.291Z"
+    }
+  ],
   "Problem": [
     {
       "_id": "two-sum",

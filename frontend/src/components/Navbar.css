@@ -3,12 +3,23 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 4rem;
+    padding: 1.5rem 4rem;
     background: #0f172a;
     color: white;
     position: sticky;
     top: 0;
     z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.navbar.navbar-transparent {
+    background: transparent;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-bottom: none;
+    padding: 2rem 4rem;
 }
 
 /* Brand / Logo */

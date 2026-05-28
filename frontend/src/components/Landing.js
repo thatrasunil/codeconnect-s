@@ -1,47 +1,335 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaArrowRight, FaCode, FaGlobe, FaComments, FaShare, FaLock, FaMicrophone } from 'react-icons/fa';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, ContactShadows, Sparkles, MeshDistortMaterial, Float } from '@react-three/drei';
-import FlowDiagram3D from './Three/FlowDiagram3D';
-
-import { AIModel, CollabModel, CloudModel, SecureModel, LanguageModel, VideoModel } from './Three/Feature3DIcons';
+import { FaPlus, FaArrowRight, FaCode, FaUsers, FaLock, FaBolt } from 'react-icons/fa';
 import { createRoom as createApiRoom } from '../services/apiService';
 import SecureLoading from './SecureLoading';
 import { useAuth } from '../contexts/AuthContext';
-import Logo from '../logo.svg';
-import Hero3DBackground from './Hero3DBackground';
-import Steps3DFlow from './Steps3DFlow';
-import EnhancedFeatureCard from './EnhancedFeatureCard';
 
+const STORY_SECTIONS = [
+  {
+    title: "Code is more than just syntax.",
+    subtitle: "It's the art of digital expression.",
+    description: "CodeConnect removes all friction between your mind and the canvas. Experience a collaborative workspace designed with flawless aesthetics and elite performance.",
+    icon: <FaCode size={20} />,
+    videoSrc: "https://assets.mixkit.co/videos/preview/mixkit-code-lines-on-a-computer-screen-8650-large.mp4",
+    accent: { r: 168, g: 85, b: 247 },   // violet
+    accentHex: '#a855f7',
+    accentLight: 'rgba(168,85,247,',
+  },
+  {
+    title: "It's the ideas we build together.",
+    subtitle: "High-fidelity real-time pair programming.",
+    description: "Write, review, and debug code collaboratively in real-time with Monaco Editor integration. Track active typing indicators and follow user cursors instantly.",
+    icon: <FaUsers size={20} />,
+    videoSrc: "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-programmer-typing-on-a-keyboard-41584-large.mp4",
+    accent: { r: 56, g: 189, b: 248 },   // cyan
+    accentHex: '#38bdf8',
+    accentLight: 'rgba(56,189,248,',
+  },
+  {
+    title: "Zero setup. Zero friction.",
+    subtitle: "Spin up secure sessions in 2 seconds.",
+    description: "Launch instant, secure rooms without configuration. Simply share a 6-digit room code with your peers and start coding instantly with auto-saved persistence.",
+    icon: <FaLock size={20} />,
+    videoSrc: "https://assets.mixkit.co/videos/preview/mixkit-digital-animation-of-flowing-lines-of-code-31868-large.mp4",
+    accent: { r: 52, g: 211, b: 153 },   // emerald
+    accentHex: '#34d399',
+    accentLight: 'rgba(52,211,153,',
+  },
+  {
+    title: "Just you, your team, and the canvas.",
+    subtitle: "A fully stacked developer engine.",
+    description: "Accelerate your coding velocity with an integrated real-time collaborative Whiteboard, high-fidelity Voice Chat, Gemini AI debugging, and sandbox execution.",
+    icon: <FaBolt size={20} />,
+    videoSrc: "https://assets.mixkit.co/videos/preview/mixkit-futuristic-abstract-hud-interface-31845-large.mp4",
+    accent: { r: 251, g: 146, b: 60 },   // orange
+    accentHex: '#fb923c',
+    accentLight: 'rgba(251,146,60,',
+  }
+];
+
+// ─── Particle Canvas ────────────────────────────────────────────────────────
+function ParticleCanvas({ accentRgb }) {
+  const canvasRef = useRef(null);
+  const particlesRef = useRef([]);
+  const mouseRef = useRef({ x: -9999, y: -9999 });
+  const rafRef = useRef(null);
+  const accentRef = useRef(accentRgb);
+
+  useEffect(() => { accentRef.current = accentRgb; }, [accentRgb]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    };
+
+    const initParticles = () => {
+      const count = Math.min(Math.floor((canvas.width * canvas.height) / 14000), 90);
+      particlesRef.current = Array.from({ length: count }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r: Math.random() * 2 + 1.2,
+        opacity: Math.random() * 0.5 + 0.2,
+      }));
+    };
+
+    const onMouseMove = (e) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const { r, g, b } = accentRef.current;
+      const particles = particlesRef.current;
+      const mouse = mouseRef.current;
+      const CONNECTION_DIST = 140;
+      const MOUSE_ATTRACT_DIST = 180;
+
+      particles.forEach(p => {
+        // Light repulsion from mouse
+        const dx = p.x - mouse.x;
+        const dy = p.y - mouse.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MOUSE_ATTRACT_DIST) {
+          const force = (1 - dist / MOUSE_ATTRACT_DIST) * 0.5;
+          p.vx += (dx / dist) * force * 0.06;
+          p.vy += (dy / dist) * force * 0.06;
+        }
+
+        // Dampen velocity
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap edges
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r},${g},${b},${p.opacity * 0.7})`;
+        ctx.fill();
+      });
+
+      // Draw connections between close particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < CONNECTION_DIST) {
+            const alpha = (1 - d / CONNECTION_DIST) * 0.18;
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+
+        // Draw connection to mouse cursor
+        const mdx = particles[i].x - mouse.x;
+        const mdy = particles[i].y - mouse.y;
+        const md = Math.sqrt(mdx * mdx + mdy * mdy);
+        if (md < MOUSE_ATTRACT_DIST) {
+          const alpha = (1 - md / MOUSE_ATTRACT_DIST) * 0.45;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(mouse.x, mouse.y);
+          ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+    draw();
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('resize', resize);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        top: 0, left: 0,
+        width: '100%', height: '100%',
+        zIndex: 2,
+        pointerEvents: 'none',
+      }}
+    />
+  );
+}
+
+// ─── Spotlight Card ─────────────────────────────────────────────────────────
+function SpotlightCard({ children, className, accentRgb, style }) {
+  const cardRef = useRef(null);
+
+  const onMouseMove = useCallback((e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--mx', `${x}px`);
+    card.style.setProperty('--my', `${y}px`);
+  }, []);
+
+  const onMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.setProperty('--mx', '-9999px');
+    card.style.setProperty('--my', '-9999px');
+  }, []);
+
+  const { r, g, b } = accentRgb;
+
+  return (
+    <div
+      ref={cardRef}
+      className={`spotlight-card ${className || ''}`}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={{
+        '--accent-r': r,
+        '--accent-g': g,
+        '--accent-b': b,
+        '--mx': '-9999px',
+        '--my': '-9999px',
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Floating Symbols ────────────────────────────────────────────────────────
+const SYMBOLS = ['{ }', '</>', '=>', '[ ]', '( )', '&&', '||', '/**'];
+function FloatingSymbols({ accentHex }) {
+  return (
+    <div className="floating-symbols-layer" aria-hidden="true">
+      {SYMBOLS.map((sym, i) => (
+        <span
+          key={i}
+          className="float-symbol"
+          style={{
+            left: `${8 + i * 12}%`,
+            animationDelay: `${i * 1.3}s`,
+            animationDuration: `${18 + i * 3}s`,
+            color: accentHex,
+          }}
+        >
+          {sym}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 function Landing() {
   const navigate = useNavigate();
   const { user, firebaseUser } = useAuth();
+
   const [showNameModal, setShowNameModal] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [roomId, setRoomId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [activeSection, setActiveSection] = useState(0);
+
+  // Smooth accent color interpolation between sections
+  const [displayAccent, setDisplayAccent] = useState(STORY_SECTIONS[0].accent);
+  const accentAnimRef = useRef(null);
+  const currentAccentRef = useRef(STORY_SECTIONS[0].accent);
 
   useEffect(() => {
-    // Reset scroll position to top on component mount
     window.scrollTo(0, 0);
-
-    // Redirect to dashboard if already logged in
-    if (firebaseUser || user) {
-      console.log('🚀 Landing: User is authenticated, redirecting to Dashboard...');
-      navigate('/dashboard');
-      return; // Stop further execution
-    }
+    if (firebaseUser || user) navigate('/dashboard');
   }, [firebaseUser, user, navigate]);
+
+  // Animate accent color transition
+  useEffect(() => {
+    const target = activeSection < STORY_SECTIONS.length
+      ? STORY_SECTIONS[activeSection].accent
+      : { r: 255, g: 255, b: 255 };
+
+    let start = null;
+    const from = { ...currentAccentRef.current };
+    const duration = 700;
+
+    const animate = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      const r = Math.round(from.r + (target.r - from.r) * ease);
+      const g = Math.round(from.g + (target.g - from.g) * ease);
+      const b = Math.round(from.b + (target.b - from.b) * ease);
+      setDisplayAccent({ r, g, b });
+      if (p < 1) {
+        accentAnimRef.current = requestAnimationFrame(animate);
+      } else {
+        currentAccentRef.current = target;
+      }
+    };
+
+    if (accentAnimRef.current) cancelAnimationFrame(accentAnimRef.current);
+    accentAnimRef.current = requestAnimationFrame(animate);
+    return () => { if (accentAnimRef.current) cancelAnimationFrame(accentAnimRef.current); };
+  }, [activeSection]);
+
+  // Intersection Observer for scroll tracking
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-index'), 10);
+            if (!isNaN(index)) setActiveSection(index);
+          }
+        });
+      },
+      { root: null, rootMargin: '-20% 0px -20% 0px', threshold: 0.2 }
+    );
+    const sections = document.querySelectorAll('.story-section');
+    sections.forEach(s => observer.observe(s));
+    return () => sections.forEach(s => observer.unobserve(s));
+  }, []);
+
+  const scrollToSection = (index) => {
+    const sections = document.querySelectorAll('.story-section');
+    if (sections[index]) sections[index].scrollIntoView({ behavior: 'smooth' });
+  };
 
   const initiateCreateRoom = () => {
     const storedName = localStorage.getItem('codeconnect_guest_name');
-    if (storedName) {
-      createRoom(storedName);
-    } else {
-      setShowNameModal(true);
-    }
+    if (storedName) createRoom(storedName);
+    else setShowNameModal(true);
   };
 
   const handleNameSubmit = (e) => {
@@ -56,18 +344,11 @@ function Landing() {
     setIsCreating(true);
     try {
       const newRoom = await createApiRoom({
-        title: "Untitled Room",
-        ownerId: "guest", // Guest user
-        isPublic: true,
-        language: "javascript",
-        ownerName: name // Pass the name
+        title: 'Untitled Session', ownerId: 'guest',
+        isPublic: true, language: 'javascript', ownerName: name
       });
-
-      if (newRoom.roomId) {
-        navigate(`/room/${newRoom.roomId}`); // Changed from newRoom.id to newRoom.roomId based on API response structure
-      } else if (newRoom.id) {
-        navigate(`/room/${newRoom.id}`);
-      }
+      if (newRoom.roomId) navigate(`/room/${newRoom.roomId}`);
+      else if (newRoom.id) navigate(`/room/${newRoom.id}`);
     } catch (err) {
       console.error('Failed to create room:', err);
       alert('Failed to create room: ' + err.message);
@@ -75,588 +356,811 @@ function Landing() {
     }
   };
 
-  const joinRoom = () => {
-    if (roomId) {
-      navigate(`/room/${roomId}`);
-    }
-  };
-
-  const steps = [
-    { num: '1', title: 'Create Room', desc: 'Start a session instantly with one click.' },
-    { num: '2', title: 'Share Link', desc: 'Invite friends or colleagues via URL.' },
-    { num: '3', title: 'Code Together', desc: 'Real-time sync with < 50ms latency.' }
-  ];
+  const joinRoom = () => { if (roomId) navigate(`/room/${roomId}`); };
 
   if (isCreating || firebaseUser || user) {
-    return <SecureLoading message={isCreating ? "Initializing Secure Environment..." : "Redirecting to Dashboard..."} />;
+    return <SecureLoading message={isCreating ? 'Initializing Canvas...' : 'Redirecting to Dashboard...'} />;
   }
 
+  const { r, g, b } = displayAccent;
+  const accentCss = `rgb(${r},${g},${b})`;
+  const accentGlow = `rgba(${r},${g},${b},0.35)`;
+  const accentSoft = `rgba(${r},${g},${b},0.12)`;
+  const accentBorder = `rgba(${r},${g},${b},0.35)`;
+
+  const currentSection = STORY_SECTIONS[activeSection];
+  const currentAccentHex = currentSection?.accentHex || '#a855f7';
+
+  const getBgStyle = () => ({
+    transform: `scale(${1 + activeSection * 0.015}) translate3d(0,0,0)`,
+    filter: `blur(${activeSection === 4 ? 0 : 2}px)`,
+    opacity: 0.3 + activeSection * 0.035,
+  });
+
   return (
-    <div className="landing-page">
+    <div className="landing-scroll-container">
+      {/* ── Parallax BG ── */}
+      <div className="parallax-background" style={getBgStyle()} />
 
-      {/* Name Modal */}
-      {showNameModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)'
-        }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass-card"
-            style={{
-              padding: '2rem', width: '90%', maxWidth: '400px',
-              background: '#1e293b', border: '1px solid #334155'
-            }}
-          >
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'white' }}>Enter your name</h3>
-            <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Please enter a display name to join the room.</p>
-            <form onSubmit={handleNameSubmit}>
-              <input
-                autoFocus
-                type="text"
-                placeholder="Your Name (e.g. Alex)"
-                value={guestName}
-                onChange={e => setGuestName(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.8rem', borderRadius: '8px',
-                  background: '#0f172a', border: '1px solid #334155',
-                  color: 'white', marginBottom: '1.5rem', outline: 'none'
-                }}
-              />
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowNameModal(false)}
-                  style={{
-                    padding: '0.6rem 1.2rem', borderRadius: '8px',
-                    background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={!guestName.trim()}
-                  style={{
-                    padding: '0.6rem 1.2rem', borderRadius: '8px',
-                    background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer',
-                    fontWeight: '600', opacity: !guestName.trim() ? 0.5 : 1
-                  }}
-                >
-                  Continue
-                </button>
-              </div>
-            </form>
-          </motion.div>
+      {/* ── Ambient vignette ── */}
+      <div className="ambient-vignette" />
+
+      {/* ── Interactive Particle Network ── */}
+      <ParticleCanvas accentRgb={displayAccent} />
+
+      {/* ── Floating Dev Symbols ── */}
+      <FloatingSymbols accentHex={currentAccentHex} />
+
+      {/* ── Theme color glow orb follows active section ── */}
+      <div
+        className="theme-orb"
+        style={{
+          background: `radial-gradient(circle, ${accentGlow} 0%, transparent 70%)`,
+        }}
+      />
+
+      {/* ── Header ── */}
+      <header className="sticky-header">
+        <div className="header-logo">
+          <FaCode className="logo-icon" style={{ color: accentCss, filter: `drop-shadow(0 0 8px ${accentGlow})` }} />
+          <span>CodeConnect</span>
         </div>
-      )}
+        <button onClick={() => scrollToSection(4)} className="skip-btn">
+          Skip to Code <FaArrowRight size={12} />
+        </button>
+      </header>
 
-      {/* Dynamic Background Accents */}
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 100, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'var(--accent-primary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
-      <motion.div animate={{ rotate: -360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '20%', right: '-5%', width: '400px', height: '400px', background: 'var(--accent-secondary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
+      {/* ── Right Nav Dots ── */}
+      <div className="floating-dots-nav">
+        {[0, 1, 2, 3, 4].map((index) => (
+          <button
+            key={index}
+            onClick={() => scrollToSection(index)}
+            className={`nav-dot ${activeSection === index ? 'active' : ''}`}
+            title={index === 4 ? 'Workspace' : `Slide ${index + 1}`}
+            style={activeSection === index ? {
+              background: accentCss,
+              boxShadow: `0 0 10px ${accentGlow}`,
+            } : {}}
+          />
+        ))}
+      </div>
 
-      <main className="landing-main">
-        {/* Ad Unit - Top Horizontal - Disabled for testing */}
-        {/* <div style={{ width: '100%', maxWidth: '1200px', margin: '0 auto 2rem auto', textAlign: 'center' }}>
-          <AdUnit />
-        </div> */}
+      {/* ── Story Sections ── */}
+      {STORY_SECTIONS.map((section, index) => (
+        <section key={index} className="story-section" data-index={index}>
+          <div className="story-content story-content-split">
 
-        {/* Hero Section with 3D Background */}
-        <Hero3DBackground>
-          <div className="hero-content-wrapper" style={{
-            width: '100%',
-            maxWidth: '1200px',
-            padding: '3rem 2rem',
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '3rem',
-            alignItems: 'center',
-          }}>
+            {/* Text column with spotlight card */}
             <motion.div
-              className="hero-text"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, type: "spring", stiffness: 100 }}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'flex-start'
-              }}
+              initial={{ opacity: 0, x: -50, scale: 0.97 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: false, amount: 0.2 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              style={{ flex: 1, maxWidth: '520px' }}
             >
-              <div className="hero-badge" style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                color: '#38bdf8', fontSize: '0.85rem', fontWeight: '600', letterSpacing: '0.5px', marginBottom: '1.5rem',
-                background: 'rgba(56, 189, 248, 0.1)', padding: '6px 16px', borderRadius: '24px', border: '1px solid rgba(56, 189, 248, 0.2)', backdropFilter: 'blur(10px)'
-              }}>
-                <span style={{ width: '6px', height: '6px', background: '#38bdf8', borderRadius: '50%', boxShadow: '0 0 10px #38bdf8' }}></span>
-                New: High-Performance Sync Engine
-              </div>
-
-              <h1 className="main-title" style={{ fontSize: 'clamp(3rem, 6vw, 4.5rem)', lineHeight: '1.05', fontWeight: '900', marginBottom: '1.5rem', letterSpacing: '-0.04em', fontFamily: '"Inter", sans-serif' }}>
-                <span style={{ color: '#f8fafc' }}>Code together.</span>
-                <br />
-                <span style={{ background: 'linear-gradient(135deg, #38bdf8, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Zero Friction.</span>
-              </h1>
-
-              <p className="subtitle" style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '520px', marginBottom: '2.5rem', lineHeight: '1.6', fontWeight: '400' }}>
-                Spin up an interview-ready coding room in seconds. Share a link and collaborate in perfect sync with real-time execution.
-              </p>
-
-              <div className="action-buttons" style={{ display: 'flex', gap: '1.5rem', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-                <motion.button
-                  onClick={initiateCreateRoom}
-                  className="btn"
-                  whileHover={{ scale: 1.02, boxShadow: '0 10px 30px -10px rgba(99, 102, 241, 0.5)' }}
-                  whileTap={{ scale: 0.98 }}
+              <SpotlightCard className="glass-card text-column" accentRgb={section.accent}>
+                <div
+                  className="card-badge"
                   style={{
-                    fontSize: '1.1rem',
-                    padding: '1.2rem 2.5rem',
-                    background: '#f8fafc',
-                    color: '#0f172a',
-                    border: 'none',
-                    borderRadius: '14px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    transition: 'all 0.3s ease'
+                    background: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.15)`,
+                    borderColor: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.4)`,
+                    color: section.accentHex,
                   }}
                 >
-                  <FaPlus size={14} /> Start Coding Now
-                </motion.button>
+                  <span className="badge-icon">{section.icon}</span>
+                  <span className="badge-text">Narrative {index + 1} of 4</span>
+                </div>
 
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  style={{ display: 'flex', alignItems: 'center', background: 'rgba(30, 41, 59, 0.5)', padding: '8px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)' }}>
+                <h1 className="story-title gradient-text neon-text-glow">
+                  {section.title}
+                </h1>
+                <h3 className="story-subtitle">{section.subtitle}</h3>
+                <p className="story-desc">{section.description}</p>
+
+                {/* Mobile mockups */}
+                <div className="mobile-mockup-container">
+                  {index === 0 && (
+                    <div className="card-mockup flex-center">
+                      <div className="visual-code-line"><span className="color-purple">const</span> codeConnect = <span className="color-yellow">new</span> <span className="color-blue">CollaboratorEngine</span>();</div>
+                      <div className="visual-code-line second-line">codeConnect.<span className="color-green">ignite</span>(); <span className="cursor-pulse">|</span></div>
+                    </div>
+                  )}
+                  {index === 1 && (
+                    <div className="card-mockup collab-mockup">
+                      <div className="collab-user user-alex"><div className="user-dot bg-purple" /> Alex (typing...)</div>
+                      <div className="collab-user user-sarah"><div className="user-dot bg-blue" /> Sarah (following)</div>
+                      <div className="visual-code-line"><span className="color-blue">function</span> <span className="color-yellow">syncCode</span>() &#123; <span className="visual-cursor" style={{ borderColor: '#8b5cf6' }}></span>&#125;</div>
+                    </div>
+                  )}
+                  {index === 2 && (
+                    <div className="card-mockup passcode-mockup">
+                      {[5,9,2,8,1,4].map((d,i) => <div key={i} className="passcode-digit">{d}</div>)}
+                    </div>
+                  )}
+                  {index === 3 && (
+                    <div className="badges-grid">
+                      <span className="visual-badge">🤖 Gemini AI Assist</span>
+                      <span className="visual-badge">🎨 Realtime Whiteboard</span>
+                      <span className="visual-badge">🎙️ Voice Channels</span>
+                      <span className="visual-badge">⚡ Sandboxed Run</span>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  className="next-slide-btn"
+                  onClick={() => scrollToSection(index + 1)}
+                  style={{ '--dot-color': section.accentHex }}
+                >
+                  Scroll down or Click to continue <FaArrowRight className="bounce-arrow" />
+                </button>
+              </SpotlightCard>
+            </motion.div>
+
+            {/* Desktop Visual Column */}
+            <motion.div
+              initial={{ opacity: 0, x: 50, scale: 0.95 }}
+              whileInView={{ opacity: 1, x: 0, scale: 1 }}
+              viewport={{ once: false, amount: 0.2 }}
+              transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="visual-column"
+            >
+              <div
+                className="video-glow-frame"
+                style={{
+                  borderColor: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.2)`,
+                  boxShadow: `0 30px 60px rgba(0,0,0,0.5), 0 0 60px rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.12)`,
+                }}
+              >
+                <video
+                  autoPlay loop muted playsInline preload="metadata"
+                  src={section.videoSrc}
+                  className="showcase-video"
+                />
+                {index === 0 && (
+                  <div className="video-visual-overlay visual-editor-overlay">
+                    <div className="visual-code-line"><span className="color-purple">const</span> platform = <span className="color-yellow">new</span> <span className="color-blue">CodeConnect</span>();</div>
+                    <div className="visual-code-line second-line">platform.<span className="color-green">ignite</span>(); <span className="cursor-pulse">|</span></div>
+                  </div>
+                )}
+                {index === 1 && (
+                  <div className="video-visual-overlay visual-collab-overlay">
+                    <div className="live-bubble bubble-alex"><div className="user-dot bg-purple" /> Alex writing</div>
+                    <div className="live-bubble bubble-sarah"><div className="user-dot bg-blue" /> Sarah viewing</div>
+                  </div>
+                )}
+                {index === 2 && (
+                  <div className="video-visual-overlay visual-passcode-overlay">
+                    <div className="visual-passcode-container">
+                      {[5,9,2,8,1,4].map((d,i) => (
+                        <div key={i} className="passcode-digit-neon" style={{
+                          borderColor: section.accentHex,
+                          color: section.accentHex,
+                          boxShadow: `0 0 15px rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.3)`,
+                        }}>{d}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {index === 3 && (
+                  <div className="video-visual-overlay visual-features-overlay">
+                    <div className="feature-neon-badge" style={{ background: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.15)`, borderColor: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.5)`, color: section.accentHex }}>🔥 Engine Compiled</div>
+                    <div className="feature-neon-badge" style={{ background: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.15)`, borderColor: `rgba(${section.accent.r},${section.accent.g},${section.accent.b},0.5)`, color: section.accentHex }}>🚀 Low Latency</div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      ))}
+
+      {/* ── Final Action Section ── */}
+      <section className="story-section final-action-section" data-index={4}>
+        <div className="story-content">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 30 }}
+            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            viewport={{ once: false, amount: 0.2 }}
+            transition={{ duration: 0.8 }}
+          >
+            <SpotlightCard className="glass-card terminal-card" accentRgb={{ r: 255, g: 255, b: 255 }}>
+              <div className="terminal-header">
+                <span className="terminal-dot bg-red" />
+                <span className="terminal-dot bg-yellow" />
+                <span className="terminal-dot bg-green" />
+                <span className="terminal-title">CodeConnect Engine v3.2.0</span>
+              </div>
+              <div className="logo-container">
+                <div className="logo-glow-ring" style={{ boxShadow: `0 0 30px ${accentGlow}`, borderColor: accentBorder }}>
+                  <FaCode size={32} color="#fff" />
+                </div>
+                <h1 className="final-title gradient-text">Code Connect</h1>
+                <p className="final-desc">Your sandbox is hot and compiled. Start pair programming instantly.</p>
+              </div>
+              <div className="actions-layout">
+                <button onClick={initiateCreateRoom} className="action-btn-primary" style={{ '--btn-accent': accentCss, '--btn-glow': accentGlow }}>
+                  <FaPlus size={16} /> Start a Session
+                </button>
+                <div className="join-room-wrapper" style={{ '--focus-border': accentBorder }}>
                   <input
                     type="text"
-                    placeholder="Enter Room ID"
+                    placeholder="Enter 6-Digit Room ID"
                     value={roomId}
                     onChange={(e) => setRoomId(e.target.value)}
-                    style={{ background: 'transparent', border: 'none', color: 'white', padding: '0.8rem 1rem', outline: 'none', width: '160px', fontSize: '1.05rem', fontWeight: '500' }}
+                    className="room-input"
                     onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
+                    maxLength={12}
                   />
                   <button
                     onClick={joinRoom}
-                    style={{ background: '#334155', border: 'none', color: '#f8fafc', padding: '0.8rem 1.5rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
-                    onMouseOver={(e) => e.target.style.background = '#475569'}
-                    onMouseOut={(e) => e.target.style.background = '#334155'}
+                    disabled={!roomId.trim()}
+                    className={`room-submit-btn ${roomId.trim() ? 'active' : ''}`}
                   >
-                    Join
+                    <FaArrowRight size={14} />
                   </button>
-                </motion.div>
+                </div>
               </div>
-            </motion.div>
+            </SpotlightCard>
+          </motion.div>
+        </div>
+      </section>
 
+      {/* ── Name Modal ── */}
+      <AnimatePresence>
+        {showNameModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="modal-overlay"
+          >
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              style={{
-                display: 'none',
-                '@media (max-width: 1024px)': {
-                  display: 'none'
-                }
-              }}
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
             >
+              <SpotlightCard className="modal-box glass-card" accentRgb={displayAccent}>
+                <h3 className="modal-title">Who's joining?</h3>
+                <p className="modal-desc">Enter a display name to enter the room.</p>
+                <form onSubmit={handleNameSubmit}>
+                  <input
+                    autoFocus type="text"
+                    placeholder="Your Name (e.g. Alex)"
+                    value={guestName}
+                    onChange={e => setGuestName(e.target.value)}
+                    className="modal-input"
+                    style={{ '--focus-color': accentBorder }}
+                  />
+                  <div className="modal-actions">
+                    <button type="button" onClick={() => setShowNameModal(false)} className="modal-btn-cancel">Cancel</button>
+                    <button type="submit" disabled={!guestName.trim()} className="modal-btn-submit" style={{ background: accentCss }}>Continue</button>
+                  </div>
+                </form>
+              </SpotlightCard>
             </motion.div>
-          </div>
-        </Hero3DBackground>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Steps 3D Flow - Enhanced Component */}
-        <Steps3DFlow />
-
-
-
-
-
-
-        {/* Features Section - Enhanced */}
-        <div className="features-section" style={{ width: '100%', maxWidth: '1200px', marginBottom: '8rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem', background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Everything you need</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Powerful tools for interviews, education, and pair programming.</p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-            {[
-              { title: "AI Assistant", model: <AIModel />, color: "#8b5cf6", desc: "Get real-time code explanations, debugging help, and suggestions from Gemini AI." },
-              { title: "Collaborative Coding", model: <CollabModel />, color: "#ec4899", desc: "Work together in the same editor with presence indicators and live cursors." },
-              { title: "Cloud Execution", model: <CloudModel />, color: "#eab308", desc: "Run code instantly in the cloud. Support for multiple languages with fast output." },
-              { title: "Secure Rooms", model: <SecureModel />, color: "#ef4444", desc: "Ephemeral, password-protected rooms ensuring your code stays private and temporary." },
-              { title: "Multi-Language", model: <LanguageModel />, color: "#06b6d4", desc: "Support for JavaScript, Python, Java, C++, and more with intelligent syntax highlighting." },
-              { title: "Video Chat", model: <VideoModel />, color: "#22c55e", desc: "Built-in video and voice chat integration for seamless team communication." }
-            ].map((feature, i) => (
-              <EnhancedFeatureCard
-                key={i}
-                title={feature.title}
-                description={feature.desc}
-                model={feature.model}
-                color={feature.color}
-                index={i}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div style={{ width: '100%', maxWidth: '800px', marginBottom: '10rem' }}>
-          <h2 style={{ textAlign: 'center', marginBottom: '4rem', fontSize: '2.5rem', fontWeight: '800' }}>Frequently Asked Questions</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            {[
-              { q: "Is CodeConnect free?", a: "Yes, our Hobby plan is completely free for personal use and quick coding sessions. You get access to all core features including real-time collaboration and basic AI assistance." },
-              { q: "Do I need to create an account?", a: "No! You can create and join rooms instantly as a guest without signing up. However, creating an account allows you to save your room history, track your coding stats, and customize your profile." },
-              { q: "Is my code secure?", a: "Absolutely. Guest rooms are ephemeral and memory-only. Once all participants leave, the code is permanently wiped from our servers. For registered users, we use industry-standard encryption for data at rest and in transit." }
-            ].map((faq, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <FAQItem question={faq.q} answer={faq.a} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* AdSense Optimization Text Block */}
-        <div className="seo-content-block" style={{ width: '100%', maxWidth: '900px', margin: '0 auto 8rem', padding: '0 2rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '1.5rem', color: 'white' }}>About Our Platform</h2>
-          <div style={{ color: '#94a3b8', fontSize: '1.05rem', lineHeight: '1.8', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            <p>
-              CodeConnect represents the next evolution in remote collaboration and developer productivity. In today's distributed work environment, traditional screen sharing is no longer sufficient for rigorous software engineering tasks. True pair programming requires high-fidelity, bidirectional synchronization where both participants have equal agency over the codebase, terminal, and execution environment. Our platform solves this fundamental friction point by providing an ultra-low latency, browser-based Integrated Development Environment (IDE) that requires absolutely zero configuration or environment setup.
-            </p>
-            <p>
-              Under the hood, CodeConnect utilizes Operational Transformation (OT) and sophisticated Conflict-free Replicated Data Types (CRDTs) to guarantee that code buffers remain in perfect lockstep, regardless of geographical distance or network jitter. This mathematical foundation allows dozens of developers to interact with the same document simultaneously without data corruption. By coupling this synchronization engine with secure, containerized cloud execution environments, teams can compile, test, and debug code in standardized runtimes (ranging from Node.js and Python to C++ and Java) without worrying about local dependency conflicts or the classic "it works on my machine" paradigm.
-            </p>
-            <p>
-              Furthermore, acknowledging the transformative impact of machine learning on software engineering, we have deeply integrated artificial intelligence directly into the collaborative workflow. Our context-aware AI assistant acts as a silent partner, capable of analyzing written code, identifying logical flaws, suggesting optimizations, and even generating comprehensive unit tests on demand. Combined with integrated WebRTC video and audio channels, CodeConnect provides a unified, highly efficient workspace designed specifically for the unique demands of modern technical interviews, educational boot camps, and professional remote engineering teams.
-            </p>
-          </div>
-        </div>
-
-      </main>
-
-
-
-
-
-
-
+      {/* ═══════════════════════ STYLES ═══════════════════════════════════ */}
       <style>{`
-        /* Hero Section Responsive */
-        .hero-section, .hero-text, .hero-image-container {
-          opacity: 1 !important;
-          visibility: visible !important;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
 
-        .hero-section {
-          display: grid !important;
-          grid-template-columns: 1fr 1fr;
-          gap: 4rem;
-          align-items: center;
+        * { box-sizing: border-box; }
+
+        .landing-scroll-container {
+          position: relative;
           width: 100%;
-          max-width: 1400px;
-          margin-bottom: 8rem;
+          height: 100vh;
+          overflow-y: scroll;
+          scroll-snap-type: y mandatory;
+          scroll-behavior: smooth;
+          background-color: #020205;
+          color: #fff;
+          font-family: 'Inter', sans-serif;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+        .landing-scroll-container::-webkit-scrollbar { display: none; }
+
+        /* ── Parallax BG ── */
+        .parallax-background {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: url("/assets/story_bg.png");
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          opacity: 0.4;
+          z-index: 0;
+          will-change: transform, opacity, filter;
+          transition: transform 0.9s cubic-bezier(0.16,1,0.3,1), opacity 0.9s ease, filter 0.9s ease;
         }
 
-        .hero-content-wrapper {
-          animation: fadeInUp 0.8s ease-out;
+        .ambient-vignette {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: radial-gradient(ellipse at center, transparent 0%, rgba(2,2,5,0.9) 100%);
+          z-index: 1;
+          pointer-events: none;
         }
 
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        /* ── Pulsing theme orb ── */
+        .theme-orb {
+          position: fixed;
+          width: 800px; height: 800px;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          z-index: 1;
+          pointer-events: none;
+          transition: background 0.8s ease;
+          animation: orbPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes orbPulse {
+          0% { transform: translate(-50%,-50%) scale(1); opacity: 0.6; }
+          100% { transform: translate(-50%,-50%) scale(1.15); opacity: 1; }
         }
 
-        @media (max-width: 1024px) {
-          .hero-section {
-            grid-template-columns: 1fr;
-            gap: 3rem;
-            text-align: center;
-          }
-
-          .hero-content-wrapper {
-            grid-template-columns: 1fr !important;
-            padding: 2rem 1rem !important;
-          }
-
-          .hero-text {
-            order: 1;
-            text-align: center;
-          }
-
-          .hero-image-container {
-            order: 2;
-          }
-
-          .action-buttons {
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 1rem !important;
-          }
-
-          .action-buttons > * {
-            width: 100%;
-            max-width: 350px;
-          }
+        /* ── Floating dev symbols ── */
+        .floating-symbols-layer {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          z-index: 3;
+          pointer-events: none;
+          overflow: hidden;
+        }
+        .float-symbol {
+          position: absolute;
+          bottom: -80px;
+          font-family: 'Fira Code', monospace;
+          font-size: clamp(0.7rem, 1.2vw, 1.1rem);
+          font-weight: 500;
+          opacity: 0;
+          animation: floatUp linear infinite;
+          text-shadow: 0 0 12px currentColor;
+          will-change: transform, opacity;
+        }
+        @keyframes floatUp {
+          0%   { transform: translateY(0) rotate(-8deg); opacity: 0; }
+          8%   { opacity: 0.18; }
+          92%  { opacity: 0.10; }
+          100% { transform: translateY(-110vh) rotate(8deg); opacity: 0; }
         }
 
-        @media (max-width: 768px) {
-          .main-title {
-            font-size: 2.5rem !important;
-          }
-
-          .subtitle {
-            font-size: 1.1rem !important;
-          }
-
-          .hero-badge {
-            font-size: 0.75rem !important;
-          }
-
-          .hero-content-wrapper {
-            padding: 1.5rem 1rem !important;
-          }
+        /* ── Header ── */
+        .sticky-header {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          height: 72px;
+          padding: 0 3rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          z-index: 100;
+          background: linear-gradient(to bottom, rgba(2,2,5,0.72), transparent);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+        .header-logo {
+          display: flex; align-items: center; gap: 12px;
+          font-size: 1.2rem; font-weight: 700; letter-spacing: -0.03em;
+        }
+        .skip-btn {
+          padding: 0.55rem 1.15rem; font-size: 0.85rem; font-weight: 500;
+          color: rgba(255,255,255,0.75);
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 10px; cursor: pointer;
+          display: flex; align-items: center; gap: 8px;
+          transition: all 0.25s ease;
+        }
+        .skip-btn:hover {
+          color: #fff; background: rgba(255,255,255,0.10);
+          border-color: rgba(255,255,255,0.22); transform: translateY(-1px);
         }
 
-        /* Features Grid Responsive */
-        @media (max-width: 768px) {
-          .features-section h2 {
-            font-size: 2rem !important;
-          }
+        /* ── Nav Dots ── */
+        .floating-dots-nav {
+          position: fixed; right: 2.5rem; top: 50%;
+          transform: translateY(-50%);
+          display: flex; flex-direction: column; gap: 1rem; z-index: 100;
+        }
+        .nav-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: rgba(255,255,255,0.18); border: none;
+          cursor: pointer; padding: 0;
+          transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .nav-dot.active { transform: scale(1.7); }
 
-          .features-section p {
-            font-size: 1rem !important;
-          }
+        /* ── Story Sections ── */
+        .story-section {
+          position: relative;
+          width: 100%; height: 100vh;
+          scroll-snap-align: start;
+          display: flex; align-items: center; justify-content: center;
+          z-index: 10;
+        }
+        .story-content {
+          width: 90%; max-width: 1240px;
+          padding: 2rem;
+          display: flex; justify-content: center;
+        }
+        .story-content-split {
+          display: flex; flex-direction: row;
+          align-items: center; justify-content: space-between;
+          gap: 3.5rem;
         }
 
-        /* How It Works Responsive */
-        @media (max-width: 768px) {
-          .how-it-works h2 {
-            font-size: 2rem !important;
-          }
-
-          .how-it-works p {
-            font-size: 1rem !important;
-          }
-
-          .steps-grid {
-            grid-template-columns: 1fr !important;
-          }
+        /* ── Spotlight Card ── */
+        .spotlight-card {
+          position: relative;
+          overflow: hidden;
+        }
+        .spotlight-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: radial-gradient(
+            600px circle at var(--mx, -9999px) var(--my, -9999px),
+            rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.13) 0%,
+            transparent 60%
+          );
+          pointer-events: none;
+          transition: none;
+          z-index: 0;
+        }
+        .spotlight-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          border: 1px solid transparent;
+          background: radial-gradient(
+            350px circle at var(--mx, -9999px) var(--my, -9999px),
+            rgba(var(--accent-r), var(--accent-g), var(--accent-b), 0.55) 0%,
+            transparent 60%
+          ) border-box;
+          -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: destination-out;
+          mask-composite: exclude;
+          pointer-events: none;
+          z-index: 0;
+        }
+        .spotlight-card > * {
+          position: relative;
+          z-index: 1;
         }
 
-        /* FAQ Responsive */
-        @media (max-width: 768px) {
-          .faq-section h2 {
-            font-size: 2rem !important;
-          }
-
-          .faq-section p {
-            font-size: 1rem !important;
-          }
+        /* ── Glass Card ── */
+        .glass-card {
+          background: rgba(255,255,255,0.025);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 28px;
+          padding: 3rem;
+          width: 100%;
+          box-shadow: 0 32px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09);
+          text-align: left;
         }
 
-        /* Footer Responsive */
-        @media (max-width: 768px) {
-          .landing-footer {
-            padding: 4rem 1rem !important;
-          }
+        .text-column { flex: 1; max-width: 520px; }
 
-          .landing-footer > div:nth-child(4) {
-            flex-direction: column !important;
-            gap: 1.5rem !important;
-          }
+        /* ── Visual Column ── */
+        .visual-column {
+          flex: 1; max-width: 600px;
+          display: flex; align-items: center; justify-content: center;
+          position: relative;
+        }
+        .video-glow-frame {
+          position: relative; width: 100%;
+          border-radius: 28px;
+          border: 1px solid rgba(255,255,255,0.07);
+          background: rgba(10,10,15,0.4);
+          backdrop-filter: blur(10px);
+          padding: 8px;
+          overflow: hidden;
+          transition: border-color 0.6s ease, box-shadow 0.6s ease, transform 0.4s ease;
+        }
+        .video-glow-frame:hover { transform: translateY(-3px) scale(1.005); }
+        .showcase-video {
+          width: 100%; height: 340px;
+          object-fit: cover; border-radius: 20px;
+          opacity: 0.88; display: block;
+        }
+        .mobile-mockup-container { display: none; }
+
+        /* ── Video Overlays ── */
+        .video-visual-overlay {
+          position: absolute; inset: 8px;
+          background: rgba(2,2,5,0.25);
+          border-radius: 20px;
+          display: flex; flex-direction: column;
+          justify-content: center; padding: 2.5rem;
+          pointer-events: none;
+        }
+        .visual-editor-overlay {
+          background: linear-gradient(to right, rgba(2,2,5,0.68) 40%, transparent 100%);
+          font-family: 'Fira Code', monospace; font-size: 0.95rem; color: #e2e8f0;
+        }
+        .visual-collab-overlay { justify-content: flex-end; align-items: flex-end; background: transparent; }
+        .visual-passcode-overlay { background: rgba(2,2,5,0.62); align-items: center; }
+        .visual-features-overlay { background: transparent; align-items: flex-start; justify-content: flex-start; gap: 8px; }
+
+        .live-bubble {
+          background: rgba(10,10,15,0.88); border: 1px solid rgba(255,255,255,0.1);
+          padding: 6px 12px; border-radius: 10px;
+          font-size: 0.75rem; font-weight: 500;
+          display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        .bubble-alex { border-color: rgba(168,85,247,0.4); animation: slideInBubble 1s ease forwards; opacity: 0; }
+        .bubble-sarah { border-color: rgba(96,165,250,0.4); animation: slideInBubble 1.4s ease forwards; opacity: 0; }
+        @keyframes slideInBubble {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 3D Canvas Responsive */
-        @media (max-width: 768px) {
-          .how-it-works > div:nth-child(2) {
-            height: 300px !important;
-          }
+        .visual-passcode-container { display: flex; gap: 0.75rem; }
+        .passcode-digit-neon {
+          width: 44px; height: 44px; border-radius: 10px;
+          background: rgba(2,2,5,0.7); border: 1px solid;
+          font-weight: 700; font-size: 1.2rem;
+          display: flex; align-items: center; justify-content: center;
+          animation: digitGlow 1.5s infinite alternate;
+        }
+        @keyframes digitGlow {
+          0% { filter: brightness(0.9); }
+          100% { filter: brightness(1.3); }
+        }
+        .feature-neon-badge {
+          font-size: 0.75rem; font-weight: 600;
+          padding: 5px 12px; border-radius: 8px; border: 1px solid;
         }
 
-        /* Code Editor Window Responsive */
-        @media (max-width: 768px) {
-          .hero-image-container {
-            padding: 0 1rem;
+        /* ── Typography ── */
+        .card-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 6px 12px; border-radius: 12px;
+          font-size: 0.8rem; font-weight: 500;
+          border: 1px solid; margin-bottom: 1.5rem;
+          transition: all 0.5s ease;
+        }
+        .story-title {
+          font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+          font-weight: 800; letter-spacing: -0.04em;
+          margin: 0 0 0.5rem 0; line-height: 1.15;
+        }
+        .gradient-text {
+          background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .neon-text-glow { filter: drop-shadow(0 0 18px rgba(255,255,255,0.12)); }
+        .story-subtitle {
+          font-size: 1.15rem; font-weight: 400;
+          color: rgba(255,255,255,0.78); margin: 0 0 1.25rem 0;
+        }
+        .story-desc {
+          font-size: 0.98rem; line-height: 1.65;
+          color: rgba(255,255,255,0.5); margin: 0 0 2rem 0;
+        }
+
+        /* ── Code Mockup Colors ── */
+        .card-mockup {
+          background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 16px; padding: 1.25rem; margin-bottom: 2rem;
+          font-family: 'Fira Code', monospace; font-size: 0.9rem; color: #e2e8f0;
+          min-height: 80px;
+        }
+        .flex-center { display: flex; flex-direction: column; justify-content: center; }
+        .visual-code-line { line-height: 1.5; }
+        .second-line { margin-top: 4px; }
+        .color-purple { color: #c084fc; }
+        .color-yellow { color: #fde047; }
+        .color-blue   { color: #60a5fa; }
+        .color-green  { color: #4ade80; }
+        .cursor-pulse { animation: pulse 1s infinite alternate; color: #a855f7; font-weight: bold; }
+        .collab-mockup { position: relative; overflow: hidden; }
+        .collab-user {
+          position: absolute;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: 4px 10px; border-radius: 8px;
+          font-size: 0.75rem;
+          display: flex; align-items: center; gap: 6px;
+        }
+        .user-alex { top: 10px; right: 15px; border-color: rgba(168,85,247,0.3); }
+        .user-sarah { bottom: 10px; right: 15px; border-color: rgba(96,165,250,0.3); }
+        .user-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .bg-purple { background-color: #a855f7; }
+        .bg-blue   { background-color: #3b82f6; }
+        .visual-cursor {
+          display: inline-block; height: 16px; border-left: 2px solid;
+          animation: pulse 1s infinite alternate;
+          margin-left: 2px; vertical-align: middle;
+        }
+        .passcode-mockup {
+          display: flex; justify-content: center; gap: 0.75rem;
+          background: transparent; border: none; padding: 0;
+        }
+        .passcode-digit {
+          width: 48px; height: 48px; border-radius: 12px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1.25rem; font-weight: 700; color: #a855f7;
+          box-shadow: 0 8px 24px rgba(168,85,247,0.15);
+        }
+        .badges-grid {
+          display: grid; grid-template-columns: repeat(2, 1fr);
+          gap: 0.75rem; margin-bottom: 2rem;
+        }
+        .visual-badge {
+          background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+          padding: 10px 14px; border-radius: 12px;
+          font-size: 0.85rem; font-weight: 500;
+          color: rgba(255,255,255,0.8);
+          display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ── Next Button ── */
+        .next-slide-btn {
+          background: transparent; border: none;
+          color: rgba(255,255,255,0.35); cursor: pointer;
+          display: flex; align-items: center; gap: 10px;
+          font-size: 0.85rem; padding: 0;
+          transition: color 0.3s;
+        }
+        .next-slide-btn:hover { color: rgba(255,255,255,0.7); }
+        .bounce-arrow { animation: bounceX 1.2s infinite alternate ease-in-out; }
+
+        /* ── Final / Terminal Card ── */
+        .terminal-card { padding: 0; overflow: hidden; background: rgba(10,10,15,0.48); }
+        .terminal-header {
+          background: rgba(255,255,255,0.02);
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+          padding: 12px 20px;
+          display: flex; align-items: center; gap: 6px;
+        }
+        .terminal-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .bg-red { background-color: #ef4444; }
+        .bg-yellow { background-color: #eab308; }
+        .bg-green { background-color: #22c55e; }
+        .terminal-title {
+          font-size: 0.75rem; font-family: 'Fira Code', monospace;
+          color: rgba(255,255,255,0.35); margin-left: 10px;
+        }
+        .logo-container {
+          padding: 3rem 3rem 1.5rem 3rem;
+          display: flex; flex-direction: column;
+          align-items: center; text-align: center;
+        }
+        .logo-glow-ring {
+          width: 66px; height: 66px; border-radius: 50%;
+          background: rgba(255,255,255,0.04); border: 1px solid;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 1.5rem;
+          transition: box-shadow 0.8s ease, border-color 0.8s ease;
+        }
+        .final-title {
+          font-size: clamp(2.2rem, 5vw, 3.2rem);
+          font-weight: 800; letter-spacing: -0.04em; margin: 0;
+        }
+        .final-desc { color: rgba(255,255,255,0.48); font-size: 1rem; margin: 8px 0 0 0; }
+
+        /* ── Action Buttons ── */
+        .actions-layout {
+          padding: 0 3rem 3.5rem 3rem;
+          display: flex; flex-direction: column;
+          gap: 1.25rem; max-width: 420px; margin: 0 auto;
+        }
+        .action-btn-primary {
+          padding: 1.1rem 2rem; font-size: 1.05rem; font-weight: 600;
+          color: #fff; background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 16px; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: all 0.3s ease;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+        }
+        .action-btn-primary:hover {
+          background: rgba(255,255,255,0.12);
+          border-color: rgba(255,255,255,0.22);
+          transform: translateY(-2px);
+          box-shadow: 0 14px 40px var(--btn-glow, rgba(168,85,247,0.2));
+        }
+        .join-room-wrapper {
+          display: flex; align-items: center;
+          background: rgba(0,0,0,0.3);
+          border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+          padding: 6px; transition: border-color 0.3s;
+        }
+        .join-room-wrapper:focus-within { border-color: var(--focus-border, rgba(168,85,247,0.4)); }
+        .room-input {
+          flex: 1; background: transparent; border: none;
+          color: #fff; padding: 0.8rem 1.2rem; outline: none;
+          font-size: 1.05rem; font-weight: 500;
+        }
+        .room-input::placeholder { color: rgba(255,255,255,0.28); }
+        .room-submit-btn {
+          background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3);
+          border: none; padding: 0.85rem; border-radius: 12px;
+          cursor: default;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.3s;
+        }
+        .room-submit-btn.active { background: #fff; color: #000; cursor: pointer; }
+        .room-submit-btn.active:hover { transform: translateX(2px); }
+
+        /* ── Modal ── */
+        .modal-overlay {
+          position: fixed; inset: 0; z-index: 9999;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(0,0,0,0.7); backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+        }
+        .modal-box { width: 90%; max-width: 420px; }
+        .modal-title { font-size: 1.5rem; font-weight: 600; color: #fff; margin: 0 0 0.5rem 0; }
+        .modal-desc { color: rgba(255,255,255,0.5); margin: 0 0 2rem 0; font-size: 0.95rem; }
+        .modal-input {
+          width: 100%; padding: 1.1rem 1.25rem; border-radius: 14px;
+          background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12);
+          color: #fff; margin-bottom: 1.75rem; outline: none;
+          font-size: 1rem; transition: border-color 0.3s; box-sizing: border-box;
+        }
+        .modal-input:focus { border-color: var(--focus-color, rgba(168,85,247,0.4)); }
+        .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; }
+        .modal-btn-cancel {
+          padding: 0.8rem 1.5rem; border-radius: 12px;
+          background: transparent; color: rgba(255,255,255,0.55);
+          border: none; cursor: pointer; font-size: 0.95rem; font-weight: 500;
+          transition: color 0.3s;
+        }
+        .modal-btn-cancel:hover { color: #fff; }
+        .modal-btn-submit {
+          padding: 0.8rem 1.5rem; border-radius: 12px;
+          color: #000; border: none; cursor: pointer;
+          font-weight: 600; font-size: 0.95rem;
+          transition: opacity 0.3s, transform 0.2s;
+        }
+        .modal-btn-submit:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.92; }
+        .modal-btn-submit:disabled { opacity: 0.35; cursor: default; }
+
+        /* ── Keyframes ── */
+        @keyframes pulse {
+          0% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
+        @keyframes bounceX {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(5px); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 992px) {
+          .sticky-header { padding: 0 1.5rem; }
+          .floating-dots-nav { display: none; }
+          .story-content-split { flex-direction: column; gap: 2rem; }
+          .text-column { max-width: 100% !important; }
+          .visual-column { display: none; }
+          .mobile-mockup-container { display: block; }
+          .glass-card { padding: 2rem; }
+          .logo-container { padding: 2rem 1.5rem 1rem 1.5rem; }
+          .actions-layout { padding: 0 1.5rem 2.5rem 1.5rem; }
+          .landing-scroll-container { scroll-snap-type: none; }
+          .story-section {
+            height: auto; min-height: 100vh;
+            padding: 7rem 0 3rem 0;
+            scroll-snap-align: none;
           }
+          .floating-symbols-layer { display: none; }
+          .theme-orb { width: 400px; height: 400px; }
         }
       `}</style>
     </div>
   );
 }
-
-
-// AdUnit Component for AdSense
-const AdUnit = () => {
-  const insRef = useRef(null);
-
-  useEffect(() => {
-    // Prevent duplicate script injection
-    const SCRIPT_SRC = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7175260853905543";
-    if (!document.querySelector(`script[src="${SCRIPT_SRC}"]`)) {
-      const script = document.createElement('script');
-      script.src = SCRIPT_SRC;
-      script.async = true;
-      script.crossOrigin = "anonymous";
-      document.head.appendChild(script);
-    }
-
-    // Only push if this specific ins element has NOT already been initialized
-    if (insRef.current && insRef.current.getAttribute('data-adsbygoogle-status') === null) {
-      try {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (e) {
-        console.error('AdSense error:', e);
-      }
-    }
-  }, []);
-
-  return (
-    <div style={{ overflow: 'hidden', minHeight: '100px', margin: '20px 0' }}>
-      {/* hori */}
-      <ins ref={insRef}
-        className="adsbygoogle"
-        style={{ display: 'block' }}
-        data-ad-client="ca-pub-7175260853905543"
-        data-ad-slot="8804074041"
-        data-ad-format="auto"
-        data-full-width-responsive="true"></ins>
-    </div>
-  );
-};
-
-
-function FAQItem({ question, answer }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div
-      onClick={() => setIsOpen(!isOpen)}
-      style={{
-        background: 'rgba(30, 41, 59, 0.4)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.05)',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        transition: 'background 0.2s'
-      }}
-      onMouseOver={(e) => e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)'}
-      onMouseOut={(e) => e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)'}
-    >
-      <div style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', color: 'white', margin: 0 }}>{question}</h3>
-        <motion.div animate={{ rotate: isOpen ? 90 : 0 }}>
-          <FaArrowRight size={14} color="#94a3b8" />
-        </motion.div>
-      </div>
-
-      <motion.div
-        initial={false}
-        animate={{ height: isOpen ? 'auto' : 0, opacity: isOpen ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        style={{ overflow: 'hidden' }}
-      >
-        <div style={{ padding: '0 1.5rem 1.5rem 1.5rem', color: '#94a3b8', lineHeight: '1.6' }}>
-          {answer}
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-
-function TypewriterCode() {
-  const codeLines = [
-    { text: '// Two Sum Problem', color: '#6a9955' },
-    { text: 'function twoSum(nums, target) {', indent: 0, html: true },
-    { text: 'const map = new Map();', indent: 20, html: true },
-    { text: 'for (let i = 0; i < nums.length; i++) {', indent: 20, html: true },
-    { text: 'const diff = target - nums[i];', indent: 40, html: true },
-    { text: 'if (map.has(diff)) return [map.get(diff), i];', indent: 40, html: true },
-    { text: 'map.set(nums[i], i);', indent: 40, html: true },
-    { text: '}', indent: 20, html: true },
-    { text: 'return [];', indent: 20, html: true },
-    { text: '}', indent: 0, html: true }
-  ];
-
-  const [displayedLines, setDisplayedLines] = useState([]);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
-  const [currentCharIndex, setCurrentCharIndex] = useState(0);
-
-  useEffect(() => {
-    if (currentLineIndex >= codeLines.length) return;
-
-    const timeout = setTimeout(() => {
-      const currentLine = codeLines[currentLineIndex];
-      const fullText = currentLine.text;
-
-      if (currentCharIndex < fullText.length) {
-        // Typing current line
-        setCurrentCharIndex(prev => prev + 1);
-      } else {
-        // Line finished, move to next
-        setDisplayedLines(prev => [...prev, currentLine]);
-        setCurrentLineIndex(prev => prev + 1);
-        setCurrentCharIndex(0);
-      }
-    }, 30); // Typing speed
-
-    return () => clearTimeout(timeout);
-  }, [currentLineIndex, currentCharIndex]);
-
-  // Render static lines + currently typing line
-  return (
-    <>
-      {displayedLines.map((line, i) => (
-        <CodeLine key={i} line={line} />
-      ))}
-      {currentLineIndex < codeLines.length && (
-        <div style={{ paddingLeft: codeLines[currentLineIndex].indent || 0, display: 'flex', alignItems: 'center' }}>
-          <SyntaxHighlight text={codeLines[currentLineIndex].text.substring(0, currentCharIndex)} />
-          <span style={{
-            display: 'inline-block', width: '8px', height: '16px',
-            background: '#3b82f6', marginLeft: '2px', animation: 'blink 1s step-end infinite'
-          }} />
-        </div>
-      )}
-      <style>{`@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }`}</style>
-    </>
-  );
-}
-
-const CodeLine = ({ line }) => (
-  <div style={{ paddingLeft: line.indent || 0, whiteSpace: 'pre-wrap' }}>
-    {line.html ? <SyntaxHighlight text={line.text} /> : <span style={{ color: line.color }}>{line.text}</span>}
-  </div>
-);
-
-const SyntaxHighlight = ({ text }) => {
-  // Simple naive highlighter for the typing effect
-  // In a real app, use prismjs or similar, but for this specific snippet, manual is cleaner for animation
-  const words = text.split(/(\s+|[(){}[\].,;])/);
-  return (
-    <span>
-      {words.map((word, i) => {
-        let color = '#e2e8f0';
-        if (['function', 'const', 'let', 'return', 'new', 'if', 'for'].includes(word)) color = '#c586c0';
-        else if (['twoSum', 'has', 'get', 'set'].includes(word)) color = '#dcdcaa';
-        else if (['nums', 'target', 'map', 'diff', 'i', 'length'].includes(word)) color = '#9cdcfe';
-        else if (['Map'].includes(word)) color = '#4ec9b0';
-        else if (!isNaN(word)) color = '#b5cea8';
-
-        return <span key={i} style={{ color }}>{word}</span>;
-      })}
-    </span>
-  );
-};
 
 export default Landing;

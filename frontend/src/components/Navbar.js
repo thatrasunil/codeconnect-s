@@ -27,8 +27,10 @@ const Navbar = () => {
 
     const isActive = (path) => location.pathname === path ? 'active' : '';
 
+    const isLanding = location.pathname === '/';
+
     return (
-        <nav className="navbar">
+        <nav className={`navbar ${isLanding ? 'navbar-transparent' : ''}`}>
             <Link to="/" className="navbar-brand" onClick={closeMenu}>
                 <img src={Logo} alt="CodeConnect Logo" className="navbar-logo" style={{ width: '40px', height: '40px' }} />
                 <span>CodeConnect</span>

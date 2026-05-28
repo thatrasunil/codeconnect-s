@@ -43,6 +43,9 @@ const teamsRouter = require('./routes/teams');
 const Room = require('./models/Room');
 
 const app = express();
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require('socket.io');
 
 // ===== CRITICAL: CORS Configuration for Vercel & Render =====
 const allowedOrigins = [
@@ -55,6 +58,14 @@ const allowedOrigins = [
   'https://codeconnect-frontend.vercel.app',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
+
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true
+  }
+});
 
 // CORS with credentials support
 app.use(cors({
@@ -279,16 +290,42 @@ app.get('/api/leaderboard', async (req, res) => {
       .limit(10)
       .select('username displayName avatar stats'); // Select specific fields
 
-    // Transform for frontend if needed
-    const formattedLeaderboard = leaderboard.map(u => ({
-      ...u.toObject(),
-      points: u.stats?.points || 0
-    }));
+    const formattedLeaderboard = leaderboard.map(u => {
+      const plain = typeof u.toObject === 'function' ? u.toObject() : u;
+      return {
+        ...plain,
+        points: plain.stats?.points || 0
+      };
+    });
 
     res.json(formattedLeaderboard);
   } catch (err) {
     console.error('Error fetching leaderboard:', err);
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Public rooms discovery for Dashboard Quick Join
+app.get('/api/rooms/public', async (req, res) => {
+  try {
+    let rooms;
+    if (typeof Room !== 'undefined' && Room.find) {
+      rooms = await Room.find({ isPublic: { $ne: false } })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean();
+    } else {
+      // Fallback to localRooms in-memory store
+      const allRooms = Array.from(localRooms.values());
+      rooms = allRooms
+        .filter(r => r.isPublic !== false && r.is_public !== false)
+        .sort((a, b) => new Date(b.created_at || b.createdAt || 0) - new Date(a.created_at || a.createdAt || 0))
+        .slice(0, 10);
+    }
+    res.json(rooms || []);
+  } catch (error) {
+    console.error('Error fetching public rooms:', error);
+    res.json([]);
   }
 });
 
@@ -719,14 +756,56 @@ app.post('/api/execute', async (req, res) => {
 });
 
 // --- Socket.IO Events ---
-const { logEvent } = require('./utils/logger');
+const onlineUsers = new Map(); // socket.id -> user details
 
-// Socket.io event handlers removed for Vercel migration
-/*
 io.on('connection', (socket) => {
-  ...
+  console.log('🔌 Client connected to Socket.IO:', socket.id);
+
+  socket.on('user-online', (user) => {
+    if (!user || !user.id) return;
+    onlineUsers.set(socket.id, user);
+    console.log(`👤 User @${user.username} is online (Socket: ${socket.id})`);
+    broadcastOnlineUsers();
+  });
+
+  socket.on('dashboard-join', () => {
+    socket.join('dashboard-viewers');
+  });
+
+  socket.on('dashboard-leave', () => {
+    socket.leave('dashboard-viewers');
+  });
+
+  socket.on('pulse-event', (eventData) => {
+    if (!eventData) return;
+    io.emit('realtime-pulse-event', {
+      ...eventData,
+      id: Date.now() + Math.random().toString(36).substr(2, 5),
+      time: 'Just now'
+    });
+  });
+
+  socket.on('disconnect', () => {
+    const user = onlineUsers.get(socket.id);
+    if (user) {
+      console.log(`👤 User @${user.username} disconnected (Socket: ${socket.id})`);
+      onlineUsers.delete(socket.id);
+      broadcastOnlineUsers();
+    }
+  });
 });
-*/
+
+function broadcastOnlineUsers() {
+  const uniqueUsersMap = new Map();
+  for (const [sid, user] of onlineUsers.entries()) {
+    uniqueUsersMap.set(user.id, {
+      ...user,
+      status: 'online'
+    });
+  }
+  const uniqueUsersList = Array.from(uniqueUsersMap.values());
+  io.emit('online-users-list', uniqueUsersList);
+}
 
 // 404 Handler - Must be last
 app.use((req, res) => {
@@ -735,12 +814,10 @@ app.use((req, res) => {
 });
 
 // Always listen on PORT for Render / Local
-// IN VERCEL, WE DO NOT LISTEN
-// Always listen on PORT for Local or direct node execution
 // IN VERCEL, WE DO NOT LISTEN - it handles the export
 // Always listen unless on Vercel (which handles exports)
 if (!process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
 }

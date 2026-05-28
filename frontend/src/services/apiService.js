@@ -116,6 +116,17 @@ export const fetchUserRooms = async (userId) => {
     return response.json();
 };
 
+export const fetchPublicRooms = async () => {
+    try {
+        const response = await fetch(`${config.BACKEND_URL}/api/rooms/public`);
+        if (!response.ok) return [];
+        return await response.json();
+    } catch (error) {
+        console.warn('Failed to fetch public rooms:', error);
+        return [];
+    }
+};
+
 // --- Stats & Leaderboard ---
 
 export const getLeaderboard = async () => {

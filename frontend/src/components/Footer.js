@@ -6,8 +6,8 @@ import Logo from '../logo.svg';
 const Footer = () => {
     const location = useLocation();
 
-    // Only show Footer on Public Pages
-    const publicPages = ['/', '/privacy', '/terms', '/contact', '/about', '/cookie-policy', '/disclaimer', '/blog'];
+    // Only show Footer on Public Pages (excluding landing page for minimal UI)
+    const publicPages = ['/privacy', '/terms', '/contact', '/about', '/cookie-policy', '/disclaimer', '/blog'];
     if (!publicPages.includes(location.pathname) && !location.pathname.startsWith('/blog/')) {
         return null;
     }
